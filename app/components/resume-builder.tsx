@@ -50,8 +50,10 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { createPortal } from "react-dom"
+import { toast } from "@/hooks/use-toast"
 
 import AIModal from "./ai-modal"
+import ResumeAnalysis from "./resume-analysis"
 import TemplateSelector from "./template-selector"
 import { RESUME_TEMPLATES } from "../types/templates"
 import {
@@ -224,6 +226,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const [showAIModal, setShowAIModal] = useState(false)
   const [aiModalType, setAiModalType] = useState<"summary" | "experience" | "project" | null>(null)
   const [aiModalIndex, setAiModalIndex] = useState<number | null>(null)
+  const [showAnalysis, setShowAnalysis] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState("classic")
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -299,6 +302,8 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
   const { user } = useAuth()
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [isAutoSaving, setIsAutoSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
   // Check if photo is required for selected template
   const selectedTemplateData = RESUME_TEMPLATES.find((t) => t.id === selectedTemplate)
@@ -429,6 +434,35 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     projects.values,
     certifications.values,
     references.values,
+  ])
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (!user) return
+    
+    // Don't auto-save if we're still loading an existing resume
+    if (editingResumeId && !lastSaved && !name.value) return
+    
+    // Don't auto-save immediately after loading or if no content
+    if (!lastSaved && !name.value && !summary.value) return
+
+    const autoSaveTimer = setTimeout(async () => {
+      setIsAutoSaving(true)
+      await saveResume()
+      setLastSaved(new Date())
+      setIsAutoSaving(false)
+    }, 2000) // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(autoSaveTimer)
+  }, [
+    resumeData,
+    selectedTemplate,
+    user,
+    saveResume,
+    editingResumeId,
+    lastSaved,
+    name.value,
+    summary.value,
   ])
 
   const handleDownload = useCallback(() => {
@@ -604,24 +638,106 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     doc.save(`${resumeData.personalInfo.name || "Resume"}_Resume.pdf`)
   }, [resumeData, saveResume])
 
-  const handleAIGenerate = (type: "summary" | "experience" | "project", query: string, index?: number) => {
-    // Mock AI data generation
-    const mockData = generateMockAIData(type, query)
+  const handleAIGenerate = async (type: "summary" | "experience" | "project", query: string, index?: number) => {
+    try {
+      // Call the AI API
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, query }),
+      })
 
-    switch (type) {
-      case "summary":
-        summary.setValue(mockData)
-        break
-      case "experience":
-        if (index !== undefined && index !== null) {
-          experience.onChange(index, "responsibilities", mockData)
+      const data = await response.json()
+
+      if (data.success && data.content) {
+        const aiContent = data.content
+
+        switch (type) {
+          case "summary":
+            summary.setValue(aiContent)
+            break
+          case "experience":
+            if (index !== undefined && index !== null) {
+              experience.onChange(index, "responsibilities", aiContent)
+            }
+            break
+          case "project":
+            if (index !== undefined && index !== null) {
+              projects.onChange(index, "description", aiContent)
+            }
+            break
         }
-        break
-      case "project":
-        if (index !== undefined && index !== null) {
-          projects.onChange(index, "description", mockData)
+
+        // Show success message if it was a fallback
+        if (data.fallback) {
+          toast({
+            title: "Content Generated",
+            description: "Using fallback templates. Add your Gemini API key to .env.local for AI-powered content.",
+            duration: 5000,
+          })
+        } else {
+          toast({
+            title: "AI Content Generated",
+            description: "Successfully generated professional content using Google Gemini.",
+            duration: 3000,
+          })
         }
-        break
+      } else {
+        // Fallback to mock data if API fails
+        const mockData = generateMockAIData(type, query)
+        
+        switch (type) {
+          case "summary":
+            summary.setValue(mockData)
+            break
+          case "experience":
+            if (index !== undefined && index !== null) {
+              experience.onChange(index, "responsibilities", mockData)
+            }
+            break
+          case "project":
+            if (index !== undefined && index !== null) {
+              projects.onChange(index, "description", mockData)
+            }
+            break
+        }
+
+        toast({
+          title: "Content Generated",
+          description: "Using template content. Check your API configuration for AI features.",
+          duration: 4000,
+        })
+      }
+    } catch (error) {
+      console.error('Error calling AI API:', error)
+      
+      // Fallback to mock data
+      const mockData = generateMockAIData(type, query)
+      
+      switch (type) {
+        case "summary":
+          summary.setValue(mockData)
+          break
+        case "experience":
+          if (index !== undefined && index !== null) {
+            experience.onChange(index, "responsibilities", mockData)
+          }
+          break
+        case "project":
+          if (index !== undefined && index !== null) {
+            projects.onChange(index, "description", mockData)
+          }
+          break
+      }
+
+      toast({
+        title: "Content Generated",
+        description: "Using template content due to API error. Please check your configuration.",
+        variant: "destructive",
+        duration: 4000,
+      })
     }
 
     setShowAIModal(false)
@@ -631,7 +747,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
   const openAIModal = (type: "summary" | "experience" | "project", index?: number) => {
     setAiModalType(type)
-    setAiModalIndex(index || null)
+    setAiModalIndex(index !== undefined ? index : null)
     setShowAIModal(true)
   }
 
@@ -722,19 +838,51 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 <h1 className="text-2xl font-bold text-foreground">
                   {editingResumeId ? "Edit Resume" : "Create Resume"}
                 </h1>
-                <p className="text-muted-foreground text-sm">AI-Powered Resume Builder</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-muted-foreground text-sm">AI-Powered Resume Builder</p>
+                  {isAutoSaving && (
+                    <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      Saving...
+                    </span>
+                  )}
+                  {lastSaved && !isAutoSaving && (
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      Saved {new Date().getTime() - lastSaved.getTime() < 10000 ? 'just now' : 'recently'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <Button 
+                onClick={() => {
+                  alert('🚀 AI Analysis Button Clicked! Opening modal...')
+                  console.log('🚀 === AI Analysis Button Clicked (Header) ===')
+                  console.log('📊 Resume data exists:', !!resumeData)
+                  console.log('📊 Resume data keys:', Object.keys(resumeData))
+                  console.log('📋 Resume data structure:', JSON.stringify(resumeData, null, 2))
+                  console.log('🔄 Setting showAnalysis to true...')
+                  setShowAnalysis(true)
+                  console.log('✅ showAnalysis state updated')
+                }} 
+                variant="outline" 
+                size="sm"
+                className="bg-accent/10 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI Analysis
+              </Button>
+
               <Button onClick={() => setShowTemplateSelector(true)} variant="outline" size="sm">
                 <Palette className="h-4 w-4 mr-2" />
                 Template
               </Button>
 
-              <Button onClick={saveResume} variant="outline" size="sm">
+              <Button onClick={saveResume} variant="outline" size="sm" disabled={isAutoSaving}>
                 <Save className="h-4 w-4 mr-2" />
-                Save
+                {isAutoSaving ? 'Saving...' : 'Save Now'}
               </Button>
 
               <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
@@ -942,16 +1090,26 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           {activeId && activeItem ? (
             <div className="p-4 border rounded-lg bg-card border-border shadow-lg">
               <p className="font-semibold text-foreground">
-                {activeItem.jobTitle || activeItem.school || activeItem.name}
+                {(activeItem as any).jobTitle || (activeItem as any).school || (activeItem as any).name}
               </p>
               <p className="text-sm text-muted-foreground">
-                {activeItem.company || activeItem.degree || activeItem.description || activeItem.issuer}
+                {(activeItem as any).company || (activeItem as any).degree || (activeItem as any).description || (activeItem as any).issuer}
               </p>
             </div>
           ) : null}
         </DragOverlay>,
         document.body,
       )}
+
+      {/* Resume Analysis Modal */}
+      <ResumeAnalysis
+        isOpen={showAnalysis}
+        onClose={() => {
+          console.log('🔄 Closing analysis modal...')
+          setShowAnalysis(false)
+        }}
+        resumeData={resumeData}
+      />
     </div>
   )
 }
@@ -1434,73 +1592,124 @@ const AdditionalStep = ({ certifications, references, sensors, activeId, onDragS
   </div>
 )
 
-const ReviewStep = ({ data, onDownload }: { data: ResumeData; onDownload: () => void }) => (
-  <div className="space-y-8">
-    <div className="text-center mb-8">
-      <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Launch!</h3>
-      <p className="text-muted-foreground">Review your resume and download when you're satisfied</p>
-    </div>
+const ReviewStep = ({ data, onDownload }: { data: ResumeData; onDownload: () => void }) => {
+  const [showAnalysis, setShowAnalysis] = useState(false)
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card className="border border-border">
+  return (
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Launch!</h3>
+        <p className="text-muted-foreground">Review your resume and download when you're satisfied</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="border border-border">
+          <CardContent className="p-6">
+            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Personal Information
+            </h4>
+            <div className="space-y-2 text-sm">
+              <p className="text-muted-foreground">
+                Name: <span className="text-foreground">{data.personalInfo.name || "Not provided"}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Title: <span className="text-foreground">{data.personalInfo.title || "Not provided"}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Email: <span className="text-foreground">{data.personalInfo.email || "Not provided"}</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border">
+          <CardContent className="p-6">
+            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Content Summary
+            </h4>
+            <div className="space-y-2 text-sm">
+              <p className="text-muted-foreground">
+                Experience:{" "}
+                <span className="text-foreground font-medium">
+                  {data.experience.filter((exp) => exp.jobTitle).length} entries
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                Education:{" "}
+                <span className="text-foreground font-medium">
+                  {data.education.filter((edu) => edu.school).length} entries
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                Projects:{" "}
+                <span className="text-foreground font-medium">
+                  {data.projects.filter((proj) => proj.name).length} entries
+                </span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Analysis Card */}
+      <Card className="border border-accent/20 bg-gradient-to-r from-accent/5 to-transparent">
         <CardContent className="p-6">
-          <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Personal Information
-          </h4>
-          <div className="space-y-2 text-sm">
-            <p className="text-muted-foreground">
-              Name: <span className="text-foreground">{data.personalInfo.name || "Not provided"}</span>
-            </p>
-            <p className="text-muted-foreground">
-              Title: <span className="text-foreground">{data.personalInfo.title || "Not provided"}</span>
-            </p>
-            <p className="text-muted-foreground">
-              Email: <span className="text-foreground">{data.personalInfo.email || "Not provided"}</span>
-            </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-accent" />
+                AI Resume Analysis
+              </h4>
+              <p className="text-muted-foreground text-sm">
+                Get professional insights and improvement suggestions powered by AI
+              </p>
+            </div>
+            <Button 
+              onClick={() => {
+                alert('🚀 AI Analysis Button Clicked! (Review Step)')
+                console.log('🚀 === AI Analysis Button Clicked (Review Step) ===')
+                console.log('📊 Resume data exists:', !!data)
+                console.log('📊 Resume data keys:', Object.keys(data))
+                console.log('📋 Personal info:', data.personalInfo)
+                console.log('📋 Full resume data:', JSON.stringify(data, null, 2))
+                console.log('🔄 Setting showAnalysis to true...')
+                setShowAnalysis(true)
+                console.log('✅ showAnalysis state updated')
+              }}
+              variant="outline"
+              className="bg-accent/10 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+            >
+              <Target className="mr-2 h-4 w-4" />
+              Analyze Resume
+            </Button>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            • Comprehensive content analysis
+            • ATS compatibility check
+            • Industry-specific recommendations
+            • Professional improvement suggestions
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border border-border">
-        <CardContent className="p-6">
-          <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Content Summary
-          </h4>
-          <div className="space-y-2 text-sm">
-            <p className="text-muted-foreground">
-              Experience:{" "}
-              <span className="text-foreground font-medium">
-                {data.experience.filter((exp) => exp.jobTitle).length} entries
-              </span>
-            </p>
-            <p className="text-muted-foreground">
-              Education:{" "}
-              <span className="text-foreground font-medium">
-                {data.education.filter((edu) => edu.school).length} entries
-              </span>
-            </p>
-            <p className="text-muted-foreground">
-              Projects:{" "}
-              <span className="text-foreground font-medium">
-                {data.projects.filter((proj) => proj.name).length} entries
-              </span>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <div className="text-center space-y-4">
+        <Button onClick={onDownload} size="lg" className="px-12 py-4 text-lg">
+          <Download className="mr-3 h-6 w-6" />
+          Download Your Resume
+        </Button>
+        <p className="text-muted-foreground text-sm">Your resume will be saved automatically</p>
+      </div>
 
-    <div className="text-center">
-      <Button onClick={onDownload} size="lg" className="px-12 py-4 text-lg">
-        <Download className="mr-3 h-6 w-6" />
-        Download Your Resume
-      </Button>
-      <p className="text-muted-foreground text-sm mt-4">Your resume will be saved automatically</p>
+      <ResumeAnalysis
+        isOpen={showAnalysis}
+        onClose={() => setShowAnalysis(false)}
+        resumeData={data}
+      />
     </div>
-  </div>
-)
+  )
+}
 
 const ResumePreview = ({ data, templateId = "classic" }: { data: ResumeData; templateId?: string }) => {
   const template = RESUME_TEMPLATES.find((t) => t.id === templateId) || RESUME_TEMPLATES[0]
