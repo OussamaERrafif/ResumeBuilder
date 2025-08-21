@@ -42,33 +42,61 @@ export default function TemplateSelector({ selectedTemplate, onTemplateSelect, o
   // Mock resume data for template previews
   const mockResumeData = {
     personalInfo: {
-      name: "John Doe",
-      title: "Software Engineer",
-      email: "john.doe@example.com",
-      phone: "+1 (555) 123-4567",
-      location: "San Francisco, CA",
-      summary: "Highly motivated software engineer with 5 years of experience in developing scalable web applications.",
-      profileImage: "/placeholder.svg?height=100&width=100",
+      name: "Alex Chen",
+      title: "Product Manager",
+      email: "alex.chen@example.com",
+      phone: "+1 (555) 987-6543",
+      location: "New York, NY",
+      summary: "Results-driven product manager with 6+ years of experience launching innovative digital products. Expert in user research, agile methodologies, and cross-functional team leadership.",
+      profileImage: "/professional-man.png",
     },
-    links: [{ name: "LinkedIn", url: "#" }],
-    education: [{ school: "University of Tech", degree: "B.S. Computer Science", date: "2020" }],
+    links: [
+      { name: "LinkedIn", url: "#" },
+      { name: "Portfolio", url: "#" }
+    ],
+    education: [
+      { 
+        school: "MIT Sloan School of Management", 
+        degree: "MBA, Technology Management", 
+        date: "2019",
+        gpa: "3.9"
+      }
+    ],
     experience: [
       {
-        jobTitle: "Software Engineer",
-        company: "Tech Solutions",
+        jobTitle: "Senior Product Manager",
+        company: "Apple",
         date: "2020-Present",
-        responsibilities: "Developed and maintained web applications.",
+        responsibilities: "Led product strategy for iOS apps with 100M+ users. Managed cross-functional teams of 15+ engineers and designers to deliver market-leading features.",
       },
+      {
+        jobTitle: "Product Manager",
+        company: "Spotify",
+        date: "2018-2020",
+        responsibilities: "Launched music discovery features that increased user engagement by 25%. Conducted extensive user research and A/B testing.",
+      }
     ],
-    skills: { languages: "JavaScript, Python", frameworks: "React, Node.js", tools: "Git, Docker" },
+    skills: { 
+      languages: "Python, SQL, R", 
+      frameworks: "Tableau, Figma, Jira, Confluence", 
+      tools: "Google Analytics, Mixpanel, A/B Testing, Agile/Scrum" 
+    },
     projects: [
       {
-        name: "E-commerce Platform",
-        description: "Built a full-stack e-commerce platform.",
-        technologies: "React, Node.js, MongoDB",
+        name: "AI-Powered Music Recommendations",
+        description: "Designed and launched personalized recommendation system serving 50M+ monthly users.",
+        technologies: "Python, TensorFlow, BigQuery, React",
       },
+      {
+        name: "Cross-Platform Mobile App",
+        description: "Led development of award-winning mobile application with 4.8-star rating.",
+        technologies: "React Native, Node.js, Firebase, GraphQL",
+      }
     ],
-    certifications: [{ name: "AWS Certified Developer", issuer: "AWS", date: "2022" }],
+    certifications: [
+      { name: "Certified Scrum Product Owner", issuer: "Scrum Alliance", date: "2023" },
+      { name: "Google Analytics Certified", issuer: "Google", date: "2022" }
+    ],
     references: [],
   }
 

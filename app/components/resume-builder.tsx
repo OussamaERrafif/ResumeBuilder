@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { MarkdownTextarea } from "@/components/ui/markdown-textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -51,6 +52,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
+import { markdownToPlainText } from "@/lib/markdown"
 
 import AIModal from "./ai-modal"
 import ResumeAnalysis from "./resume-analysis"
@@ -309,6 +311,13 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const selectedTemplateData = RESUME_TEMPLATES.find((t) => t.id === selectedTemplate)
   const isPhotoRequired = selectedTemplateData?.requiresPhoto || false
 
+  // Clear profile image when switching to a template that doesn't require photos
+  useEffect(() => {
+    if (!isPhotoRequired && profileImage) {
+      setProfileImage(null)
+    }
+  }, [isPhotoRequired, profileImage])
+
   // Load existing resume data if editing
   useEffect(() => {
     const loadResumeData = async () => {
@@ -510,7 +519,8 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
       doc.line(10, yPos + 1, 200, yPos + 1)
       yPos += 8
       doc.setFont("Times", "normal")
-      const splitSummary = doc.splitTextToSize(resumeData.personalInfo.summary, 180)
+      const plainSummary = markdownToPlainText(resumeData.personalInfo.summary)
+      const splitSummary = doc.splitTextToSize(plainSummary, 180)
       doc.text(splitSummary, 10, yPos)
       yPos += splitSummary.length * 5 + 5
     }
@@ -577,7 +587,8 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           doc.text(exp.date, 200, yPos, { align: "right" })
           yPos += 5
           if (exp.responsibilities) {
-            const splitResponsibilities = doc.splitTextToSize(exp.responsibilities, 180)
+            const plainResponsibilities = markdownToPlainText(exp.responsibilities)
+            const splitResponsibilities = doc.splitTextToSize(plainResponsibilities, 180)
             doc.text(splitResponsibilities, 10, yPos)
             yPos += splitResponsibilities.length * 5 + 5
           }
@@ -600,7 +611,8 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           yPos += 5
           doc.setFont("Times", "normal")
           if (project.description) {
-            const splitDescription = doc.splitTextToSize(project.description, 180)
+            const plainDescription = markdownToPlainText(project.description)
+            const splitDescription = doc.splitTextToSize(plainDescription, 180)
             doc.text(splitDescription, 10, yPos)
             yPos += splitDescription.length * 5
           }
@@ -1031,7 +1043,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           </Card>
 
           {/* Preview Section */}
-          <Card className="border border-border sticky top-8">
+          <Card className="border border-border sticky top-8 h-fit">
             <CardHeader className="border-b border-border">
               <CardTitle className="flex items-center justify-between text-foreground">
                 <div className="flex items-center space-x-3">
@@ -1045,7 +1057,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="bg-white min-h-[700px] max-h-[700px] overflow-auto">
+              <div className="bg-white overflow-auto" style={{ height: 'calc(100vh - 200px)' }}>
                 <div className="p-6">
                   <ResumePreview data={resumeData} templateId={selectedTemplate} />
                 </div>
@@ -1164,6 +1176,7 @@ const FormField = ({
   required = false,
   showAI = false,
   onAIClick,
+  useMarkdown = false,
 }: {
   label: string
   value: string
@@ -1174,6 +1187,7 @@ const FormField = ({
   required?: boolean
   showAI?: boolean
   onAIClick?: () => void
+  useMarkdown?: boolean
 }) => (
   <div className="space-y-2">
     <Label
@@ -1185,7 +1199,17 @@ const FormField = ({
       {showAI && <Sparkles className="h-3 w-3 text-muted-foreground" />}
     </Label>
     <div className="relative">
-      {type === "textarea" ? (
+      {type === "textarea" && useMarkdown ? (
+        <MarkdownTextarea
+          label=""
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          showAI={showAI}
+          onAIClick={onAIClick}
+          error={error}
+        />
+      ) : type === "textarea" ? (
         <Textarea
           id={label.toLowerCase().replace(/\s+/g, "-")}
           value={value}
@@ -1203,7 +1227,7 @@ const FormField = ({
           className="h-10"
         />
       )}
-      {showAI && (
+      {showAI && !useMarkdown && (
         <Button
           type="button"
           onClick={onAIClick}
@@ -1215,7 +1239,7 @@ const FormField = ({
         </Button>
       )}
     </div>
-    {error && (
+    {error && !useMarkdown && (
       <p className="text-destructive text-sm flex items-center gap-2">
         <Target className="h-3 w-3" />
         {error}
@@ -1278,7 +1302,7 @@ const ArrayFormField = ({
   onChange: (index: number, field: string, value: string) => void
   onAdd: () => void
   onRemove: (index: number) => void
-  fields: { name: string; label: string; type?: string; placeholder?: string; showAI?: boolean }[]
+  fields: { name: string; label: string; type?: string; placeholder?: string; showAI?: boolean; useMarkdown?: boolean }[]
   showAI?: boolean
   onAIClick?: (index: number, field: string) => void
   draggable?: boolean
@@ -1300,6 +1324,7 @@ const ArrayFormField = ({
             placeholder={field.placeholder}
             showAI={field.showAI}
             onAIClick={() => onAIClick && onAIClick(index, field.name)}
+            useMarkdown={field.useMarkdown}
           />
         ))}
         <Button onClick={() => onRemove(index)} variant="destructive" size="sm">
@@ -1366,7 +1391,7 @@ const PersonalInfoStep = ({
     </div>
 
     <div className="flex flex-col lg:flex-row gap-8">
-      <div className="flex-1 space-y-6">
+      <div className={`${isPhotoRequired ? 'flex-1' : 'w-full'} space-y-6`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormField label="Full Name" {...name} required placeholder="John Doe" />
           <FormField label="Professional Title" {...title} required placeholder="Software Engineer" />
@@ -1376,15 +1401,17 @@ const PersonalInfoStep = ({
         <FormField label="Location" {...location} required placeholder="New York, NY" />
       </div>
 
-      <div className="lg:w-64">
-        <FileUpload
-          label={isPhotoRequired ? "Profile Picture (Required)" : "Profile Picture"}
-          accept="image/*"
-          onFileSelect={onProfileImageChange}
-          preview={profileImage}
-          className="h-full"
-        />
-      </div>
+      {isPhotoRequired && (
+        <div className="lg:w-64">
+          <FileUpload
+            label="Profile Picture (Required)"
+            accept="image/*"
+            onFileSelect={onProfileImageChange}
+            preview={profileImage}
+            className="h-full"
+          />
+        </div>
+      )}
     </div>
 
     <FormField
@@ -1394,6 +1421,7 @@ const PersonalInfoStep = ({
       placeholder="Write a compelling summary that highlights your key achievements and career goals..."
       showAI={true}
       onAIClick={() => onAIGenerate("summary")}
+      useMarkdown={true}
     />
 
     <ArrayFormField
@@ -1435,6 +1463,7 @@ const ExperienceStep = ({ experience, onAIGenerate, sensors, activeId, onDragSta
           type: "textarea",
           placeholder: "Describe your main responsibilities, achievements, and impact...",
           showAI: true,
+          useMarkdown: true,
         },
       ]}
       onAIClick={(index, field) => {
@@ -1523,6 +1552,7 @@ const ProjectsStep = ({ projects, onAIGenerate, sensors, activeId, onDragStart, 
           type: "textarea",
           placeholder: "Describe the project, your role, and the impact it made...",
           showAI: true,
+          useMarkdown: true,
         },
         { name: "technologies", label: "Technologies Used", placeholder: "React, Node.js, MongoDB, AWS" },
         {

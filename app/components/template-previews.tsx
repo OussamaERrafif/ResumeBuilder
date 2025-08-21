@@ -1,6 +1,7 @@
 "use client"
 
 import type { Template } from "../types/templates"
+import { renderMarkdown } from "@/lib/markdown"
 
 interface ResumeData {
   personalInfo: {
@@ -32,167 +33,253 @@ interface TemplatePreviewProps {
 
 export function ClassicTemplate({ data, template }: TemplatePreviewProps) {
   return (
-    <div className="space-y-6 font-serif text-sm leading-relaxed text-black bg-white">
-      {/* Header */}
-      <div className="pb-6 border-b-2 border-gray-800">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
-          {/* Profile Image */}
-          {data.personalInfo.profileImage && (
-            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-600 flex-shrink-0">
-              <img
-                src={data.personalInfo.profileImage || "/placeholder.svg"}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
-          {/* Contact Info */}
-          <div className={`text-center ${data.personalInfo.profileImage ? "md:text-left" : ""} flex-1`}>
-            <h1 className="text-2xl font-bold mb-2 tracking-wide text-gray-800">
-              {data.personalInfo.name || "Your Name"}
-            </h1>
-            <p className="text-base mb-3 text-gray-700">{data.personalInfo.title || "Your Professional Title"}</p>
-            <div className="flex flex-col sm:flex-row sm:justify-center items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
-              <span>{data.personalInfo.email}</span>
-              <span className="hidden sm:inline">•</span>
-              <span>{data.personalInfo.phone}</span>
-              <span className="hidden sm:inline">•</span>
-              <span>{data.personalInfo.location}</span>
-            </div>
-            {data.links.some((link) => link.name && link.url) && (
-              <div className="flex flex-wrap justify-center md:justify-start space-x-4 text-sm mt-2 text-gray-600">
-                {data.links
-                  .filter((link) => link.name && link.url)
-                  .map((link, index) => (
-                    <span key={index}>{link.name}</span>
-                  ))}
-              </div>
-            )}
-          </div>
+    <div 
+      className="p-6 text-black bg-white leading-tight"
+      style={{ 
+        fontFamily: "'Times New Roman', Times, serif",
+        fontSize: '12px',
+        lineHeight: '1.2'
+      }}
+    >
+      {/* Header - Name and Contact */}
+      <div className="text-center mb-6">
+        <h1 
+          className="text-2xl font-bold mb-2"
+          style={{ fontSize: '18px', fontWeight: 'bold' }}
+        >
+          {data.personalInfo.name || "OUSSAMA ERRAFIF"}
+        </h1>
+        <div className="text-sm mb-1">
+          {data.personalInfo.title || "Software engineer"}
+        </div>
+        <div className="text-sm mb-1">
+          {data.personalInfo.email || "email@example.com"} | {data.personalInfo.phone || "phone"}
+        </div>
+        <div className="text-sm">
+          {data.links.length > 0 ? (
+            data.links
+              .filter(link => link.name && link.url)
+              .map(link => link.name)
+              .join(" | ")
+          ) : "LinkedIn | GitHub | HackerRank | Portfolio"}
         </div>
       </div>
 
-      {/* Professional Summary */}
-      {data.personalInfo.summary && (
-        <div>
-          <h2 className="font-bold text-base mb-3 pb-1 border-b border-gray-600 text-gray-800">PROFESSIONAL SUMMARY</h2>
-          <p className="text-sm leading-relaxed text-black">{data.personalInfo.summary}</p>
-        </div>
-      )}
-
-      {/* Professional Experience */}
-      {data.experience.some((exp) => exp.jobTitle) && (
-        <div>
-          <h2 className="font-bold text-base mb-4 pb-1 border-b border-gray-600 text-gray-800">
-            PROFESSIONAL EXPERIENCE
-          </h2>
-          {data.experience
-            .filter((exp) => exp.jobTitle)
-            .map((exp, index) => (
-              <div key={index} className="mb-5">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-semibold text-sm text-gray-800">{exp.jobTitle}</h3>
-                  <span className="text-sm font-medium text-gray-600">{exp.date}</span>
-                </div>
-                <p className="text-sm font-medium mb-2 text-gray-600">{exp.company}</p>
-                {exp.responsibilities && <p className="text-sm leading-relaxed text-black">{exp.responsibilities}</p>}
-              </div>
-            ))}
-        </div>
-      )}
-
       {/* Education */}
-      {data.education.some((edu) => edu.school) && (
-        <div>
-          <h2 className="font-bold text-base mb-4 pb-1 border-b border-gray-600 text-gray-800">EDUCATION</h2>
-          {data.education
-            .filter((edu) => edu.school)
-            .map((edu, index) => (
-              <div key={index} className="mb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-sm text-gray-800">{edu.school}</h3>
-                    <p className="text-sm text-black">{edu.degree}</p>
+      {(data.education.some(edu => edu.school) || !data.education.length) && (
+        <div className="mb-4">
+          <h2 className="text-sm font-bold mb-2 border-b border-black pb-1">
+            EDUCATION
+          </h2>
+          {data.education.length > 0 ? (
+            data.education
+              .filter(edu => edu.school)
+              .map((edu, index) => (
+                <div key={index} className="mb-2">
+                  <div className="flex justify-between">
+                    <div>
+                      <div className="font-bold">{edu.school}</div>
+                      <div>{edu.degree}</div>
+                    </div>
+                    <div className="text-right">
+                      <div>{edu.date}</div>
+                    </div>
                   </div>
-                  <span className="text-sm text-gray-600">{edu.date}</span>
                 </div>
-                {edu.gpa && <p className="text-sm mt-1 text-gray-600">GPA: {edu.gpa}</p>}
+              ))
+          ) : (
+            <div className="mb-2">
+              <div className="flex justify-between">
+                <div>
+                  <div className="font-bold">ENSA</div>
+                  <div>Engineer G INFO</div>
+                </div>
+                <div className="text-right">
+                  <div>AGADIR</div>
+                  <div>Act 2022 - July 2025</div>
+                </div>
               </div>
-            ))}
+              <div className="mb-2">
+                <div className="flex justify-between">
+                  <div>
+                    <div className="font-bold">CPGE</div>
+                    <div>DEUG PCSI</div>
+                  </div>
+                  <div className="text-right">
+                    <div>DAKHLA</div>
+                    <div>Act 2020 - June 2022</div>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-2">
+                <div className="flex justify-between">
+                  <div>
+                    <div className="font-bold">EL FATIH</div>
+                    <div>Baccalauréat</div>
+                  </div>
+                  <div className="text-right">
+                    <div>DAKHLA</div>
+                    <div>2019 - 2020</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Core Competencies */}
-      {(data.skills.languages || data.skills.frameworks || data.skills.tools) && (
-        <div>
-          <h2 className="font-bold text-base mb-4 pb-1 border-b border-gray-600 text-gray-800">CORE COMPETENCIES</h2>
-          <div className="space-y-2">
-            {data.skills.languages && (
-              <div>
-                <span className="font-medium text-sm text-gray-700">Programming Languages: </span>
-                <span className="text-sm text-black">{data.skills.languages}</span>
+      {/* Experience */}
+      {(data.experience.some(exp => exp.jobTitle) || !data.experience.length) && (
+        <div className="mb-4">
+          <h2 className="text-sm font-bold mb-2 border-b border-black pb-1">
+            EXPERIENCE
+          </h2>
+          {data.experience.length > 0 ? (
+            data.experience
+              .filter(exp => exp.jobTitle)
+              .map((exp, index) => (
+                <div key={index} className="mb-3">
+                  <div className="flex justify-between mb-1">
+                    <div className="font-bold">{exp.company} | {exp.jobTitle}</div>
+                    <div>{exp.date}</div>
+                  </div>
+                  {exp.responsibilities && (
+                    <div 
+                      className="ml-4 resume-content prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: renderMarkdown(exp.responsibilities)
+                      }}
+                    />
+                  )}
+                </div>
+              ))
+          ) : (
+            <div>
+              <div className="mb-3">
+                <div className="flex justify-between mb-1">
+                  <div className="font-bold">PFA | Full-Stack</div>
+                  <div>Fév 2024 - Mai 2024</div>
+                </div>
+                <div className="ml-4">
+                  • Developed a full-stack web app using AngularJs and NextJS, achieving 30% faster frontend rendering and 25% quicker backend response times<br/>
+                  • Implemented secure JWT authentication, enhancing user data security and session management<br/>
+                  • Used advanced UI/UX with Angular and Next libraries and services rate, demonstrating robust scalability
+                </div>
               </div>
-            )}
-            {data.skills.frameworks && (
-              <div>
-                <span className="font-medium text-sm text-gray-700">Frameworks & Libraries: </span>
-                <span className="text-sm text-black">{data.skills.frameworks}</span>
+              <div className="mb-3">
+                <div className="flex justify-between mb-1">
+                  <div className="font-bold">Lexovit | Full-Stack</div>
+                  <div>Mars | Fév 2025 - Sep 2025</div>
+                </div>
+                <div className="ml-4">
+                  • Created multiple pages using React and Redux for the frontend, and FastAPI for the backend<br/>
+                  • Developed an ETL process to import data from Excel to a MySQL database<br/>
+                  • Implemented a RAG (Retrieval-Augmented Generation) system for file applications
+                </div>
               </div>
-            )}
-            {data.skills.tools && (
-              <div>
-                <span className="font-medium text-sm text-gray-700">Tools & Platforms: </span>
-                <span className="text-sm text-black">{data.skills.tools}</span>
-              </div>
-            )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Skills */}
+      {(data.skills.languages || data.skills.frameworks || data.skills.tools || true) && (
+        <div className="mb-4">
+          <h2 className="text-sm font-bold mb-2 border-b border-black pb-1">
+            SKILLS
+          </h2>
+          <div className="space-y-1">
+            <div>
+              <span className="font-bold">Programming Languages:</span> {data.skills.languages || "C, C++, JAVA, Python, PHP, JavaScript, HTML, CSS, Bash, R"}
+            </div>
+            <div>
+              <span className="font-bold">Libraries/Frameworks:</span> {data.skills.frameworks || "reactjs, numpy, Pandas, scipy, matplotlib, JEE, fastapi, redux"}
+            </div>
+            <div>
+              <span className="font-bold">Tools/Platforms:</span> {data.skills.tools || "Git, Linux, eclipse, git"}
+            </div>
+            <div>
+              <span className="font-bold">Databases:</span> SQL, MongoDB
+            </div>
           </div>
         </div>
       )}
 
-      {/* Key Projects */}
-      {data.projects.some((project) => project.name) && (
-        <div>
-          <h2 className="font-bold text-base mb-4 pb-1 border-b border-gray-600 text-gray-800">KEY PROJECTS</h2>
-          {data.projects
-            .filter((project) => project.name)
-            .map((project, index) => (
-              <div key={index} className="mb-4">
-                <h3 className="font-semibold text-sm mb-1 text-gray-800">{project.name}</h3>
-                {project.description && (
-                  <p className="text-sm leading-relaxed mb-1 text-black">{project.description}</p>
-                )}
-                {project.technologies && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Technologies:</span> {project.technologies}
-                  </p>
-                )}
+      {/* Projects / Open-Source */}
+      {(data.projects.some(project => project.name) || !data.projects.length) && (
+        <div className="mb-4">
+          <h2 className="text-sm font-bold mb-2 border-b border-black pb-1">
+            PROJECTS / OPEN-SOURCE
+          </h2>
+          {data.projects.length > 0 ? (
+            data.projects
+              .filter(project => project.name)
+              .map((project, index) => (
+                <div key={index} className="mb-3">
+                  <div className="font-bold mb-1">{project.name} | Link</div>
+                  {project.description && (
+                    <div 
+                      className="ml-4 resume-content prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: renderMarkdown(project.description)
+                      }}
+                    />
+                  )}
+                  {project.technologies && (
+                    <div className="ml-4 mt-1">
+                      <span className="font-bold">Technologies:</span> {project.technologies}
+                    </div>
+                  )}
+                </div>
+              ))
+          ) : (
+            <div>
+              <div className="mb-3">
+                <div className="font-bold mb-1">ResumeBuilderPy | Link</div>
+                <div className="ml-4">
+                  • Developed a Python tool to generate professional resumes in LaTeX with customizable user inputs<br/>
+                  • Automated PDF compilation, reducing resume creation time by 70%
+                </div>
               </div>
-            ))}
+              <div className="mb-3">
+                <div className="font-bold mb-1">NetScan | Link</div>
+                <div className="ml-4">
+                  • Developed a multithreaded network scanner with service/OS detection, traceroute, and export in JSON, XML, and CSV<br/>
+                  • Enhanced usability with rate limiting, a GUI, and an interactive network map
+                </div>
+              </div>
+              <div className="mb-3">
+                <div className="font-bold mb-1">Machine Learning Models</div>
+                <div className="ml-4">
+                  • Built and optimized machine learning models (Decision Trees, Random Forest, Logistic Regression) for churn analysis, sentiment analysis and weather prediction, achieving up to 92% accuracy and 26% model performance enhancement<br/>
+                  • Applied techniques like Grid Search, cross-validation, feature selection, and text vectorization (TF-IDF, Bag of Words) effectively for optimal ML model selection from large-scale data
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Certifications */}
-      {data.certifications.some((cert) => cert.name) && (
-        <div>
-          <h2 className="font-bold text-base mb-4 pb-1 border-b border-gray-600 text-gray-800">
-            PROFESSIONAL CERTIFICATIONS
-          </h2>
-          {data.certifications
-            .filter((cert) => cert.name)
+      <div className="mb-4">
+        <h2 className="text-sm font-bold mb-2 border-b border-black pb-1">
+          CERTIFICATIONS
+        </h2>
+        {data.certifications.length > 0 ? (
+          data.certifications
+            .filter(cert => cert.name)
             .map((cert, index) => (
-              <div key={index} className="mb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-sm font-medium text-gray-800">{cert.name}</span>
-                    {cert.issuer && <span className="text-sm ml-2 text-black">- {cert.issuer}</span>}
-                  </div>
-                  {cert.date && <span className="text-sm text-gray-600">{cert.date}</span>}
-                </div>
+              <div key={index} className="mb-1">
+                • {cert.name} - {cert.issuer}
               </div>
-            ))}
-        </div>
-      )}
+            ))
+        ) : (
+          <div>
+            <div>• Python for Data Science, AI & Development - <span className="font-bold">IBM</span></div>
+            <div>• Neural Networks and Deep Learning - <span className="font-bold">DeepLearning.AI</span></div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -200,8 +287,12 @@ export function ClassicTemplate({ data, template }: TemplatePreviewProps) {
 export function ModernTemplate({ data, template }: TemplatePreviewProps) {
   return (
     <div
-      className="space-y-6 font-sans text-sm"
-      style={{ color: template.colors.text, backgroundColor: template.colors.background }}
+      className="space-y-6 text-sm"
+      style={{ 
+        color: template.colors.text, 
+        backgroundColor: template.colors.background,
+        fontFamily: "'Inter', 'Helvetica Neue', sans-serif"
+      }}
     >
       {/* Header */}
       <div className="pb-6">
@@ -544,8 +635,12 @@ export function ModernTemplate({ data, template }: TemplatePreviewProps) {
 export function CreativeTemplate({ data, template }: TemplatePreviewProps) {
   return (
     <div
-      className="space-y-6 font-sans text-sm"
-      style={{ color: template.colors.text, backgroundColor: template.colors.background }}
+      className="space-y-6 text-sm"
+      style={{ 
+        color: template.colors.text, 
+        backgroundColor: template.colors.background,
+        fontFamily: "'Poppins', 'Arial', sans-serif"
+      }}
     >
       {/* Header */}
       <div className="relative">
@@ -855,21 +950,33 @@ export function CreativeTemplate({ data, template }: TemplatePreviewProps) {
 
 export function MinimalTemplate({ data, template }: TemplatePreviewProps) {
   return (
-    <div className="space-y-8 font-light text-sm max-w-2xl mx-auto leading-relaxed text-black bg-white">
+    <div 
+      className="space-y-8 text-sm max-w-2xl mx-auto leading-relaxed"
+      style={{ 
+        color: template.colors.text, 
+        backgroundColor: template.colors.background,
+        fontFamily: "'Source Sans Pro', 'Arial', sans-serif",
+        fontWeight: '300'
+      }}
+    >
       {/* Header */}
-      <div className="text-center pb-8 border-b border-gray-300">
-        {data.personalInfo.profileImage && (
-          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-black mx-auto mb-4">
-            <img
-              src={data.personalInfo.profileImage || "/placeholder.svg"}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-        <h1 className="text-3xl font-light tracking-wide mb-3 text-black">{data.personalInfo.name || "Your Name"}</h1>
-        <p className="text-lg mb-4 font-light text-gray-700">{data.personalInfo.title || "Your Professional Title"}</p>
-        <div className="flex justify-center space-x-8 text-sm text-gray-600">
+      <div className="text-center pb-8 border-b" style={{ borderColor: template.colors.accent }}>
+        <h1 
+          className="text-3xl tracking-wide mb-3"
+          style={{ color: template.colors.primary, fontWeight: '300' }}
+        >
+          {data.personalInfo.name || "Your Name"}
+        </h1>
+        <p 
+          className="text-lg mb-4"
+          style={{ color: template.colors.secondary, fontWeight: '300' }}
+        >
+          {data.personalInfo.title || "Your Professional Title"}
+        </p>
+        <div 
+          className="flex justify-center space-x-8 text-sm"
+          style={{ color: template.colors.muted }}
+        >
           <span>{data.personalInfo.email}</span>
           <span>{data.personalInfo.phone}</span>
           <span>{data.personalInfo.location}</span>
@@ -879,25 +986,55 @@ export function MinimalTemplate({ data, template }: TemplatePreviewProps) {
       {/* Professional Summary */}
       {data.personalInfo.summary && (
         <div className="text-center">
-          <p className="text-sm leading-relaxed font-light max-w-lg mx-auto text-black">{data.personalInfo.summary}</p>
+          <p 
+            className="text-sm leading-relaxed max-w-lg mx-auto"
+            style={{ color: template.colors.text, fontWeight: '300' }}
+          >
+            {data.personalInfo.summary}
+          </p>
         </div>
       )}
 
       {/* Professional Experience */}
       {data.experience.some((exp) => exp.jobTitle) && (
         <div>
-          <h2 className="text-base font-medium mb-6 tracking-wide text-center text-black">PROFESSIONAL EXPERIENCE</h2>
+          <h2 
+            className="text-base mb-6 tracking-wide text-center"
+            style={{ color: template.colors.primary, fontWeight: '500' }}
+          >
+            PROFESSIONAL EXPERIENCE
+          </h2>
           {data.experience
             .filter((exp) => exp.jobTitle)
             .map((exp, index) => (
               <div key={index} className="mb-8">
                 <div className="flex justify-between items-baseline mb-2">
-                  <h3 className="text-base font-medium text-black">{exp.jobTitle}</h3>
-                  <span className="text-sm font-light text-gray-600">{exp.date}</span>
+                  <h3 
+                    className="text-base"
+                    style={{ color: template.colors.primary, fontWeight: '400' }}
+                  >
+                    {exp.jobTitle}
+                  </h3>
+                  <span 
+                    className="text-sm"
+                    style={{ color: template.colors.accent, fontWeight: '300' }}
+                  >
+                    {exp.date}
+                  </span>
                 </div>
-                <p className="text-sm mb-3 font-light text-gray-700">{exp.company}</p>
+                <p 
+                  className="text-sm mb-3"
+                  style={{ color: template.colors.secondary, fontWeight: '300' }}
+                >
+                  {exp.company}
+                </p>
                 {exp.responsibilities && (
-                  <p className="text-sm leading-relaxed font-light text-black">{exp.responsibilities}</p>
+                  <p 
+                    className="text-sm leading-relaxed"
+                    style={{ color: template.colors.text, fontWeight: '300' }}
+                  >
+                    {exp.responsibilities}
+                  </p>
                 )}
               </div>
             ))}
@@ -907,7 +1044,12 @@ export function MinimalTemplate({ data, template }: TemplatePreviewProps) {
       {/* Core Competencies */}
       {(data.skills.languages || data.skills.frameworks || data.skills.tools) && (
         <div>
-          <h2 className="text-base font-medium mb-6 tracking-wide text-center text-black">CORE COMPETENCIES</h2>
+          <h2 
+            className="text-base mb-6 tracking-wide text-center"
+            style={{ color: template.colors.primary, fontWeight: '500' }}
+          >
+            CORE COMPETENCIES
+          </h2>
           <div className="space-y-4">
             {data.skills.languages && (
               <div className="flex justify-center">
@@ -1000,8 +1142,12 @@ export function MinimalTemplate({ data, template }: TemplatePreviewProps) {
 export function ExecutiveTemplate({ data, template }: TemplatePreviewProps) {
   return (
     <div
-      className="space-y-8 font-serif text-sm"
-      style={{ color: template.colors.text, backgroundColor: template.colors.background }}
+      className="space-y-8 text-sm"
+      style={{ 
+        color: template.colors.text, 
+        backgroundColor: template.colors.background,
+        fontFamily: "'Playfair Display', 'Georgia', serif"
+      }}
     >
       {/* Header */}
       <div className="text-center pb-8 border-b-2" style={{ borderColor: template.colors.primary }}>
@@ -1276,8 +1422,12 @@ export function ExecutiveTemplate({ data, template }: TemplatePreviewProps) {
 export function PhotoTemplate({ data, template }: TemplatePreviewProps) {
   return (
     <div
-      className="space-y-6 font-sans text-sm"
-      style={{ color: template.colors.text, backgroundColor: template.colors.background }}
+      className="space-y-6 text-sm"
+      style={{ 
+        color: template.colors.text, 
+        backgroundColor: template.colors.background,
+        fontFamily: "'Roboto', 'Arial', sans-serif"
+      }}
     >
       {/* Header with prominent photo */}
       <div className="relative">

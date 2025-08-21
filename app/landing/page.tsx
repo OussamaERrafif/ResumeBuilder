@@ -33,6 +33,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { RESUME_TEMPLATES } from "../types/templates"
+import { 
+  ClassicTemplate, 
+  ModernTemplate, 
+  CreativeTemplate, 
+  MinimalTemplate, 
+  ExecutiveTemplate, 
+  PhotoTemplate 
+} from "../components/template-previews"
 
 const FEATURES = [
   {
@@ -336,18 +344,21 @@ export default function LandingPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="relative"
             >
-              <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={selectedTemplate}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <TemplatePreview template={RESUME_TEMPLATES[selectedTemplate]} />
-                  </motion.div>
-                </AnimatePresence>
+              <div className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-md mx-auto">
+                <div className="h-96 overflow-hidden rounded-lg">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={selectedTemplate}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                      className="h-full"
+                    >
+                      <TemplatePreview template={RESUME_TEMPLATES[selectedTemplate]} />
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
 
                 <div className="flex justify-center mt-4 space-x-2">
                   {RESUME_TEMPLATES.map((_, index) => (
@@ -474,12 +485,10 @@ export default function LandingPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold text-lg">{template.name}</h3>
-                      {template.isPremium && (
-                        <Badge variant="secondary">
-                          <Award className="h-3 w-3 mr-1" />
-                          Pro
-                        </Badge>
-                      )}
+                      <Badge variant="secondary">
+                        <Award className="h-3 w-3 mr-1" />
+                        {template.category}
+                      </Badge>
                     </div>
                     <p className="text-muted-foreground text-sm mb-4">{template.description}</p>
                     <div className="flex items-center justify-between">
@@ -796,53 +805,104 @@ export default function LandingPage() {
   )
 }
 
-// Template Preview Component
+// Template Preview Component with Enhanced Mock Data
 function TemplatePreview({ template }: { template: any }) {
+  // Rich mock data for better template preview
+  const mockData = {
+    personalInfo: {
+      name: "Sarah Johnson",
+      title: "Senior Software Engineer",
+      email: "sarah.johnson@email.com",
+      phone: "+1 (555) 123-4567",
+      location: "San Francisco, CA",
+      summary: "Experienced full-stack developer with 8+ years in building scalable web applications. Passionate about clean code, user experience, and modern technologies.",
+      profileImage: "/professional-woman.png",
+    },
+    links: [
+      { name: "LinkedIn", url: "#" },
+      { name: "GitHub", url: "#" },
+      { name: "Portfolio", url: "#" }
+    ],
+    education: [
+      { 
+        school: "Stanford University", 
+        degree: "M.S. Computer Science", 
+        date: "2018",
+        gpa: "3.8"
+      },
+      { 
+        school: "UC Berkeley", 
+        degree: "B.S. Computer Engineering", 
+        date: "2016" 
+      }
+    ],
+    experience: [
+      {
+        jobTitle: "Senior Software Engineer",
+        company: "Meta",
+        date: "2021 - Present",
+        responsibilities: "Led development of React-based user interfaces serving 50M+ users. Mentored junior developers and architected scalable frontend systems using TypeScript, GraphQL, and modern tooling.",
+      },
+      {
+        jobTitle: "Software Engineer",
+        company: "Google",
+        date: "2018 - 2021",
+        responsibilities: "Built and maintained cloud-native applications using React, Node.js, and Kubernetes. Improved system performance by 40% through code optimization.",
+      }
+    ],
+    skills: { 
+      languages: "TypeScript, JavaScript, Python, Java, Go", 
+      frameworks: "React, Next.js, Node.js, Express, Spring Boot", 
+      tools: "AWS, Docker, Kubernetes, Git, Jenkins, MongoDB" 
+    },
+    projects: [
+      {
+        name: "E-Commerce Analytics Platform",
+        description: "Built a real-time analytics dashboard for e-commerce data processing 1M+ transactions daily.",
+        technologies: "React, TypeScript, Node.js, Redis, PostgreSQL",
+      },
+      {
+        name: "AI-Powered Task Manager",
+        description: "Developed an intelligent productivity app with machine learning recommendations.",
+        technologies: "React Native, Python, TensorFlow, Firebase",
+      }
+    ],
+    certifications: [
+      { name: "AWS Solutions Architect", issuer: "Amazon Web Services", date: "2023" },
+      { name: "Google Cloud Professional", issuer: "Google", date: "2022" }
+    ],
+    references: [],
+  }
+
   return (
     <div
-      className="w-full h-full bg-white rounded-lg overflow-hidden"
+      className="w-full h-full bg-white rounded-lg overflow-hidden shadow-sm border"
       style={{ backgroundColor: template.colors.background }}
     >
-      <div className="p-4 space-y-3">
-        {/* Header */}
-        <div className="text-center">
-          <div className="h-3 bg-gray-800 rounded mb-1" style={{ backgroundColor: template.colors.primary }} />
-          <div
-            className="h-2 bg-gray-600 rounded w-3/4 mx-auto"
-            style={{ backgroundColor: template.colors.secondary }}
-          />
-        </div>
-
-        {/* Contact Info */}
-        <div className="flex justify-center space-x-2">
-          <div className="h-1 bg-gray-400 rounded w-8" />
-          <div className="h-1 bg-gray-400 rounded w-8" />
-          <div className="h-1 bg-gray-400 rounded w-8" />
-        </div>
-
-        {/* Sections */}
-        <div className="space-y-2">
-          <div className="h-1.5 bg-gray-700 rounded w-1/3" style={{ backgroundColor: template.colors.primary }} />
-          <div className="space-y-1">
-            <div className="h-1 bg-gray-300 rounded" />
-            <div className="h-1 bg-gray-300 rounded w-5/6" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="h-1.5 bg-gray-700 rounded w-1/4" style={{ backgroundColor: template.colors.primary }} />
-          <div className="space-y-1">
-            <div className="h-1 bg-gray-300 rounded w-4/5" />
-            <div className="h-1 bg-gray-300 rounded w-3/4" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="h-1.5 bg-gray-700 rounded w-1/3" style={{ backgroundColor: template.colors.primary }} />
-          <div className="space-y-1">
-            <div className="h-1 bg-gray-300 rounded" />
-            <div className="h-1 bg-gray-300 rounded w-2/3" />
-          </div>
+      <div className="h-full overflow-hidden" style={{ transform: "scale(0.25)", transformOrigin: "top left", width: "400%", height: "400%" }}>
+        <div className="p-8 min-h-screen">
+          {/* Use the actual template preview component */}
+          {template.id === 'classic' && (
+            <ClassicTemplate data={mockData} template={template} />
+          )}
+          {template.id === 'modern' && (
+            <ModernTemplate data={mockData} template={template} />
+          )}
+          {template.id === 'creative' && (
+            <CreativeTemplate data={mockData} template={template} />
+          )}
+          {template.id === 'minimal' && (
+            <MinimalTemplate data={mockData} template={template} />
+          )}
+          {template.id === 'executive' && (
+            <ExecutiveTemplate data={mockData} template={template} />
+          )}
+          {template.id === 'photo' && (
+            <PhotoTemplate data={mockData} template={template} />
+          )}
+          {template.id === 'tech' && (
+            <ModernTemplate data={mockData} template={template} />
+          )}
         </div>
       </div>
     </div>

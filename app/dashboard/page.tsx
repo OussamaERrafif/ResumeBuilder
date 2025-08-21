@@ -179,9 +179,13 @@ const ResumeCard = memo(
           <CardContent className="space-y-4 pt-0">
             {/* TEMPLATE PREVIEW */}
             {template && (
-              <div className="w-full h-32 border border-border rounded-lg overflow-hidden bg-white">
-                <div className="transform scale-[0.25] origin-top-left w-[400%] h-[400%]">
-                  <TemplatePreview template={template} data={resume.data} />
+              <div className="relative w-full h-32 border border-border rounded-lg overflow-hidden bg-white">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="transform scale-[0.25] origin-center">
+                    <div className="w-[210mm] h-[297mm] bg-white">
+                      <TemplatePreview template={template} data={resume.data} />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
