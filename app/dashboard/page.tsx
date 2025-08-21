@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useToast } from "@/hooks/use-toast"
 
 import ProtectedRoute from "@/components/auth/protected-route"
 import ResumeUploadModal from "@/components/resume-upload-modal"
@@ -248,6 +249,7 @@ LoadingSkeleton.displayName = "LoadingSkeleton"
 // DASHBOARD COMPONENT
 export default function Dashboard() {
   const { user, signOut } = useAuth()
+  const { toast } = useToast()
 
   const [isDarkMode, setIsDarkMode] = useLocalStorage("theme", false)
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
@@ -585,7 +587,50 @@ export default function Dashboard() {
             <ResumeUploadModal
               isOpen={showUploadModal}
               onClose={() => setShowUploadModal(false)}
-              onAnalysisComplete={loadSavedResumes}
+              onAnalysisComplete={async (data: { resumeData: any }) => {
+                console.log('📄 Resume data received:', data.resumeData)
+                
+                if (user) {
+                  try {
+                    // Create a new resume with the parsed data
+                    const resumeName = data.resumeData.personalInfo?.name 
+                      ? `${data.resumeData.personalInfo.name}'s Resume`
+                      : `Uploaded Resume ${new Date().toLocaleDateString()}`
+                    
+                    const { error } = await ResumeService.createResume({
+                      user_id: user.id,
+                      name: resumeName,
+                      template_id: 'modern', // Default template
+                      data: data.resumeData,
+                    })
+
+                    if (error) {
+                      setError("Failed to create resume from uploaded file")
+                      console.error(error)
+                      toast({
+                        title: "Error",
+                        description: "Failed to create resume from uploaded file",
+                        variant: "destructive",
+                      })
+                    } else {
+                      console.log('✅ Resume created successfully from uploaded file')
+                      toast({
+                        title: "Success!",
+                        description: `Resume "${resumeName}" created successfully from your uploaded file`,
+                      })
+                      loadSavedResumes()
+                    }
+                  } catch (err) {
+                    setError("An unexpected error occurred while creating the resume")
+                    console.error(err)
+                    toast({
+                      title: "Error",
+                      description: "An unexpected error occurred while creating the resume",
+                      variant: "destructive",
+                    })
+                  }
+                }
+              }}
             />
           )}
           {showDuplicateModal && (

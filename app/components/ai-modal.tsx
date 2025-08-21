@@ -17,7 +17,7 @@ import { Sparkles, Loader2 } from "lucide-react"
 interface AIModalProps {
   isOpen: boolean
   onClose: () => void
-  onGenerate: (type: "summary" | "experience" | "project", query: string, index?: number) => void
+  onGenerate: (type: "summary" | "experience" | "project", query: string, index?: number) => Promise<void>
   type: "summary" | "experience" | "project" | null
   index?: number | null
 }
@@ -31,12 +31,15 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
 
     setIsGenerating(true)
 
-    // Simulate AI processing delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    onGenerate(type, query, index || undefined)
-    setIsGenerating(false)
-    setQuery("")
+    try {
+      // Call the parent's generate function (now async)
+      await onGenerate(type, query, index !== null ? index : undefined)
+    } catch (error) {
+      console.error('Error generating content:', error)
+    } finally {
+      setIsGenerating(false)
+      setQuery("")
+    }
   }
 
   const handleClose = () => {
