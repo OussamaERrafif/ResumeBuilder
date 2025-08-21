@@ -53,7 +53,7 @@ export function ClassicTemplate({ data, template }: TemplatePreviewProps) {
           {data.personalInfo.title || "Software engineer"}
         </div>
         <div className="text-sm mb-1">
-          {data.personalInfo.email || "email@example.com"} | {data.personalInfo.phone || "phone"}
+          {data.personalInfo.email || "oussama.errafif@example.com"} | {data.personalInfo.phone || "+212 6 12 34 56 78"}
         </div>
         <div className="text-sm">
           {data.links.length > 0 ? (
@@ -145,7 +145,7 @@ export function ClassicTemplate({ data, template }: TemplatePreviewProps) {
                   </div>
                   {exp.responsibilities && (
                     <div 
-                      className="ml-4 resume-content prose prose-sm max-w-none"
+                      className="ml-4 resume-content"
                       dangerouslySetInnerHTML={{
                         __html: renderMarkdown(exp.responsibilities)
                       }}
@@ -219,7 +219,7 @@ export function ClassicTemplate({ data, template }: TemplatePreviewProps) {
                   <div className="font-bold mb-1">{project.name} | Link</div>
                   {project.description && (
                     <div 
-                      className="ml-4 resume-content prose prose-sm max-w-none"
+                      className="ml-4 resume-content"
                       dangerouslySetInnerHTML={{
                         __html: renderMarkdown(project.description)
                       }}
@@ -318,10 +318,10 @@ export function ModernTemplate({ data, template }: TemplatePreviewProps) {
           )}
           <div className="flex-1 text-center sm:text-left">
             <h1 className="text-2xl font-bold mb-2" style={{ color: template.colors.primary }}>
-              {data.personalInfo.name || "Your Name"}
+              {data.personalInfo.name || "OUSSAMA ERRAFIF"}
             </h1>
             <p className="text-lg mb-3" style={{ color: template.colors.secondary }}>
-              {data.personalInfo.title || "Your Professional Title"}
+              {data.personalInfo.title || "Software engineer"}
             </p>
             <div
               className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm"
@@ -673,10 +673,10 @@ export function CreativeTemplate({ data, template }: TemplatePreviewProps) {
           )}
           <div className="relative z-10 flex-1 text-center sm:text-left">
             <h1 className="text-2xl font-bold mb-2" style={{ color: template.colors.primary }}>
-              {data.personalInfo.name || "Your Name"}
+              {data.personalInfo.name || "OUSSAMA ERRAFIF"}
             </h1>
             <p className="text-lg mb-4" style={{ color: template.colors.secondary }}>
-              {data.personalInfo.title || "Your Professional Title"}
+              {data.personalInfo.title || "Software engineer"}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div className="flex items-center justify-center sm:justify-start">
@@ -965,13 +965,13 @@ export function MinimalTemplate({ data, template }: TemplatePreviewProps) {
           className="text-3xl tracking-wide mb-3"
           style={{ color: template.colors.primary, fontWeight: '300' }}
         >
-          {data.personalInfo.name || "Your Name"}
+          {data.personalInfo.name || "OUSSAMA ERRAFIF"}
         </h1>
         <p 
           className="text-lg mb-4"
           style={{ color: template.colors.secondary, fontWeight: '300' }}
         >
-          {data.personalInfo.title || "Your Professional Title"}
+          {data.personalInfo.title || "Software engineer"}
         </p>
         <div 
           className="flex justify-center space-x-8 text-sm"
@@ -1164,10 +1164,10 @@ export function ExecutiveTemplate({ data, template }: TemplatePreviewProps) {
           </div>
         )}
         <h1 className="text-3xl font-bold mb-3 tracking-wide" style={{ color: template.colors.primary }}>
-          {data.personalInfo.name || "Your Name"}
+          {data.personalInfo.name || "OUSSAMA ERRAFIF"}
         </h1>
         <p className="text-xl font-medium mb-4" style={{ color: template.colors.secondary }}>
-          {data.personalInfo.title || "Your Professional Title"}
+          {data.personalInfo.title || "Software engineer"}
         </p>
         <div className="flex justify-center space-x-8 text-sm font-medium">
           <span style={{ color: template.colors.text }}>{data.personalInfo.email}</span>
@@ -1453,10 +1453,10 @@ export function PhotoTemplate({ data, template }: TemplatePreviewProps) {
             </div>
 
             <h1 className="text-3xl font-bold mb-2" style={{ color: template.colors.primary }}>
-              {data.personalInfo.name || "Your Name"}
+              {data.personalInfo.name || "OUSSAMA ERRAFIF"}
             </h1>
             <p className="text-xl mb-4" style={{ color: template.colors.secondary }}>
-              {data.personalInfo.title || "Your Professional Title"}
+              {data.personalInfo.title || "Software engineer"}
             </p>
 
             {/* Contact Info in elegant layout */}

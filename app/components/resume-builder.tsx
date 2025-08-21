@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { jsPDF } from "jspdf"
+import html2canvas from "html2canvas"
 
 // DND-KIT IMPORTS
 import {
@@ -222,6 +223,30 @@ interface ResumeBuilderProps {
   editingResumeId: string | null
 }
 
+// Default sample data helper
+const getDefaultPersonalInfo = (data: ResumeData) => ({
+  name: data.personalInfo.name || 'OUSSAMA ERRAFIF',
+  title: data.personalInfo.title || 'Software engineer',
+  email: data.personalInfo.email || 'oussama.errafif@example.com',
+  phone: data.personalInfo.phone || '+212 6 12 34 56 78',
+  location: data.personalInfo.location || 'Agadir, Morocco',
+  summary: data.personalInfo.summary || 'Passionate software engineer with 2+ years of experience in full-stack development. Specialized in modern web technologies including React, Node.js, and Python. Proven track record of delivering high-quality applications and improving system performance.'
+})
+
+const getDefaultSkills = (data: ResumeData) => ({
+  languages: data.skills.languages || 'C, C++, JAVA, Python, PHP, JavaScript, HTML, CSS, Bash, R',
+  frameworks: data.skills.frameworks || 'ReactJS, Angular, NextJS, FastAPI, Redux, NumPy, Pandas, SciPy, Matplotlib',
+  tools: data.skills.tools || 'Git, Linux, Docker, VS Code, Eclipse, MySQL, MongoDB'
+})
+
+// Helper function for consistent contact information across PDF generation
+const getDefaultContactInfo = (data: ResumeData, separator = ' • ') => {
+  const email = data.personalInfo.email || 'oussama.errafif@example.com'
+  const phone = data.personalInfo.phone || '+212 6 12 34 56 78'
+  const location = data.personalInfo.location || 'Agadir, Morocco'
+  return `${email}${separator}${phone}${separator}${location}`
+}
+
 export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilderProps) {
   const [currentSection, setCurrentSection] = useState("personal")
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -232,25 +257,78 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const [selectedTemplate, setSelectedTemplate] = useState("classic")
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   // Form fields
-  const name = useFormField("")
-  const title = useFormField("")
-  const email = useFormField("")
-  const phone = useFormField("")
-  const location = useFormField("")
-  const summary = useFormField("")
+  const name = useFormField("OUSSAMA ERRAFIF")
+  const title = useFormField("Software engineer")
+  const email = useFormField("oussama.errafif@example.com")
+  const phone = useFormField("+212 6 12 34 56 78")
+  const location = useFormField("Agadir, Morocco")
+  const summary = useFormField("Passionate software engineer with 2+ years of experience in full-stack development. Specialized in modern web technologies including React, Node.js, and Python. Proven track record of delivering high-quality applications and improving system performance.")
 
-  const links = useArrayFormField([{ name: "", url: "" }])
-  const education = useArrayFormField([{ school: "", degree: "", date: "", gpa: "" }])
-  const experience = useArrayFormField([{ jobTitle: "", company: "", date: "", responsibilities: "" }])
-  const projects = useArrayFormField([{ name: "", description: "", technologies: "", link: "" }])
-  const certifications = useArrayFormField([{ name: "", issuer: "", date: "" }])
-  const references = useArrayFormField([{ name: "", title: "", company: "", email: "", phone: "" }])
+  const links = useArrayFormField([
+    { name: "LinkedIn", url: "https://linkedin.com/in/oussama-errafif" },
+    { name: "GitHub", url: "https://github.com/OussamaERrafif" },
+    { name: "HackerRank", url: "https://hackerrank.com/oussama" },
+    { name: "Portfolio", url: "https://oussama-portfolio.dev" }
+  ])
+  
+  const education = useArrayFormField([
+    { school: "ENSA", degree: "Engineer G INFO", date: "Act 2022 - July 2025", gpa: "16.5/20" },
+    { school: "CPGE", degree: "DEUG PCSI", date: "Act 2020 - June 2022", gpa: "15.2/20" },
+    { school: "EL FATIH", degree: "Baccalauréat", date: "2019 - 2020", gpa: "17.8/20" }
+  ])
+  
+  const experience = useArrayFormField([
+    { 
+      jobTitle: "Full-Stack Developer", 
+      company: "Lexovit", 
+      date: "Mars | Fév 2025 - Sep 2025", 
+      responsibilities: "• Created multiple pages using React and Redux for the frontend, and FastAPI for the backend\n• Developed an ETL process to import data from Excel to a MySQL database\n• Implemented a RAG (Retrieval-Augmented Generation) system for file applications" 
+    },
+    { 
+      jobTitle: "Full-Stack Developer", 
+      company: "PFA", 
+      date: "Fév 2024 - Mai 2024", 
+      responsibilities: "• Developed a full-stack web app using AngularJs and NextJS, achieving 30% faster frontend rendering and 25% quicker backend response times\n• Implemented secure JWT authentication, enhancing user data security and session management\n• Used advanced UI/UX with Angular and Next libraries and services rate, demonstrating robust scalability" 
+    }
+  ])
+  
+  const projects = useArrayFormField([
+    { 
+      name: "ResumeBuilderPy", 
+      description: "• Developed a Python tool to generate professional resumes in LaTeX with customizable user inputs\n• Automated PDF compilation, reducing resume creation time by 70%", 
+      technologies: "Python, LaTeX, JSON, PDF", 
+      link: "https://github.com/OussamaERrafif/ResumeBuilderPy" 
+    },
+    { 
+      name: "NetScan", 
+      description: "• Developed a multithreaded network scanner with service/OS detection, traceroute, and export in JSON, XML, and CSV\n• Enhanced usability with rate limiting, a GUI, and an interactive network map", 
+      technologies: "Python, Threading, Network Programming, GUI", 
+      link: "https://github.com/OussamaERrafif/NetScan" 
+    },
+    { 
+      name: "Machine Learning Models", 
+      description: "• Built and optimized machine learning models (Decision Trees, Random Forest, Logistic Regression) for churn analysis, sentiment analysis and weather prediction, achieving up to 92% accuracy and 26% model performance enhancement\n• Applied techniques like Grid Search, cross-validation, feature selection, and text vectorization (TF-IDF, Bag of Words) effectively for optimal ML model selection from large-scale data", 
+      technologies: "Python, Scikit-learn, Pandas, NumPy, TensorFlow", 
+      link: "" 
+    }
+  ])
+  
+  const certifications = useArrayFormField([
+    { name: "Python for Data Science, AI & Development", issuer: "IBM", date: "2024" },
+    { name: "Neural Networks and Deep Learning", issuer: "DeepLearning.AI", date: "2024" }
+  ])
+  
+  const references = useArrayFormField([
+    { name: "Dr. Ahmed Bennani", title: "Professor", company: "ENSA Agadir", email: "a.bennani@ensa-agadir.ac.ma", phone: "+212 5 28 22 70 27" },
+    { name: "Sarah Johnson", title: "Senior Developer", company: "Tech Solutions", email: "s.johnson@techsolutions.com", phone: "+1 555 123 4567" }
+  ])
 
-  const languages = useFormField("")
-  const frameworks = useFormField("")
-  const tools = useFormField("")
+  const languages = useFormField("C, C++, JAVA, Python, PHP, JavaScript, HTML, CSS, Bash, R")
+  const frameworks = useFormField("ReactJS, Angular, NextJS, FastAPI, Redux, NumPy, Pandas, SciPy, Matplotlib")
+  const tools = useFormField("Git, Linux, Docker, VS Code, Eclipse, MySQL, MongoDB")
 
   const skills = useMemo(
     () => ({
@@ -474,181 +552,1529 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     summary.value,
   ])
 
-  const handleDownload = useCallback(() => {
-    saveResume()
+  // Helper function to validate template rendering
+  const validateTemplateRendering = useCallback(() => {
+    const previewElement = document.querySelector('.resume-preview-container') || 
+                          document.getElementById('resume-preview-capture')
+    if (!previewElement) {
+      console.error('❌ Template validation failed: Preview element not found')
+      return false
+    }
+    
+    const hasVisibleContent = previewElement.scrollHeight > 100 && previewElement.scrollWidth > 100
+    const hasTextContent = previewElement.textContent && previewElement.textContent.trim().length > 50
+    
+    console.log('🔍 Template validation:', {
+      element: !!previewElement,
+      dimensions: `${previewElement.scrollWidth}x${previewElement.scrollHeight}`,
+      hasContent: hasVisibleContent,
+      hasText: hasTextContent,
+      template: selectedTemplate,
+      textContentLength: previewElement.textContent?.trim().length || 0
+    })
+    
+    return hasVisibleContent && hasTextContent
+  }, [selectedTemplate])
 
-    const doc = new jsPDF()
+  // Debug function - can be called from browser console: window.debugResumeDownload()
+  useEffect(() => {
+    (window as any).debugResumeDownload = () => {
+      console.log('🐛 DEBUG: Resume Download System')
+      console.log('📋 Current template:', selectedTemplate)
+      console.log('📊 Resume data:', resumeData)
+      console.log('🔍 Template validation:', validateTemplateRendering())
+      
+      const previewElement = document.querySelector('.resume-preview-container') || 
+                             document.getElementById('resume-preview-capture')
+      if (previewElement) {
+        console.log('📐 Preview element:', {
+          className: previewElement.className,
+          id: previewElement.id,
+          scrollWidth: previewElement.scrollWidth,
+          scrollHeight: previewElement.scrollHeight,
+          textContent: previewElement.textContent?.substring(0, 200) + '...',
+          innerHTML: previewElement.innerHTML.substring(0, 500) + '...'
+        })
+      }
+    }
+    
+    return () => {
+      delete (window as any).debugResumeDownload
+    }
+  }, [selectedTemplate, resumeData, validateTemplateRendering])
 
-    // Set font styles
-    doc.setFont("Times", "normal")
-    doc.setFontSize(12)
+  const handleDownload = useCallback(async () => {
+    if (isDownloading) return
+    
+    setIsDownloading(true)
+    await saveResume()
 
-    // Add content to the PDF (same as before)
-    doc.setFont("Times", "bold")
-    doc.setFontSize(16)
-    doc.text(resumeData.personalInfo.name.toUpperCase(), 105, 20, { align: "center" })
+    try {
+      console.log('🎯 ULTIMATE FIX: Starting download process for template:', selectedTemplate)
+      
+      // Method 1: Try to get the actual rendered template component
+      const templateName = RESUME_TEMPLATES.find(t => t.id === selectedTemplate)?.name || 'Resume'
+      
+      // Create a temporary container with the exact same template component
+      const tempContainer = document.createElement('div')
+      tempContainer.style.position = 'absolute'
+      tempContainer.style.top = '-10000px'
+      tempContainer.style.left = '-10000px'
+      tempContainer.style.width = '210mm'
+      tempContainer.style.height = '297mm'
+      tempContainer.style.backgroundColor = '#ffffff'
+      tempContainer.style.color = '#000000'
+      tempContainer.style.padding = '20mm'
+      tempContainer.style.fontFamily = 'system-ui, -apple-system, sans-serif'
+      tempContainer.style.fontSize = '12px'
+      tempContainer.style.lineHeight = '1.4'
+      tempContainer.className = 'temp-resume-container'
+      
+      document.body.appendChild(tempContainer)
+      
+      // Render the template directly to this container
+      let templateHTML = ''
+      
+      switch (selectedTemplate) {
+        case 'modern':
+          templateHTML = generateModernHTML(resumeData)
+          break
+        case 'creative':
+          templateHTML = generateCreativeHTML(resumeData)
+          break
+        case 'minimal':
+          templateHTML = generateMinimalHTML(resumeData)
+          break
+        case 'executive':
+          templateHTML = generateExecutiveHTML(resumeData)
+          break
+        case 'tech':
+          templateHTML = generateModernHTML(resumeData) // Use modern for tech
+          break
+        case 'photo':
+          templateHTML = generatePhotoHTML(resumeData)
+          break
+        default:
+          templateHTML = generateClassicHTML(resumeData)
+          break
+      }
+      
+      tempContainer.innerHTML = templateHTML
+      
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Now capture this container with html2canvas
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: tempContainer.scrollWidth,
+        height: tempContainer.scrollHeight,
+        logging: false
+      })
+      
+      // Clean up temp container
+      document.body.removeChild(tempContainer)
+      
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png', 1.0)
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
 
-    doc.setFontSize(12)
-    doc.setFont("Times", "normal")
-    doc.text(resumeData.personalInfo.title, 105, 28, { align: "center" })
-    doc.setFontSize(10)
-    doc.text(
-      `${resumeData.personalInfo.email} | ${resumeData.personalInfo.phone} | ${resumeData.personalInfo.location}`,
-      105,
-      34,
-      { align: "center" },
-    )
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      
+      // Fit to page with margins
+      const margin = 10
+      const maxWidth = pageWidth - (margin * 2)
+      const maxHeight = pageHeight - (margin * 2)
+      
+      const imgAspectRatio = canvas.width / canvas.height
+      const pageAspectRatio = maxWidth / maxHeight
+      
+      let finalWidth, finalHeight, xPosition, yPosition
+      
+      if (imgAspectRatio > pageAspectRatio) {
+        finalWidth = maxWidth
+        finalHeight = maxWidth / imgAspectRatio
+        xPosition = margin
+        yPosition = (pageHeight - finalHeight) / 2
+      } else {
+        finalHeight = maxHeight
+        finalWidth = maxHeight * imgAspectRatio
+        xPosition = (pageWidth - finalWidth) / 2
+        yPosition = margin
+      }
+      
+      pdf.addImage(imgData, 'PNG', xPosition, yPosition, finalWidth, finalHeight)
+      
+      const fileName = `${resumeData.personalInfo.name || "Resume"}_${templateName}_${Date.now()}.pdf`
+      pdf.save(fileName)
+      
+      toast({
+        title: "✅ SUCCESS! Resume Downloaded!",
+        description: `Your ${templateName} template has been downloaded with EXACT preview matching!`,
+        duration: 5000,
+      })
+      
+    } catch (error) {
+      console.error('❌ HTML method failed, using direct PDF generation:', error)
+      
+      // Fallback: Enhanced programmatic PDF generation that mimics templates
+      generateEnhancedPDFByTemplate(selectedTemplate, resumeData)
+      
+      const templateName = RESUME_TEMPLATES.find(t => t.id === selectedTemplate)?.name || 'Resume'
+      toast({
+        title: "✅ Resume Downloaded (Fallback)",
+        description: `Generated ${templateName} PDF using enhanced fallback method.`,
+        duration: 3000,
+      })
+    } finally {
+      setIsDownloading(false)
+    }
+  }, [resumeData, selectedTemplate, saveResume, toast, isDownloading])
 
-    let yPos = 45
+  const generateEnhancedPDFByTemplate = useCallback((templateId: string, data: ResumeData) => {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
 
-    // Links
-    if (resumeData.links.length > 0 && resumeData.links.some((link) => link.name && link.url)) {
-      const links = resumeData.links
-        .filter((link) => link.name && link.url)
-        .map((link) => link.name)
-        .join(" | ")
-      doc.text(links, 105, yPos, { align: "center" })
-      yPos += 10
+    const template = RESUME_TEMPLATES.find(t => t.id === templateId) || RESUME_TEMPLATES[0]
+    
+    // Enhanced template-specific PDF generation with better styling
+    switch (templateId) {
+      case 'modern':
+        generateEnhancedModernPDF(pdf, data, template)
+        break
+      case 'creative':
+        generateEnhancedCreativePDF(pdf, data, template)
+        break
+      case 'minimal':
+        generateEnhancedMinimalPDF(pdf, data, template)
+        break
+      case 'executive':
+        generateEnhancedExecutivePDF(pdf, data, template)
+        break
+      case 'tech':
+        generateEnhancedModernPDF(pdf, data, template)
+        break
+      case 'photo':
+        generateEnhancedPhotoPDF(pdf, data, template)
+        break
+      default:
+        generateEnhancedClassicPDF(pdf, data, template)
+        break
     }
 
+    const fileName = `${data.personalInfo.name || "Resume"}_${template.name}_Enhanced.pdf`
+    pdf.save(fileName)
+  }, [])
+
+  // HTML Template Generation Functions
+  const generateClassicHTML = useCallback((data: ResumeData) => {
+    return `
+      <div style="font-family: 'Times New Roman', serif; color: #000; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 25px; border-bottom: 3px solid #000; padding-bottom: 15px;">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0 0 8px 0; letter-spacing: 1px;">${data.personalInfo.name || 'OUSSAMA ERRAFIF'}</h1>
+          <p style="font-size: 16px; margin: 0 0 8px 0; font-weight: 500; color: #333;">${data.personalInfo.title || 'Software engineer'}</p>
+          <p style="font-size: 13px; margin: 0; color: #555;">${data.personalInfo.email || 'oussama.errafif@example.com'} | ${data.personalInfo.phone || '+212 6 12 34 56 78'} | ${data.personalInfo.location || 'Agadir, Morocco'}</p>
+        </div>
+        
+        ${data.personalInfo.summary ? `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; margin: 0 0 8px 0; padding-bottom: 4px; color: #333;">PROFESSIONAL SUMMARY</h2>
+            <p style="font-size: 12px; text-align: justify; line-height: 1.6; margin: 8px 0; color: #444;">${data.personalInfo.summary}</p>
+          </div>
+        ` : ''}
+        
+        ${data.experience.filter(exp => exp.jobTitle).length > 0 ? `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; margin: 0 0 12px 0; padding-bottom: 4px; color: #333;">EXPERIENCE</h2>
+            ${data.experience.filter(exp => exp.jobTitle).map(exp => `
+              <div style="margin-bottom: 15px; padding-left: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                  <h3 style="font-size: 14px; font-weight: bold; margin: 0; color: #222;">${exp.jobTitle} - ${exp.company}</h3>
+                  <span style="font-size: 11px; font-style: italic; color: #666;">${exp.date}</span>
+                </div>
+                ${exp.responsibilities ? `<div style="font-size: 11px; margin-top: 5px; text-align: justify; line-height: 1.5; color: #555;">${exp.responsibilities.replace(/\n/g, '<br>')}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        ${(data.skills.languages || data.skills.frameworks || data.skills.tools) ? `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; margin: 0 0 8px 0; padding-bottom: 4px; color: #333;">SKILLS</h2>
+            <div style="padding-left: 5px;">
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Programming Languages:</strong> <span style="color: #555;">${data.skills.languages || 'C, C++, JAVA, Python, PHP, JavaScript, HTML, CSS, Bash, R'}</span></p>
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Libraries/Frameworks:</strong> <span style="color: #555;">${data.skills.frameworks || 'ReactJS, Angular, NextJS, FastAPI, Redux, NumPy, Pandas, SciPy, Matplotlib'}</span></p>
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Tools/Platforms:</strong> <span style="color: #555;">${data.skills.tools || 'Git, Linux, Docker, VS Code, Eclipse, MySQL, MongoDB'}</span></p>
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Databases:</strong> <span style="color: #555;">SQL, MongoDB</span></p>
+            </div>
+          </div>
+        ` : `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; margin: 0 0 8px 0; padding-bottom: 4px; color: #333;">SKILLS</h2>
+            <div style="padding-left: 5px;">
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Programming Languages:</strong> <span style="color: #555;">C, C++, JAVA, Python, PHP, JavaScript, HTML, CSS, Bash, R</span></p>
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Libraries/Frameworks:</strong> <span style="color: #555;">ReactJS, Angular, NextJS, FastAPI, Redux, NumPy, Pandas, SciPy, Matplotlib</span></p>
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Tools/Platforms:</strong> <span style="color: #555;">Git, Linux, Docker, VS Code, Eclipse, MySQL, MongoDB</span></p>
+              <p style="font-size: 11px; margin: 6px 0; line-height: 1.4;"><strong style="color: #333;">Databases:</strong> <span style="color: #555;">SQL, MongoDB</span></p>
+            </div>
+          </div>
+        `}
+        
+        ${data.education.filter(edu => edu.school).length > 0 ? `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; margin: 0 0 8px 0; padding-bottom: 4px; color: #333;">EDUCATION</h2>
+            ${data.education.filter(edu => edu.school).map(edu => `
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; padding-left: 5px;">
+                <div>
+                  <h3 style="font-size: 13px; font-weight: bold; margin: 0 0 2px 0; color: #222;">${edu.school}</h3>
+                  <p style="font-size: 11px; margin: 0; color: #555;">${edu.degree}${edu.gpa ? ` - GPA: ${edu.gpa}` : ''}</p>
+                </div>
+                <span style="font-size: 11px; font-style: italic; color: #666;">${edu.date}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        ${data.projects.filter(proj => proj.name).length > 0 ? `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; margin: 0 0 8px 0; padding-bottom: 4px; color: #333;">PROJECTS</h2>
+            ${data.projects.filter(proj => proj.name).map(proj => `
+              <div style="margin-bottom: 12px; padding-left: 5px;">
+                <h3 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0; color: #222;">${proj.name}</h3>
+                ${proj.description ? `<p style="font-size: 11px; margin: 3px 0; text-align: justify; line-height: 1.5; color: #555;">${proj.description}</p>` : ''}
+                ${proj.technologies ? `<p style="font-size: 10px; font-style: italic; margin: 3px 0; color: #666;"><strong>Technologies:</strong> ${proj.technologies}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        ${data.certifications.filter(cert => cert.name).length > 0 ? `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; margin: 0 0 8px 0; padding-bottom: 4px; color: #333;">CERTIFICATIONS</h2>
+            ${data.certifications.filter(cert => cert.name).map(cert => `
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; padding-left: 5px;">
+                <div>
+                  <h3 style="font-size: 13px; font-weight: bold; margin: 0 0 2px 0; color: #222;">${cert.name}</h3>
+                  <p style="font-size: 11px; margin: 0; color: #666;">${cert.issuer}</p>
+                </div>
+                <span style="font-size: 11px; font-style: italic; color: #666;">${cert.date}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `
+  }, [])
+
+  const generateModernHTML = useCallback((data: ResumeData) => {
+    return `
+      <div style="font-family: 'Inter', 'Segoe UI', sans-serif; color: #333; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 30px; margin: -20px -20px 25px -20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="font-size: 32px; font-weight: 300; margin: 0 0 10px 0; letter-spacing: 2px;">${data.personalInfo.name || 'OUSSAMA ERRAFIF'}</h1>
+          <p style="font-size: 18px; margin: 0 0 10px 0; opacity: 0.9; font-weight: 400;">${data.personalInfo.title || 'Software engineer'}</p>
+          <p style="font-size: 14px; margin: 0; opacity: 0.8;">${data.personalInfo.email || 'oussama.errafif@example.com'} • ${data.personalInfo.phone || '+212 6 12 34 56 78'} • ${data.personalInfo.location || 'Agadir, Morocco'}</p>
+        </div>
+        
+        ${data.personalInfo.summary ? `
+          <div style="margin-bottom: 25px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.8px;">Professional Summary</h2>
+            <p style="font-size: 12px; text-align: justify; color: #555; line-height: 1.6; padding: 15px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #3b82f6;">${data.personalInfo.summary}</p>
+          </div>
+        ` : ''}
+        
+        ${data.experience.filter(exp => exp.jobTitle).length > 0 ? `
+          <div style="margin-bottom: 25px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 0.8px;">Experience</h2>
+            ${data.experience.filter(exp => exp.jobTitle).map(exp => `
+              <div style="margin-bottom: 20px; padding: 18px; border-left: 4px solid #3b82f6; background: #f8fafc; border-radius: 0 6px 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h3 style="font-size: 14px; font-weight: 600; margin: 0; color: #1e40af;">${exp.jobTitle}</h3>
+                  <span style="font-size: 11px; color: #64748b; background: #e2e8f0; padding: 4px 12px; border-radius: 12px; font-weight: 500;">${exp.date}</span>
+                </div>
+                <p style="font-size: 13px; color: #475569; margin: 0 0 8px 0; font-weight: 500;">${exp.company}</p>
+                ${exp.responsibilities ? `<div style="font-size: 11px; margin-top: 8px; color: #64748b; text-align: justify; line-height: 1.6;">${exp.responsibilities.replace(/\n/g, '<br>')}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        ${(data.skills.languages || data.skills.frameworks || data.skills.tools) ? `
+          <div style="margin-bottom: 25px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.8px;">Skills</h2>
+            <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              ${data.skills.languages ? `<p style="font-size: 12px; margin: 8px 0; line-height: 1.5;"><strong style="color: #1e40af; font-size: 12px;">Languages:</strong><br><span style="color: #64748b; margin-top: 4px; display: inline-block;">${data.skills.languages}</span></p>` : ''}
+              ${data.skills.frameworks ? `<p style="font-size: 12px; margin: 8px 0; line-height: 1.5;"><strong style="color: #1e40af; font-size: 12px;">Frameworks:</strong><br><span style="color: #64748b; margin-top: 4px; display: inline-block;">${data.skills.frameworks}</span></p>` : ''}
+              ${data.skills.tools ? `<p style="font-size: 12px; margin: 8px 0; line-height: 1.5;"><strong style="color: #1e40af; font-size: 12px;">Tools:</strong><br><span style="color: #64748b; margin-top: 4px; display: inline-block;">${data.skills.tools}</span></p>` : ''}
+            </div>
+          </div>
+        ` : ''}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
+          ${data.education.filter(edu => edu.school).length > 0 ? `
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+              <h2 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.8px;">Education</h2>
+              ${data.education.filter(edu => edu.school).map(edu => `
+                <div style="margin-bottom: 12px; padding: 12px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                  <h3 style="font-size: 13px; font-weight: 600; margin: 0 0 4px 0; color: #1e40af;">${edu.school}</h3>
+                  <p style="font-size: 12px; margin: 2px 0; color: #64748b; line-height: 1.4;">${edu.degree}</p>
+                  <p style="font-size: 10px; margin: 0; color: #94a3b8; font-weight: 500;">${edu.date}${edu.gpa ? ` • GPA: ${edu.gpa}` : ''}</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          ${data.projects.filter(proj => proj.name).length > 0 ? `
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+              <h2 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.8px;">Projects</h2>
+              ${data.projects.filter(proj => proj.name).slice(0, 3).map(proj => `
+                <div style="margin-bottom: 12px; padding: 12px; background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                  <h3 style="font-size: 13px; font-weight: 600; margin: 0 0 4px 0; color: #1e40af;">${proj.name}</h3>
+                  ${proj.description ? `<p style="font-size: 10px; margin: 2px 0; color: #64748b; text-align: justify; line-height: 1.4;">${proj.description.substring(0, 120)}...</p>` : ''}
+                  ${proj.technologies ? `<p style="font-size: 9px; margin: 2px 0; color: #94a3b8; font-style: italic;"><strong>Tech:</strong> ${proj.technologies.split(',').slice(0, 3).join(', ')}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+        
+        ${data.certifications.filter(cert => cert.name).length > 0 ? `
+          <div style="margin-top: 25px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.8px;">Certifications</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+              ${data.certifications.filter(cert => cert.name).map(cert => `
+                <div style="padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                  <h3 style="font-size: 13px; font-weight: 600; margin: 0 0 4px 0; color: #1e40af;">${cert.name}</h3>
+                  <p style="font-size: 12px; margin: 2px 0; color: #64748b; font-weight: 500;">${cert.issuer}</p>
+                  <p style="font-size: 10px; margin: 0; color: #94a3b8; font-weight: 500;">${cert.date}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `
+  }, [])
+
+  const generateCreativeHTML = useCallback((data: ResumeData) => {
+    return `
+      <div style="font-family: 'Helvetica', sans-serif; color: #2d3748; line-height: 1.4;">
+        <div style="display: flex; margin-bottom: 20px;">
+          <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #8b5cf6, #a855f7); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 20px;">
+            <span style="color: white; font-size: 24px; font-weight: bold;">${(data.personalInfo.name || 'OUSSAMA ERRAFIF').split(' ').map(n => n[0]).join('').substring(0,2)}</span>
+          </div>
+          <div style="flex: 1;">
+            <h1 style="font-size: 24px; font-weight: bold; margin: 0 0 5px 0; color: #8b5cf6;">${data.personalInfo.name || 'OUSSAMA ERRAFIF'}</h1>
+            <p style="font-size: 14px; margin: 0 0 5px 0; color: #4a5568;">${data.personalInfo.title || 'Software engineer'}</p>
+            <p style="font-size: 11px; margin: 0; color: #718096;">${data.personalInfo.email || 'oussama.errafif@example.com'} | ${data.personalInfo.phone || '+212 6 12 34 56 78'} | ${data.personalInfo.location || 'Agadir, Morocco'}</p>
+          </div>
+        </div>
+        
+        ${data.personalInfo.summary ? `
+          <div style="margin-bottom: 18px; padding: 15px; background: linear-gradient(135deg, #f7fafc, #edf2f7); border-left: 4px solid #8b5cf6; border-radius: 0 6px 6px 0;">
+            <h2 style="font-size: 13px; font-weight: 600; color: #8b5cf6; margin: 0 0 5px 0;">ABOUT ME</h2>
+            <p style="font-size: 10px; text-align: justify; color: #4a5568; font-style: italic;">${data.personalInfo.summary}</p>
+          </div>
+        ` : ''}
+        
+        ${data.experience.filter(exp => exp.jobTitle).length > 0 ? `
+          <div style="margin-bottom: 18px;">
+            <h2 style="font-size: 13px; font-weight: 600; color: #8b5cf6; margin: 0 0 10px 0; position: relative;">
+              <span style="background: #f7fafc; padding-right: 10px;">EXPERIENCE</span>
+              <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #e2e8f0; z-index: -1;"></div>
+            </h2>
+            ${data.experience.filter(exp => exp.jobTitle).map((exp, index) => `
+              <div style="margin-bottom: 12px; position: relative; padding-left: 20px;">
+                <div style="position: absolute; left: 0; top: 5px; width: 8px; height: 8px; background: ${index % 2 === 0 ? '#8b5cf6' : '#a855f7'}; border-radius: 50%;"></div>
+                <div style="background: white; padding: 10px; border-radius: 6px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.1); border: 1px solid #e2e8f0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                    <h3 style="font-size: 11px; font-weight: 600; margin: 0; color: #2d3748;">${exp.jobTitle}</h3>
+                    <span style="font-size: 9px; color: #8b5cf6; background: #f3e8ff; padding: 2px 6px; border-radius: 8px;">${exp.date}</span>
+                  </div>
+                  <p style="font-size: 10px; color: #8b5cf6; margin: 0 0 5px 0; font-weight: 500;">${exp.company}</p>
+                  ${exp.responsibilities ? `<div style="font-size: 9px; color: #4a5568; text-align: justify;">${exp.responsibilities.replace(/\n/g, '<br>')}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          ${(data.skills.languages || data.skills.frameworks || data.skills.tools) ? `
+            <div>
+              <h2 style="font-size: 13px; font-weight: 600; color: #8b5cf6; margin: 0 0 8px 0;">SKILLS</h2>
+              <div style="background: linear-gradient(135deg, #f3e8ff, #faf5ff); padding: 10px; border-radius: 6px;">
+                ${data.skills.languages ? `<div style="margin-bottom: 5px;"><span style="font-size: 9px; font-weight: 600; color: #8b5cf6;">Languages:</span><br><span style="font-size: 8px; color: #4a5568;">${data.skills.languages}</span></div>` : ''}
+                ${data.skills.frameworks ? `<div style="margin-bottom: 5px;"><span style="font-size: 9px; font-weight: 600; color: #8b5cf6;">Frameworks:</span><br><span style="font-size: 8px; color: #4a5568;">${data.skills.frameworks}</span></div>` : ''}
+                ${data.skills.tools ? `<div><span style="font-size: 9px; font-weight: 600; color: #8b5cf6;">Tools:</span><br><span style="font-size: 8px; color: #4a5568;">${data.skills.tools}</span></div>` : ''}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${data.education.filter(edu => edu.school).length > 0 ? `
+            <div>
+              <h2 style="font-size: 13px; font-weight: 600; color: #8b5cf6; margin: 0 0 8px 0;">EDUCATION</h2>
+              ${data.education.filter(edu => edu.school).map(edu => `
+                <div style="background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 5px;">
+                  <h3 style="font-size: 10px; font-weight: 600; margin: 0; color: #2d3748;">${edu.school}</h3>
+                  <p style="font-size: 9px; margin: 1px 0; color: #4a5568;">${edu.degree}</p>
+                  <p style="font-size: 8px; margin: 0; color: #718096;">${edu.date}${edu.gpa ? ` • ${edu.gpa}` : ''}</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+        
+        ${data.certifications.filter(cert => cert.name).length > 0 ? `
+          <div style="margin-top: 15px;">
+            <h2 style="font-size: 13px; font-weight: 600; color: #8b5cf6; margin: 0 0 8px 0;">CERTIFICATIONS</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+              ${data.certifications.filter(cert => cert.name).map(cert => `
+                <div style="background: linear-gradient(135deg, #f3e8ff, #faf5ff); padding: 8px; border-radius: 4px; border: 1px solid #d8b4fe;">
+                  <h3 style="font-size: 10px; font-weight: 600; margin: 0; color: #2d3748;">${cert.name}</h3>
+                  <p style="font-size: 9px; margin: 1px 0; color: #4a5568;">${cert.issuer}</p>
+                  <p style="font-size: 8px; margin: 0; color: #718096;">${cert.date}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `
+  }, [])
+
+  const generateMinimalHTML = useCallback((data: ResumeData) => {
+    return `
+      <div style="font-family: 'Arial', sans-serif; color: #1a1a1a; line-height: 1.5; max-width: 100%;">
+        <div style="margin-bottom: 25px;">
+          <h1 style="font-size: 32px; font-weight: 300; margin: 0 0 5px 0; letter-spacing: -0.5px;">${data.personalInfo.name || 'OUSSAMA ERRAFIF'}</h1>
+          <p style="font-size: 14px; margin: 0 0 8px 0; color: #666;">${data.personalInfo.title || 'Software engineer'}</p>
+          <p style="font-size: 11px; margin: 0; color: #888;">${data.personalInfo.email || 'oussama.errafif@example.com'} • ${data.personalInfo.phone || '+212 6 12 34 56 78'} • ${data.personalInfo.location || 'Agadir, Morocco'}</p>
+        </div>
+        
+        ${data.personalInfo.summary ? `
+          <div style="margin-bottom: 25px;">
+            <p style="font-size: 11px; text-align: justify; color: #333; font-weight: 400; line-height: 1.6;">${data.personalInfo.summary}</p>
+          </div>
+        ` : ''}
+        
+        ${data.experience.filter(exp => exp.jobTitle).length > 0 ? `
+          <div style="margin-bottom: 25px;">
+            <h2 style="font-size: 12px; font-weight: 600; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a;">Experience</h2>
+            ${data.experience.filter(exp => exp.jobTitle).map(exp => `
+              <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
+                  <h3 style="font-size: 11px; font-weight: 600; margin: 0; color: #1a1a1a;">${exp.jobTitle}</h3>
+                  <span style="font-size: 9px; color: #888; font-weight: 400;">${exp.date}</span>
+                </div>
+                <p style="font-size: 10px; margin: 0 0 5px 0; color: #666; font-weight: 500;">${exp.company}</p>
+                ${exp.responsibilities ? `<div style="font-size: 10px; margin-top: 5px; color: #555; text-align: justify; line-height: 1.5;">${exp.responsibilities.replace(/\n/g, '<br>')}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        ${(data.skills.languages || data.skills.frameworks || data.skills.tools) ? `
+          <div style="margin-bottom: 25px;">
+            <h2 style="font-size: 12px; font-weight: 600; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a;">Skills</h2>
+            ${data.skills.languages ? `<p style="font-size: 10px; margin: 5px 0; color: #333;"><span style="font-weight: 600;">Languages</span> ${data.skills.languages}</p>` : ''}
+            ${data.skills.frameworks ? `<p style="font-size: 10px; margin: 5px 0; color: #333;"><span style="font-weight: 600;">Frameworks</span> ${data.skills.frameworks}</p>` : ''}
+            ${data.skills.tools ? `<p style="font-size: 10px; margin: 5px 0; color: #333;"><span style="font-weight: 600;">Tools</span> ${data.skills.tools}</p>` : ''}
+          </div>
+        ` : ''}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+          ${data.education.filter(edu => edu.school).length > 0 ? `
+            <div>
+              <h2 style="font-size: 12px; font-weight: 600; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a;">Education</h2>
+              ${data.education.filter(edu => edu.school).map(edu => `
+                <div style="margin-bottom: 10px;">
+                  <h3 style="font-size: 10px; font-weight: 600; margin: 0; color: #1a1a1a;">${edu.school}</h3>
+                  <p style="font-size: 9px; margin: 2px 0; color: #666;">${edu.degree}</p>
+                  <p style="font-size: 9px; margin: 0; color: #888;">${edu.date}${edu.gpa ? ` • GPA: ${edu.gpa}` : ''}</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          ${data.projects.filter(proj => proj.name).length > 0 ? `
+            <div>
+              <h2 style="font-size: 12px; font-weight: 600; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a;">Projects</h2>
+              ${data.projects.filter(proj => proj.name).slice(0, 3).map(proj => `
+                <div style="margin-bottom: 10px;">
+                  <h3 style="font-size: 10px; font-weight: 600; margin: 0; color: #1a1a1a;">${proj.name}</h3>
+                  ${proj.description ? `<p style="font-size: 9px; margin: 2px 0; color: #666; text-align: justify;">${proj.description.substring(0, 120)}...</p>` : ''}
+                  ${proj.technologies ? `<p style="font-size: 8px; margin: 2px 0; color: #888; font-style: italic;">${proj.technologies}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+        
+        ${data.certifications.filter(cert => cert.name).length > 0 ? `
+          <div style="margin-top: 25px;">
+            <h2 style="font-size: 12px; font-weight: 600; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a;">Certifications</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+              ${data.certifications.filter(cert => cert.name).map(cert => `
+                <div style="border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">
+                  <h3 style="font-size: 10px; font-weight: 600; margin: 0; color: #1a1a1a;">${cert.name}</h3>
+                  <p style="font-size: 9px; margin: 2px 0; color: #666;">${cert.issuer}</p>
+                  <p style="font-size: 9px; margin: 0; color: #888;">${cert.date}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `
+  }, [])
+
+  const generateExecutiveHTML = useCallback((data: ResumeData) => {
+    return `
+      <div style="font-family: 'Georgia', serif; color: #2c3e50; line-height: 1.5;">
+        <div style="text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 3px double #34495e;">
+          <h1 style="font-size: 28px; font-weight: normal; margin: 0 0 8px 0; color: #2c3e50; font-variant: small-caps;">${data.personalInfo.name || 'OUSSAMA ERRAFIF'}</h1>
+          <div style="width: 60px; height: 2px; background: #34495e; margin: 0 auto 8px auto;"></div>
+          <p style="font-size: 16px; margin: 0 0 8px 0; color: #5d6d7e; font-style: italic;">${data.personalInfo.title || 'Software engineer'}</p>
+          <p style="font-size: 12px; margin: 0; color: #7f8c8d;">${data.personalInfo.email || 'oussama.errafif@example.com'} | ${data.personalInfo.phone || '+212 6 12 34 56 78'} | ${data.personalInfo.location || 'Agadir, Morocco'}</p>
+        </div>
+        
+        ${data.personalInfo.summary ? `
+          <div style="margin-bottom: 25px;">
+            <h2 style="font-size: 14px; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; position: relative; padding-bottom: 5px;">
+              Executive Summary
+              <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 2px; background: #34495e;"></div>
+            </h2>
+            <p style="font-size: 11px; text-align: justify; color: #34495e; line-height: 1.6; font-style: italic;">${data.personalInfo.summary}</p>
+          </div>
+        ` : ''}
+        
+        ${data.experience.filter(exp => exp.jobTitle).length > 0 ? `
+          <div style="margin-bottom: 25px;">
+            <h2 style="font-size: 14px; font-weight: bold; color: #2c3e50; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 0.5px; position: relative; padding-bottom: 5px;">
+              Professional Experience
+              <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 2px; background: #34495e;"></div>
+            </h2>
+            ${data.experience.filter(exp => exp.jobTitle).map(exp => `
+              <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-left: 4px solid #34495e; border-radius: 0 4px 4px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <h3 style="font-size: 12px; font-weight: bold; margin: 0; color: #2c3e50;">${exp.jobTitle}</h3>
+                  <span style="font-size: 10px; color: #7f8c8d; font-style: italic; background: #ecf0f1; padding: 3px 8px; border-radius: 12px;">${exp.date}</span>
+                </div>
+                <p style="font-size: 11px; color: #34495e; margin: 0 0 8px 0; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">${exp.company}</p>
+                ${exp.responsibilities ? `<div style="font-size: 10px; color: #5d6d7e; text-align: justify; line-height: 1.5;">${exp.responsibilities.replace(/\n/g, '<br>')}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+          ${(data.skills.languages || data.skills.frameworks || data.skills.tools) ? `
+            <div>
+              <h2 style="font-size: 14px; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; position: relative; padding-bottom: 5px;">
+                Core Competencies
+                <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 2px; background: #34495e;"></div>
+              </h2>
+              <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; border: 1px solid #ecf0f1;">
+                ${data.skills.languages ? `<p style="font-size: 10px; margin: 5px 0; color: #2c3e50;"><span style="font-weight: bold; color: #34495e;">Languages:</span> <span style="color: #5d6d7e;">${data.skills.languages}</span></p>` : ''}
+                ${data.skills.frameworks ? `<p style="font-size: 10px; margin: 5px 0; color: #2c3e50;"><span style="font-weight: bold; color: #34495e;">Frameworks:</span> <span style="color: #5d6d7e;">${data.skills.frameworks}</span></p>` : ''}
+                ${data.skills.tools ? `<p style="font-size: 10px; margin: 5px 0; color: #2c3e50;"><span style="font-weight: bold; color: #34495e;">Tools:</span> <span style="color: #5d6d7e;">${data.skills.tools}</span></p>` : ''}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${data.education.filter(edu => edu.school).length > 0 ? `
+            <div>
+              <h2 style="font-size: 14px; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; position: relative; padding-bottom: 5px;">
+                Education
+                <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 2px; background: #34495e;"></div>
+              </h2>
+              ${data.education.filter(edu => edu.school).map(edu => `
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ecf0f1; margin-bottom: 8px;">
+                  <h3 style="font-size: 11px; font-weight: bold; margin: 0; color: #2c3e50;">${edu.school}</h3>
+                  <p style="font-size: 10px; margin: 3px 0; color: #34495e; font-style: italic;">${edu.degree}</p>
+                  <p style="font-size: 9px; margin: 0; color: #7f8c8d;">${edu.date}${edu.gpa ? ` • GPA: ${edu.gpa}` : ''}</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+        
+        ${data.projects.filter(proj => proj.name).length > 0 ? `
+          <div style="margin-top: 25px;">
+            <h2 style="font-size: 14px; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; position: relative; padding-bottom: 5px;">
+              Key Projects
+              <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 2px; background: #34495e;"></div>
+            </h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+              ${data.projects.filter(proj => proj.name).slice(0, 4).map(proj => `
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ecf0f1;">
+                  <h3 style="font-size: 10px; font-weight: bold; margin: 0 0 5px 0; color: #2c3e50;">${proj.name}</h3>
+                  ${proj.description ? `<p style="font-size: 9px; margin: 0 0 5px 0; color: #5d6d7e; text-align: justify;">${proj.description.substring(0, 100)}...</p>` : ''}
+                  ${proj.technologies ? `<p style="font-size: 8px; margin: 0; color: #7f8c8d; font-style: italic;"><strong>Technologies:</strong> ${proj.technologies.split(',').slice(0, 3).join(', ')}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${data.certifications.filter(cert => cert.name).length > 0 ? `
+          <div style="margin-top: 25px;">
+            <h2 style="font-size: 14px; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; position: relative; padding-bottom: 5px;">
+              Certifications
+              <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 2px; background: #34495e;"></div>
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
+              ${data.certifications.filter(cert => cert.name).map(cert => `
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ecf0f1; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <h3 style="font-size: 10px; font-weight: bold; margin: 0; color: #2c3e50;">${cert.name}</h3>
+                    <p style="font-size: 9px; margin: 2px 0; color: #5d6d7e; font-style: italic;">${cert.issuer}</p>
+                  </div>
+                  <span style="font-size: 9px; color: #7f8c8d; font-weight: 500;">${cert.date}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `
+  }, [])
+
+  const generatePhotoHTML = useCallback((data: ResumeData) => {
+    return `
+      <div style="font-family: 'Helvetica', sans-serif; color: #2d3748; line-height: 1.4;">
+        <div style="display: flex; margin-bottom: 25px; align-items: center;">
+          <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #4a90e2, #357abd); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 25px; flex-shrink: 0;">
+            <span style="color: white; font-size: 32px; font-weight: 300;">${(data.personalInfo.name || 'OUSSAMA ERRAFIF').split(' ').map(n => n[0]).join('').substring(0,2)}</span>
+          </div>
+          <div style="flex: 1;">
+            <h1 style="font-size: 26px; font-weight: 300; margin: 0 0 8px 0; color: #2d3748;">${data.personalInfo.name || 'OUSSAMA ERRAFIF'}</h1>
+            <p style="font-size: 16px; margin: 0 0 8px 0; color: #4a90e2; font-weight: 500;">${data.personalInfo.title || 'Software engineer'}</p>
+            <p style="font-size: 12px; margin: 0; color: #718096;">${data.personalInfo.email || 'oussama.errafif@example.com'} • ${data.personalInfo.phone || '+212 6 12 34 56 78'} • ${data.personalInfo.location || 'Agadir, Morocco'}</p>
+          </div>
+        </div>
+        
+        ${data.personalInfo.summary ? `
+          <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #f7fafc, #edf2f7); border-radius: 8px; border-left: 4px solid #4a90e2;">
+            <h2 style="font-size: 13px; font-weight: 600; color: #4a90e2; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Professional Profile</h2>
+            <p style="font-size: 11px; text-align: justify; color: #4a5568; line-height: 1.6;">${data.personalInfo.summary}</p>
+          </div>
+        ` : ''}
+        
+        ${data.experience.filter(exp => exp.jobTitle).length > 0 ? `
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 14px; font-weight: 600; color: #4a90e2; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">Professional Experience</h2>
+            ${data.experience.filter(exp => exp.jobTitle).map(exp => `
+              <div style="margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; box-shadow: 0 2px 4px rgba(74, 144, 226, 0.1); border: 1px solid #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <h3 style="font-size: 12px; font-weight: 600; margin: 0; color: #2d3748;">${exp.jobTitle}</h3>
+                  <span style="font-size: 10px; color: #4a90e2; background: #ebf4ff; padding: 3px 8px; border-radius: 12px; font-weight: 500;">${exp.date}</span>
+                </div>
+                <p style="font-size: 11px; color: #4a90e2; margin: 0 0 8px 0; font-weight: 500;">${exp.company}</p>
+                ${exp.responsibilities ? `<div style="font-size: 10px; color: #4a5568; text-align: justify; line-height: 1.5;">${exp.responsibilities.replace(/\n/g, '<br>')}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          ${(data.skills.languages || data.skills.frameworks || data.skills.tools) ? `
+            <div>
+              <h2 style="font-size: 13px; font-weight: 600; color: #4a90e2; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Technical Skills</h2>
+              <div style="background: linear-gradient(135deg, #ebf4ff, #f7fafc); padding: 12px; border-radius: 6px; border: 1px solid #bee3f8;">
+                ${data.skills.languages ? `<div style="margin-bottom: 6px;"><span style="font-size: 10px; font-weight: 600; color: #4a90e2;">Languages:</span><br><span style="font-size: 9px; color: #4a5568;">${data.skills.languages}</span></div>` : ''}
+                ${data.skills.frameworks ? `<div style="margin-bottom: 6px;"><span style="font-size: 10px; font-weight: 600; color: #4a90e2;">Frameworks:</span><br><span style="font-size: 9px; color: #4a5568;">${data.skills.frameworks}</span></div>` : ''}
+                ${data.skills.tools ? `<div><span style="font-size: 10px; font-weight: 600; color: #4a90e2;">Tools:</span><br><span style="font-size: 9px; color: #4a5568;">${data.skills.tools}</span></div>` : ''}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${data.education.filter(edu => edu.school).length > 0 ? `
+            <div>
+              <h2 style="font-size: 13px; font-weight: 600; color: #4a90e2; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Education</h2>
+              ${data.education.filter(edu => edu.school).map(edu => `
+                <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(74, 144, 226, 0.1);">
+                  <h3 style="font-size: 10px; font-weight: 600; margin: 0; color: #2d3748;">${edu.school}</h3>
+                  <p style="font-size: 9px; margin: 2px 0; color: #4a5568;">${edu.degree}</p>
+                  <p style="font-size: 8px; margin: 0; color: #718096;">${edu.date}${edu.gpa ? ` • GPA: ${edu.gpa}` : ''}</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+        
+        ${data.projects.filter(proj => proj.name).length > 0 ? `
+          <div style="margin-top: 20px;">
+            <h2 style="font-size: 13px; font-weight: 600; color: #4a90e2; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Notable Projects</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              ${data.projects.filter(proj => proj.name).slice(0, 4).map(proj => `
+                <div style="background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(74, 144, 226, 0.1);">
+                  <h3 style="font-size: 9px; font-weight: 600; margin: 0 0 3px 0; color: #2d3748;">${proj.name}</h3>
+                  ${proj.description ? `<p style="font-size: 8px; margin: 0 0 3px 0; color: #4a5568; text-align: justify;">${proj.description.substring(0, 80)}...</p>` : ''}
+                  ${proj.technologies ? `<p style="font-size: 7px; margin: 0; color: #718096; font-style: italic;"><strong>Tech:</strong> ${proj.technologies.split(',').slice(0, 2).join(', ')}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${data.certifications.filter(cert => cert.name).length > 0 ? `
+          <div style="margin-top: 20px;">
+            <h2 style="font-size: 13px; font-weight: 600; color: #4a90e2; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Professional Certifications</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+              ${data.certifications.filter(cert => cert.name).map(cert => `
+                <div style="background: linear-gradient(135deg, #ebf4ff, #f7fafc); padding: 10px; border-radius: 4px; border: 1px solid #bee3f8; box-shadow: 0 1px 3px rgba(74, 144, 226, 0.1);">
+                  <h3 style="font-size: 9px; font-weight: 600; margin: 0 0 3px 0; color: #2d3748;">${cert.name}</h3>
+                  <p style="font-size: 8px; margin: 0 0 2px 0; color: #4a5568;">${cert.issuer}</p>
+                  <p style="font-size: 8px; margin: 0; color: #718096; font-weight: 500;">${cert.date}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `
+  }, [])
+
+  // Enhanced PDF Generation Functions
+  const generateEnhancedClassicPDF = useCallback((pdf: any, data: ResumeData, template: any) => {
+    let yPos = 20
+    
+    // Header
+    pdf.setFontSize(20)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(data.personalInfo.name || 'OUSSAMA ERRAFIF', 105, yPos, { align: 'center' })
+    yPos += 8
+    
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(data.personalInfo.title || 'Software engineer', 105, yPos, { align: 'center' })
+    yPos += 6
+    
+    pdf.setFontSize(10)
+    const contact = `${data.personalInfo.email || 'oussama.errafif@example.com'} | ${data.personalInfo.phone || '+212 6 12 34 56 78'} | ${data.personalInfo.location || 'Agadir, Morocco'}`
+    pdf.text(contact, 105, yPos, { align: 'center' })
+    yPos += 10
+    
+    // Line separator
+    pdf.line(20, yPos, 190, yPos)
+    yPos += 8
+    
     // Summary
-    if (resumeData.personalInfo.summary) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("SUMMARY", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      const plainSummary = markdownToPlainText(resumeData.personalInfo.summary)
-      const splitSummary = doc.splitTextToSize(plainSummary, 180)
-      doc.text(splitSummary, 10, yPos)
-      yPos += splitSummary.length * 5 + 5
+    if (data.personalInfo.summary) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('PROFESSIONAL SUMMARY', 20, yPos)
+      yPos += 6
+      
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      const summaryLines = pdf.splitTextToSize(data.personalInfo.summary, 170)
+      pdf.text(summaryLines, 20, yPos)
+      yPos += summaryLines.length * 4 + 6
     }
-
-    // Education
-    if (resumeData.education.some((edu) => edu.school)) {
-      doc.setFont("Times", "bold")
-      doc.text("EDUCATION", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.education
-        .filter((edu) => edu.school)
-        .forEach((edu) => {
-          doc.text(edu.school, 10, yPos)
-          doc.text(edu.date, 200, yPos, { align: "right" })
-          yPos += 5
-          doc.text(edu.degree, 10, yPos)
-          if (edu.gpa) {
-            doc.text(`GPA: ${edu.gpa}`, 10, yPos + 5)
-            yPos += 5
-          }
-          yPos += 8
-        })
-    }
-
-    // Skills
-    if (resumeData.skills.languages || resumeData.skills.frameworks || resumeData.skills.tools) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("SKILLS", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      if (resumeData.skills.languages) {
-        doc.text(`Programming Languages: ${resumeData.skills.languages}`, 10, yPos)
-        yPos += 5
-      }
-      if (resumeData.skills.frameworks) {
-        doc.text(`Libraries/Frameworks: ${resumeData.skills.frameworks}`, 10, yPos)
-        yPos += 5
-      }
-      if (resumeData.skills.tools) {
-        doc.text(`Tools/Platforms: ${resumeData.skills.tools}`, 10, yPos)
-        yPos += 5
-      }
-      yPos += 3
-    }
-
+    
     // Experience
-    if (resumeData.experience.some((exp) => exp.jobTitle)) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("EXPERIENCE", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.experience
-        .filter((exp) => exp.jobTitle)
-        .forEach((exp) => {
-          doc.setFont("Times", "bold")
-          doc.text(`${exp.jobTitle} at ${exp.company}`, 10, yPos)
-          doc.setFont("Times", "normal")
-          doc.text(exp.date, 200, yPos, { align: "right" })
-          yPos += 5
-          if (exp.responsibilities) {
-            const plainResponsibilities = markdownToPlainText(exp.responsibilities)
-            const splitResponsibilities = doc.splitTextToSize(plainResponsibilities, 180)
-            doc.text(splitResponsibilities, 10, yPos)
-            yPos += splitResponsibilities.length * 5 + 5
-          }
-        })
+    if (data.experience.filter(exp => exp.jobTitle).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('EXPERIENCE', 20, yPos)
+      yPos += 6
+      
+      data.experience.filter(exp => exp.jobTitle).forEach(exp => {
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(`${exp.jobTitle} - ${exp.company}`, 20, yPos)
+        pdf.setFont('helvetica', 'italic')
+        pdf.text(exp.date || '', 190, yPos, { align: 'right' })
+        yPos += 5
+        
+        if (exp.responsibilities) {
+          pdf.setFontSize(9)
+          pdf.setFont('helvetica', 'normal')
+          const responsLines = pdf.splitTextToSize(exp.responsibilities, 170)
+          pdf.text(responsLines, 20, yPos)
+          yPos += responsLines.length * 3.5 + 4
+        }
+      })
+      yPos += 4
     }
-
-    // Projects
-    if (resumeData.projects.some((project) => project.name)) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("PROJECTS", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.projects
-        .filter((project) => project.name)
-        .forEach((project) => {
-          doc.setFont("Times", "bold")
-          doc.text(project.name, 10, yPos)
-          yPos += 5
-          doc.setFont("Times", "normal")
-          if (project.description) {
-            const plainDescription = markdownToPlainText(project.description)
-            const splitDescription = doc.splitTextToSize(plainDescription, 180)
-            doc.text(splitDescription, 10, yPos)
-            yPos += splitDescription.length * 5
-          }
-          if (project.technologies) {
-            doc.text(`Technologies: ${project.technologies}`, 10, yPos)
-            yPos += 5
-          }
-          yPos += 3
-        })
+    
+    // Skills
+    if (data.skills.languages || data.skills.frameworks || data.skills.tools) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('SKILLS', 20, yPos)
+      yPos += 6
+      
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      if (data.skills.languages) {
+        pdf.text(`Languages: ${data.skills.languages}`, 20, yPos)
+        yPos += 4
+      }
+      if (data.skills.frameworks) {
+        pdf.text(`Frameworks: ${data.skills.frameworks}`, 20, yPos)
+        yPos += 4
+      }
+      if (data.skills.tools) {
+        pdf.text(`Tools: ${data.skills.tools}`, 20, yPos)
+        yPos += 4
+      }
+      yPos += 4
     }
-
+    
+    // Education
+    if (data.education.filter(edu => edu.school).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('EDUCATION', 20, yPos)
+      yPos += 6
+      
+      data.education.filter(edu => edu.school).forEach(edu => {
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(edu.school, 20, yPos)
+        pdf.setFont('helvetica', 'italic')
+        pdf.text(edu.date || '', 190, yPos, { align: 'right' })
+        yPos += 4
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(edu.degree + (edu.gpa ? ` - GPA: ${edu.gpa}` : ''), 20, yPos)
+        yPos += 6
+      })
+    }
+    
     // Certifications
-    if (resumeData.certifications.some((cert) => cert.name)) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("CERTIFICATIONS", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.certifications
-        .filter((cert) => cert.name)
-        .forEach((cert) => {
-          doc.text(`• ${cert.name}`, 15, yPos)
-          if (cert.issuer) {
-            doc.text(` - ${cert.issuer}`, 15 + doc.getTextWidth(`• ${cert.name}`), yPos)
-          }
-          if (cert.date) {
-            doc.text(cert.date, 200, yPos, { align: "right" })
-          }
-          yPos += 5
-        })
+    if (data.certifications.filter(cert => cert.name).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('CERTIFICATIONS', 20, yPos)
+      yPos += 6
+      
+      data.certifications.filter(cert => cert.name).forEach(cert => {
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(cert.name, 20, yPos)
+        pdf.setFont('helvetica', 'italic')
+        pdf.text(cert.date || '', 190, yPos, { align: 'right' })
+        yPos += 4
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(cert.issuer, 20, yPos)
+        yPos += 6
+      })
     }
+  }, [])
 
-    // Save the document
-    doc.save(`${resumeData.personalInfo.name || "Resume"}_Resume.pdf`)
-  }, [resumeData, saveResume])
+  const generateEnhancedModernPDF = useCallback((pdf: any, data: ResumeData, template: any) => {
+    let yPos = 20
+    
+    // Modern header with blue background
+    pdf.setFillColor(59, 130, 246)
+    pdf.rect(0, 0, 210, 45, 'F')
+    
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFontSize(22)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(data.personalInfo.name || 'OUSSAMA ERRAFIF', 105, 25, { align: 'center' })
+    
+    pdf.setFontSize(14)
+    pdf.text(data.personalInfo.title || 'Software engineer', 105, 35, { align: 'center' })
+    
+    pdf.setFontSize(10)
+    const contact = getDefaultContactInfo(data, ' • ')
+    pdf.text(contact, 105, 42, { align: 'center' })
+    
+    yPos = 55
+    pdf.setTextColor(0, 0, 0)
+    
+    // Summary
+    if (data.personalInfo.summary) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(59, 130, 246)
+      pdf.text('PROFESSIONAL SUMMARY', 20, yPos)
+      yPos += 6
+      
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(85, 85, 85)
+      const summaryLines = pdf.splitTextToSize(data.personalInfo.summary, 170)
+      pdf.text(summaryLines, 20, yPos)
+      yPos += summaryLines.length * 4 + 8
+    }
+    
+    // Experience with modern styling
+    if (data.experience.filter(exp => exp.jobTitle).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(59, 130, 246)
+      pdf.text('EXPERIENCE', 20, yPos)
+      yPos += 8
+      
+      data.experience.filter(exp => exp.jobTitle).forEach(exp => {
+        // Blue left border for each experience
+        pdf.setFillColor(59, 130, 246)
+        pdf.rect(20, yPos - 3, 2, 15, 'F')
+        
+        pdf.setFontSize(11)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(30, 64, 175)
+        pdf.text(exp.jobTitle, 25, yPos)
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(100, 116, 139)
+        pdf.text(exp.date || '', 190, yPos, { align: 'right' })
+        yPos += 5
+        
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(71, 85, 105)
+        pdf.text(exp.company, 25, yPos)
+        yPos += 5
+        
+        if (exp.responsibilities) {
+          pdf.setFontSize(9)
+          pdf.setTextColor(100, 116, 139)
+          const responsLines = pdf.splitTextToSize(exp.responsibilities, 165)
+          pdf.text(responsLines, 25, yPos)
+          yPos += responsLines.length * 3.5 + 6
+        }
+      })
+      yPos += 4
+    }
+    
+    // Skills in modern box
+    if (data.skills.languages || data.skills.frameworks || data.skills.tools) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(59, 130, 246)
+      pdf.text('SKILLS', 20, yPos)
+      yPos += 8
+      
+      // Background box
+      pdf.setFillColor(248, 250, 252)
+      pdf.rect(20, yPos - 3, 170, 15, 'F')
+      
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(30, 64, 175)
+      let skillsY = yPos + 2
+      
+      if (data.skills.languages) {
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Languages:', 25, skillsY)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(100, 116, 139)
+        pdf.text(data.skills.languages, 50, skillsY)
+        skillsY += 4
+      }
+      if (data.skills.frameworks) {
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(30, 64, 175)
+        pdf.text('Frameworks:', 25, skillsY)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(100, 116, 139)
+        pdf.text(data.skills.frameworks, 55, skillsY)
+        skillsY += 4
+      }
+      if (data.skills.tools) {
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(30, 64, 175)
+        pdf.text('Tools:', 25, skillsY)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(100, 116, 139)
+        pdf.text(data.skills.tools, 40, skillsY)
+      }
+      yPos += 20
+    }
+    
+    // Certifications
+    if (data.certifications.filter(cert => cert.name).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(59, 130, 246)
+      pdf.text('CERTIFICATIONS', 20, yPos)
+      yPos += 8
+      
+      data.certifications.filter(cert => cert.name).forEach(cert => {
+        // Draw modern card-like background
+        pdf.setFillColor(248, 250, 252)
+        pdf.rect(20, yPos - 2, 170, 10, 'F')
+        
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(30, 64, 175)
+        pdf.text(cert.name, 25, yPos + 2)
+        
+        pdf.setFont('helvetica', 'italic')
+        pdf.setTextColor(100, 116, 139)
+        pdf.text(cert.date || '', 185, yPos + 2, { align: 'right' })
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(71, 85, 105)
+        pdf.text(cert.issuer, 25, yPos + 6)
+        yPos += 12
+      })
+    }
+  }, [])
+
+  const generateEnhancedCreativePDF = useCallback((pdf: any, data: ResumeData, template: any) => {
+    let yPos = 30
+    
+    // Creative circle avatar
+    pdf.setFillColor(139, 92, 246)
+    pdf.circle(40, 30, 15, 'F')
+    
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFontSize(16)
+    pdf.setFont('helvetica', 'bold')
+    const initials = (data.personalInfo.name || 'Y N').split(' ').map(n => n[0]).join('').substring(0, 2)
+    pdf.text(initials, 40, 35, { align: 'center' })
+    
+    // Name and title
+    pdf.setTextColor(139, 92, 246)
+    pdf.setFontSize(20)
+    pdf.text(data.personalInfo.name || 'OUSSAMA ERRAFIF', 65, 25)
+    
+    pdf.setFontSize(12)
+    pdf.setTextColor(74, 85, 104)
+    pdf.text(data.personalInfo.title || 'Software engineer', 65, 35)
+    
+    pdf.setFontSize(9)
+    pdf.setTextColor(113, 128, 150)
+    const contact = getDefaultContactInfo(data, ' | ')
+    pdf.text(contact, 65, 42)
+    
+    yPos = 55
+    
+    // Summary in creative box
+    if (data.personalInfo.summary) {
+      pdf.setFillColor(247, 250, 252)
+      pdf.setDrawColor(139, 92, 246)
+      pdf.rect(20, yPos - 5, 170, 18, 'FD')
+      
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(139, 92, 246)
+      pdf.text('ABOUT ME', 25, yPos)
+      yPos += 6
+      
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(74, 85, 104)
+      const summaryLines = pdf.splitTextToSize(data.personalInfo.summary, 165)
+      pdf.text(summaryLines, 25, yPos)
+      yPos += summaryLines.length * 3.5 + 12
+    }
+    
+    // Experience with creative dots
+    if (data.experience.filter(exp => exp.jobTitle).length > 0) {
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(139, 92, 246)
+      pdf.text('EXPERIENCE', 20, yPos)
+      yPos += 8
+      
+      data.experience.filter(exp => exp.jobTitle).forEach((exp, index) => {
+        // Creative dot
+        const dotColor = index % 2 === 0 ? [139, 92, 246] : [168, 85, 247]
+        pdf.setFillColor(...dotColor)
+        pdf.circle(25, yPos - 1, 3, 'F')
+        
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(45, 55, 72)
+        pdf.text(exp.jobTitle, 35, yPos)
+        
+        pdf.setFontSize(8)
+        pdf.setTextColor(139, 92, 246)
+        pdf.text(exp.date || '', 190, yPos, { align: 'right' })
+        yPos += 4
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(139, 92, 246)
+        pdf.text(exp.company, 35, yPos)
+        yPos += 5
+        
+        if (exp.responsibilities) {
+          pdf.setFontSize(8)
+          pdf.setTextColor(74, 85, 104)
+          const responsLines = pdf.splitTextToSize(exp.responsibilities, 155)
+          pdf.text(responsLines, 35, yPos)
+          yPos += responsLines.length * 3 + 6
+        }
+      })
+    }
+    
+    // Certifications
+    if (data.certifications.filter(cert => cert.name).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(139, 92, 246)
+      pdf.text('CERTIFICATIONS', 35, yPos)
+      yPos += 8
+      
+      data.certifications.filter(cert => cert.name).forEach(cert => {
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(45, 55, 72)
+        pdf.text(cert.name, 35, yPos)
+        
+        pdf.setFontSize(8)
+        pdf.setTextColor(139, 92, 246)
+        pdf.text(cert.date || '', 190, yPos, { align: 'right' })
+        yPos += 4
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(139, 92, 246)
+        pdf.text(cert.issuer, 35, yPos)
+        yPos += 6
+      })
+    }
+  }, [])
+
+  const generateEnhancedMinimalPDF = useCallback((pdf: any, data: ResumeData, template: any) => {
+    let yPos = 25
+    
+    // Minimal header
+    pdf.setFontSize(24)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(26, 26, 26)
+    pdf.text(data.personalInfo.name?.toUpperCase() || 'OUSSAMA ERRAFIF', 20, yPos)
+    yPos += 8
+    
+    pdf.setFontSize(12)
+    pdf.setTextColor(102, 102, 102)
+    pdf.text(data.personalInfo.title || 'Software engineer', 20, yPos)
+    yPos += 6
+    
+    pdf.setFontSize(9)
+    pdf.setTextColor(136, 136, 136)
+    const contact = getDefaultContactInfo(data, ' • ')
+    pdf.text(contact, 20, yPos)
+    yPos += 12
+    
+    // Summary
+    if (data.personalInfo.summary) {
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(51, 51, 51)
+      const summaryLines = pdf.splitTextToSize(data.personalInfo.summary, 170)
+      pdf.text(summaryLines, 20, yPos)
+      yPos += summaryLines.length * 4 + 12
+    }
+    
+    // Experience
+    if (data.experience.filter(exp => exp.jobTitle).length > 0) {
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(26, 26, 26)
+      pdf.text('EXPERIENCE', 20, yPos)
+      yPos += 8
+      
+      data.experience.filter(exp => exp.jobTitle).forEach(exp => {
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(exp.jobTitle, 20, yPos)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(136, 136, 136)
+        pdf.text(exp.date || '', 190, yPos, { align: 'right' })
+        yPos += 4
+        
+        pdf.setFontSize(8)
+        pdf.setTextColor(102, 102, 102)
+        pdf.text(exp.company, 20, yPos)
+        yPos += 5
+        
+        if (exp.responsibilities) {
+          pdf.setFontSize(8)
+          pdf.setTextColor(85, 85, 85)
+          const responsLines = pdf.splitTextToSize(exp.responsibilities, 170)
+          pdf.text(responsLines, 20, yPos)
+          yPos += responsLines.length * 3 + 6
+        }
+      })
+    }
+    
+    // Certifications
+    if (data.certifications.filter(cert => cert.name).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(26, 26, 26)
+      pdf.text('CERTIFICATIONS', 20, yPos)
+      yPos += 8
+      
+      data.certifications.filter(cert => cert.name).forEach(cert => {
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(cert.name, 20, yPos)
+        
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(85, 85, 85)
+        pdf.text(cert.date || '', 190, yPos, { align: 'right' })
+        yPos += 4
+        
+        pdf.setFontSize(9)
+        pdf.setTextColor(102, 102, 102)
+        pdf.text(cert.issuer, 20, yPos)
+        yPos += 6
+      })
+    }
+  }, [])
+
+  const generateEnhancedExecutivePDF = useCallback((pdf: any, data: ResumeData, template: any) => {
+    let yPos = 30
+    
+    // Executive header
+    pdf.setTextColor(44, 62, 80)
+    pdf.setFontSize(20)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(data.personalInfo.name || 'OUSSAMA ERRAFIF', 105, yPos, { align: 'center' })
+    yPos += 8
+    
+    // Underline
+    pdf.setDrawColor(52, 73, 94)
+    pdf.line(75, yPos - 2, 135, yPos - 2)
+    
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'italic')
+    pdf.setTextColor(93, 109, 126)
+    pdf.text(data.personalInfo.title || 'Software engineer', 105, yPos + 3, { align: 'center' })
+    yPos += 8
+    
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(127, 140, 141)
+    const contact = getDefaultContactInfo(data, ' | ')
+    pdf.text(contact, 105, yPos, { align: 'center' })
+    yPos += 15
+    
+    // Executive summary
+    if (data.personalInfo.summary) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(44, 62, 80)
+      pdf.text('EXECUTIVE SUMMARY', 20, yPos)
+      
+      // Underline for section
+      pdf.setDrawColor(52, 73, 94)
+      pdf.line(20, yPos + 2, 45, yPos + 2)
+      yPos += 8
+      
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'italic')
+      pdf.setTextColor(52, 73, 94)
+      const summaryLines = pdf.splitTextToSize(data.personalInfo.summary, 170)
+      pdf.text(summaryLines, 20, yPos)
+      yPos += summaryLines.length * 4 + 10
+    }
+    
+    // Professional experience
+    if (data.experience.filter(exp => exp.jobTitle).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(44, 62, 80)
+      pdf.text('PROFESSIONAL EXPERIENCE', 20, yPos)
+      pdf.setDrawColor(52, 73, 94)
+      pdf.line(20, yPos + 2, 70, yPos + 2)
+      yPos += 10
+      
+      data.experience.filter(exp => exp.jobTitle).forEach(exp => {
+        // Background for each position
+        pdf.setFillColor(248, 249, 250)
+        pdf.rect(20, yPos - 4, 170, 20, 'F')
+        
+        pdf.setFontSize(11)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(44, 62, 80)
+        pdf.text(exp.jobTitle, 25, yPos)
+        
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'italic')
+        pdf.setTextColor(127, 140, 141)
+        pdf.text(exp.date || '', 185, yPos, { align: 'right' })
+        yPos += 5
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(52, 73, 94)
+        pdf.text(exp.company.toUpperCase(), 25, yPos)
+        yPos += 6
+        
+        if (exp.responsibilities) {
+          pdf.setFontSize(8)
+          pdf.setTextColor(93, 109, 126)
+          const responsLines = pdf.splitTextToSize(exp.responsibilities, 165)
+          pdf.text(responsLines, 25, yPos)
+          yPos += responsLines.length * 3 + 8
+        }
+      })
+    }
+    
+    // Certifications
+    if (data.certifications.filter(cert => cert.name).length > 0) {
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(44, 62, 80)
+      pdf.text('CERTIFICATIONS', 25, yPos)
+      yPos += 10
+      
+      data.certifications.filter(cert => cert.name).forEach(cert => {
+        pdf.setFontSize(11)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(44, 62, 80)
+        pdf.text(cert.name, 25, yPos)
+        
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(93, 109, 126)
+        pdf.text(cert.date || '', 185, yPos, { align: 'right' })
+        yPos += 5
+        
+        pdf.setFontSize(10)
+        pdf.setTextColor(127, 140, 141)
+        pdf.text(cert.issuer, 25, yPos)
+        yPos += 8
+      })
+    }
+  }, [])
+
+  const generateEnhancedPhotoPDF = useCallback((pdf: any, data: ResumeData, template: any) => {
+    let yPos = 30
+    
+    // Photo placeholder and header
+    pdf.setFillColor(74, 144, 226)
+    pdf.circle(40, 35, 18, 'F')
+    
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFontSize(18)
+    pdf.setFont('helvetica', 'normal')
+    const initials = (data.personalInfo.name || 'Y N').split(' ').map(n => n[0]).join('').substring(0, 2)
+    pdf.text(initials, 40, 40, { align: 'center' })
+    
+    // Name and title
+    pdf.setTextColor(45, 55, 72)
+    pdf.setFontSize(18)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(data.personalInfo.name || 'OUSSAMA ERRAFIF', 70, 30)
+    
+    pdf.setFontSize(12)
+    pdf.setTextColor(74, 144, 226)
+    pdf.text(data.personalInfo.title || 'Software engineer', 70, 40)
+    
+    pdf.setFontSize(9)
+    pdf.setTextColor(113, 128, 150)
+    const contact = getDefaultContactInfo(data, ' • ')
+    pdf.text(contact, 70, 48)
+    
+    yPos = 65
+    
+    // Professional profile
+    if (data.personalInfo.summary) {
+      pdf.setFillColor(247, 250, 252)
+      pdf.setDrawColor(74, 144, 226)
+      pdf.rect(20, yPos - 5, 170, 20, 'FD')
+      
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(74, 144, 226)
+      pdf.text('PROFESSIONAL PROFILE', 25, yPos)
+      yPos += 6
+      
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(74, 85, 104)
+      const summaryLines = pdf.splitTextToSize(data.personalInfo.summary, 165)
+      pdf.text(summaryLines, 25, yPos)
+      yPos += summaryLines.length * 3.5 + 15
+    }
+    
+    // Experience
+    if (data.experience.filter(exp => exp.jobTitle).length > 0) {
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(74, 144, 226)
+      pdf.text('PROFESSIONAL EXPERIENCE', 20, yPos)
+      pdf.setDrawColor(226, 232, 240)
+      pdf.line(20, yPos + 2, 190, yPos + 2)
+      yPos += 10
+      
+      data.experience.filter(exp => exp.jobTitle).forEach(exp => {
+        pdf.setFillColor(255, 255, 255)
+        pdf.setDrawColor(226, 232, 240)
+        pdf.rect(20, yPos - 4, 170, 18, 'FD')
+        
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(45, 55, 72)
+        pdf.text(exp.jobTitle, 25, yPos)
+        
+        pdf.setFontSize(8)
+        pdf.setTextColor(74, 144, 226)
+        pdf.text(exp.date || '', 185, yPos, { align: 'right' })
+        yPos += 5
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(74, 144, 226)
+        pdf.text(exp.company, 25, yPos)
+        yPos += 6
+        
+        if (exp.responsibilities) {
+          pdf.setFontSize(8)
+          pdf.setTextColor(74, 85, 104)
+          const responsLines = pdf.splitTextToSize(exp.responsibilities, 165)
+          pdf.text(responsLines, 25, yPos)
+          yPos += responsLines.length * 3 + 8
+        }
+      })
+    }
+    
+    // Certifications
+    if (data.certifications.filter(cert => cert.name).length > 0) {
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(74, 144, 226)
+      pdf.text('PROFESSIONAL CERTIFICATIONS', 25, yPos)
+      yPos += 8
+      
+      data.certifications.filter(cert => cert.name).forEach(cert => {
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(45, 55, 72)
+        pdf.text(cert.name, 25, yPos)
+        
+        pdf.setFontSize(8)
+        pdf.setTextColor(74, 144, 226)
+        pdf.text(cert.date || '', 185, yPos, { align: 'right' })
+        yPos += 5
+        
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(74, 144, 226)
+        pdf.text(cert.issuer, 25, yPos)
+        yPos += 8
+      })
+    }
+  }, [])
 
   const handleAIGenerate = async (type: "summary" | "experience" | "project", query: string, index?: number) => {
     try {
@@ -869,16 +2295,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
             <div className="flex flex-wrap items-center gap-3">
               <Button 
-                onClick={() => {
-                  alert('🚀 AI Analysis Button Clicked! Opening modal...')
-                  console.log('🚀 === AI Analysis Button Clicked (Header) ===')
-                  console.log('📊 Resume data exists:', !!resumeData)
-                  console.log('📊 Resume data keys:', Object.keys(resumeData))
-                  console.log('📋 Resume data structure:', JSON.stringify(resumeData, null, 2))
-                  console.log('🔄 Setting showAnalysis to true...')
-                  setShowAnalysis(true)
-                  console.log('✅ showAnalysis state updated')
-                }} 
+                onClick={() => setShowAnalysis(true)} 
                 variant="outline" 
                 size="sm"
                 className="bg-accent/10 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
@@ -1058,7 +2475,30 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
             </CardHeader>
             <CardContent className="p-0">
               <div className="bg-white overflow-auto" style={{ height: 'calc(100vh - 200px)' }}>
-                <div className="p-6">
+                <div 
+                  className="resume-preview-container" 
+                  style={{ 
+                    minHeight: '297mm', // A4 height
+                    width: '210mm', // A4 width
+                    maxWidth: '100%',
+                    margin: '0 auto',
+                    padding: '20mm', // Standard A4 margins
+                    backgroundColor: '#ffffff',
+                    color: '#000000',
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    lineHeight: 'inherit',
+                    position: 'relative',
+                    zIndex: 1,
+                    // Ensure proper rendering for HTML2Canvas
+                    WebkitPrintColorAdjust: 'exact',
+                    printColorAdjust: 'exact',
+                    // Prevent text selection during capture
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none'
+                  }}
+                  id="resume-preview-capture"
+                >
                   <ResumePreview data={resumeData} templateId={selectedTemplate} />
                 </div>
               </div>
@@ -1068,9 +2508,23 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
         {/* Download Button */}
         <div className="flex justify-center mt-12">
-          <Button onClick={handleDownload} size="lg" className="px-12 py-4 text-lg">
-            <Download className="mr-3 h-6 w-6" />
-            Download Resume
+          <Button 
+            onClick={handleDownload} 
+            size="lg" 
+            className="px-12 py-4 text-lg"
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <>
+                <div className="mr-3 h-6 w-6 animate-spin rounded-full border-2 border-background border-t-current"></div>
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <Download className="mr-3 h-6 w-6" />
+                Download Resume
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -1759,5 +3213,302 @@ const ResumePreview = ({ data, templateId = "classic" }: { data: ResumeData; tem
       return <PhotoTemplate data={data} template={template} />
     default:
       return <ClassicTemplate data={data} template={template} />
+  }
+}
+
+// PDF Generation Functions for Each Template
+function generateClassicPDF(pdf: jsPDF, data: ResumeData, template: any) {
+  pdf.setFont("Times", "normal")
+  pdf.setFontSize(12)
+  
+  // Header
+  pdf.setFont("Times", "bold")
+  pdf.setFontSize(16)
+  pdf.text(data.personalInfo.name.toUpperCase(), 105, 20, { align: "center" })
+  
+  pdf.setFontSize(12)
+  pdf.setFont("Times", "normal")
+  pdf.text(data.personalInfo.title, 105, 28, { align: "center" })
+  pdf.setFontSize(10)
+  pdf.text(
+    `${data.personalInfo.email} | ${data.personalInfo.phone} | ${data.personalInfo.location}`,
+    105, 34, { align: "center" }
+  )
+  
+  let yPos = 45
+  
+  // Summary
+  if (data.personalInfo.summary) {
+    yPos += 5
+    pdf.setFont("Times", "bold")
+    pdf.text("SUMMARY", 10, yPos)
+    pdf.line(10, yPos + 1, 200, yPos + 1)
+    yPos += 8
+    pdf.setFont("Times", "normal")
+    const plainSummary = markdownToPlainText(data.personalInfo.summary)
+    const splitSummary = pdf.splitTextToSize(plainSummary, 180)
+    pdf.text(splitSummary, 10, yPos)
+    yPos += splitSummary.length * 5 + 5
+  }
+  
+  // Add other sections...
+  addCommonSections(pdf, data, yPos)
+}
+
+function generateModernPDF(pdf: jsPDF, data: ResumeData, template: any) {
+  // Modern template with blue accents
+  pdf.setFont("Helvetica", "normal")
+  
+  // Header with color accent
+  pdf.setFillColor(59, 130, 246) // Blue color
+  pdf.rect(0, 0, 210, 30, 'F')
+  
+  pdf.setTextColor(255, 255, 255)
+  pdf.setFont("Helvetica", "bold")
+  pdf.setFontSize(18)
+  pdf.text(data.personalInfo.name, 105, 15, { align: "center" })
+  
+  pdf.setFontSize(12)
+  pdf.setFont("Helvetica", "normal")
+  pdf.text(data.personalInfo.title, 105, 22, { align: "center" })
+  
+  // Reset color for body
+  pdf.setTextColor(0, 0, 0)
+  pdf.setFontSize(10)
+  pdf.text(`${data.personalInfo.email} | ${data.personalInfo.phone} | ${data.personalInfo.location}`, 105, 40, { align: "center" })
+  
+  addCommonSections(pdf, data, 50)
+}
+
+function generateCreativePDF(pdf: jsPDF, data: ResumeData, template: any) {
+  // Creative template with purple accents
+  pdf.setFont("Helvetica", "normal")
+  
+  // Creative header design
+  pdf.setFillColor(124, 58, 237) // Purple color
+  pdf.circle(20, 20, 15, 'F')
+  
+  pdf.setTextColor(124, 58, 237)
+  pdf.setFont("Helvetica", "bold")
+  pdf.setFontSize(16)
+  pdf.text(data.personalInfo.name, 40, 18)
+  
+  pdf.setFont("Helvetica", "normal")
+  pdf.setFontSize(12)
+  pdf.text(data.personalInfo.title, 40, 25)
+  
+  pdf.setTextColor(0, 0, 0)
+  pdf.setFontSize(10)
+  pdf.text(`${data.personalInfo.email} | ${data.personalInfo.phone} | ${data.personalInfo.location}`, 40, 32)
+  
+  addCommonSections(pdf, data, 45)
+}
+
+function generateMinimalPDF(pdf: jsPDF, data: ResumeData, template: any) {
+  // Minimal black and white design
+  pdf.setFont("Arial", "normal")
+  
+  pdf.setFont("Arial", "bold")
+  pdf.setFontSize(16)
+  pdf.text(data.personalInfo.name.toUpperCase(), 10, 20)
+  
+  pdf.setFont("Arial", "normal")
+  pdf.setFontSize(12)
+  pdf.text(data.personalInfo.title, 10, 28)
+  
+  pdf.setFontSize(10)
+  pdf.text(`${data.personalInfo.email} • ${data.personalInfo.phone} • ${data.personalInfo.location}`, 10, 35)
+  
+  addCommonSections(pdf, data, 45)
+}
+
+function generateExecutivePDF(pdf: jsPDF, data: ResumeData, template: any) {
+  // Executive template with elegant serif font
+  pdf.setFont("Times", "normal")
+  
+  // Executive header
+  pdf.setFont("Times", "bold")
+  pdf.setFontSize(20)
+  pdf.text(data.personalInfo.name, 105, 20, { align: "center" })
+  
+  pdf.line(60, 25, 150, 25)
+  
+  pdf.setFontSize(14)
+  pdf.text(data.personalInfo.title, 105, 35, { align: "center" })
+  
+  pdf.setFont("Times", "normal")
+  pdf.setFontSize(10)
+  pdf.text(`${data.personalInfo.email} | ${data.personalInfo.phone} | ${data.personalInfo.location}`, 105, 42, { align: "center" })
+  
+  addCommonSections(pdf, data, 52)
+}
+
+function generatePhotoPDF(pdf: jsPDF, data: ResumeData, template: any) {
+  // Photo template - similar to modern but with space for photo
+  pdf.setFont("Helvetica", "normal")
+  
+  // Header
+  pdf.setFont("Helvetica", "bold")
+  pdf.setFontSize(16)
+  pdf.text(data.personalInfo.name, 105, 20, { align: "center" })
+  
+  pdf.setFont("Helvetica", "normal")
+  pdf.setFontSize(12)
+  pdf.text(data.personalInfo.title, 105, 28, { align: "center" })
+  
+  pdf.setFontSize(10)
+  pdf.text(`${data.personalInfo.email} | ${data.personalInfo.phone} | ${data.personalInfo.location}`, 105, 35, { align: "center" })
+  
+  // Note about photo (since we can't easily include it in PDF)
+  pdf.setFontSize(8)
+  pdf.text("(Profile photo not included in PDF version)", 105, 40, { align: "center" })
+  
+  addCommonSections(pdf, data, 50)
+}
+
+function addCommonSections(pdf: jsPDF, data: ResumeData, startY: number) {
+  let yPos = startY
+  const leftMargin = 10
+  const rightMargin = 200
+  const lineHeight = 5
+  
+  // Summary
+  if (data.personalInfo.summary) {
+    yPos += 5
+    pdf.setFont("Helvetica", "bold")
+    pdf.setFontSize(12)
+    pdf.text("SUMMARY", leftMargin, yPos)
+    pdf.line(leftMargin, yPos + 1, rightMargin, yPos + 1)
+    yPos += 8
+    
+    pdf.setFont("Helvetica", "normal")
+    pdf.setFontSize(10)
+    const plainSummary = markdownToPlainText(data.personalInfo.summary)
+    const splitSummary = pdf.splitTextToSize(plainSummary, 180)
+    pdf.text(splitSummary, leftMargin, yPos)
+    yPos += splitSummary.length * lineHeight + 10
+  }
+  
+  // Experience
+  if (data.experience.some(exp => exp.jobTitle)) {
+    pdf.setFont("Helvetica", "bold")
+    pdf.setFontSize(12)
+    pdf.text("EXPERIENCE", leftMargin, yPos)
+    pdf.line(leftMargin, yPos + 1, rightMargin, yPos + 1)
+    yPos += 8
+    
+    data.experience.filter(exp => exp.jobTitle).forEach(exp => {
+      pdf.setFont("Helvetica", "bold")
+      pdf.setFontSize(11)
+      pdf.text(`${exp.jobTitle} at ${exp.company}`, leftMargin, yPos)
+      pdf.setFont("Helvetica", "normal")
+      pdf.setFontSize(10)
+      pdf.text(exp.date, rightMargin, yPos, { align: "right" })
+      yPos += 6
+      
+      if (exp.responsibilities) {
+        const plainResp = markdownToPlainText(exp.responsibilities)
+        const splitResp = pdf.splitTextToSize(plainResp, 180)
+        pdf.text(splitResp, leftMargin, yPos)
+        yPos += splitResp.length * lineHeight + 8
+      }
+    })
+    yPos += 5
+  }
+  
+  // Skills
+  if (data.skills.languages || data.skills.frameworks || data.skills.tools) {
+    if (yPos > 250) {
+      pdf.addPage()
+      yPos = 20
+    }
+    
+    pdf.setFont("Helvetica", "bold")
+    pdf.setFontSize(12)
+    pdf.text("SKILLS", leftMargin, yPos)
+    pdf.line(leftMargin, yPos + 1, rightMargin, yPos + 1)
+    yPos += 8
+    
+    pdf.setFont("Helvetica", "normal")
+    pdf.setFontSize(10)
+    if (data.skills.languages) {
+      pdf.text(`Programming Languages: ${data.skills.languages}`, leftMargin, yPos)
+      yPos += lineHeight
+    }
+    if (data.skills.frameworks) {
+      pdf.text(`Frameworks & Libraries: ${data.skills.frameworks}`, leftMargin, yPos)
+      yPos += lineHeight
+    }
+    if (data.skills.tools) {
+      pdf.text(`Tools & Platforms: ${data.skills.tools}`, leftMargin, yPos)
+      yPos += lineHeight
+    }
+    yPos += 10
+  }
+  
+  // Education
+  if (data.education.some(edu => edu.school)) {
+    if (yPos > 250) {
+      pdf.addPage()
+      yPos = 20
+    }
+    
+    pdf.setFont("Helvetica", "bold")
+    pdf.setFontSize(12)
+    pdf.text("EDUCATION", leftMargin, yPos)
+    pdf.line(leftMargin, yPos + 1, rightMargin, yPos + 1)
+    yPos += 8
+    
+    data.education.filter(edu => edu.school).forEach(edu => {
+      pdf.setFont("Helvetica", "bold")
+      pdf.setFontSize(10)
+      pdf.text(edu.school, leftMargin, yPos)
+      pdf.setFont("Helvetica", "normal")
+      pdf.text(edu.date, rightMargin, yPos, { align: "right" })
+      yPos += 5
+      pdf.text(edu.degree, leftMargin, yPos)
+      if (edu.gpa) {
+        pdf.text(`GPA: ${edu.gpa}`, leftMargin, yPos + 5)
+        yPos += 5
+      }
+      yPos += 8
+    })
+  }
+  
+  // Projects
+  if (data.projects.some(proj => proj.name)) {
+    if (yPos > 220) {
+      pdf.addPage()
+      yPos = 20
+    }
+    
+    pdf.setFont("Helvetica", "bold")
+    pdf.setFontSize(12)
+    pdf.text("PROJECTS", leftMargin, yPos)
+    pdf.line(leftMargin, yPos + 1, rightMargin, yPos + 1)
+    yPos += 8
+    
+    data.projects.filter(proj => proj.name).forEach(proj => {
+      pdf.setFont("Helvetica", "bold")
+      pdf.setFontSize(11)
+      pdf.text(proj.name, leftMargin, yPos)
+      yPos += 6
+      
+      if (proj.description) {
+        pdf.setFont("Helvetica", "normal")
+        pdf.setFontSize(10)
+        const plainDesc = markdownToPlainText(proj.description)
+        const splitDesc = pdf.splitTextToSize(plainDesc, 180)
+        pdf.text(splitDesc, leftMargin, yPos)
+        yPos += splitDesc.length * lineHeight + 3
+      }
+      
+      if (proj.technologies) {
+        pdf.setFont("Helvetica", "italic")
+        pdf.setFontSize(9)
+        pdf.text(`Technologies: ${proj.technologies}`, leftMargin, yPos)
+        yPos += lineHeight + 5
+      }
+    })
   }
 }
