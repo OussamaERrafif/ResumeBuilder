@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, Suspense, memo } from "react"
+import Link from "next/link"
 import {
   FileText,
   Moon,
@@ -16,6 +17,7 @@ import {
   Sparkles,
   X,
   Star,
+  Mail,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -427,14 +429,30 @@ export default function Dashboard() {
           <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
             <div className="container mx-auto px-6 py-4">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-primary-foreground" />
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-foreground">ResumeAI</h1>
+                      <p className="text-muted-foreground text-sm">Professional Resume Builder</p>
+                    </div>
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-foreground">ResumeAI</h1>
-                    <p className="text-muted-foreground text-sm">Professional Resume Builder</p>
-                  </div>
+                  
+                  {/* Navigation */}
+                  <nav className="hidden md:flex items-center gap-1">
+                    <Button variant="ghost" className="bg-primary/10 text-primary">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Resumes
+                    </Button>
+                    <Link href="/cover-letters">
+                      <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                        <Mail className="h-4 w-4 mr-2" />
+                        Cover Letters
+                      </Button>
+                    </Link>
+                  </nav>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
