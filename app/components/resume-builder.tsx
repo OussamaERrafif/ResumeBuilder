@@ -51,7 +51,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 
-import { downloadResumePDF } from "../../lib/html-pdf-generator"
+// Import removed - now using dynamic import for exact HTML generator
 import AIModal from "./ai-modal"
 import ResumeAnalysis from "./resume-analysis"
 import TemplateSelector from "./template-selector"
@@ -477,8 +477,9 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         throw new Error('Template not found')
       }
 
-      // Use our HTML-to-PDF generation system
-      await downloadResumePDF(templateObj, resumeData)
+      // Use our EXACT HTML-to-PDF generation system
+      const { downloadExactResumePDF } = await import('../../lib/exact-html-generator')
+      await downloadExactResumePDF(templateObj, resumeData)
       
       toast({
         title: "Success! 🎉",
