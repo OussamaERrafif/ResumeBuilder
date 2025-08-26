@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, Suspense, memo } from "react"
+import React, { useState, useEffect, useMemo, useCallback, Suspense, memo } from "react"
 import Link from "next/link"
 import {
   FileText,
