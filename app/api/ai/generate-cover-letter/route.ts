@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+// Check for Gemini API key
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-export async function POST(request: NextRequest) {
+// If API key is missing, export a POST handler that returns a 500 error
+if (!GEMINI_API_KEY) {
+  export async function POST(request: NextRequest) {
+    return NextResponse.json(
+      { error: 'Gemini API key is not configured. Please set GEMINI_API_KEY in your environment.' },
+      { status: 500 }
+    );
+  }
+} else {
+  // Initialize Gemini AI
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+  export async function POST(request: NextRequest) {
   let resumeData: any = null
   
   try {
