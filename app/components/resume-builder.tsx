@@ -30,7 +30,6 @@ import {
   Target,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { jsPDF } from "jspdf"
 
 // DND-KIT IMPORTS
 import {
@@ -52,6 +51,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 
+// Import removed - now using dynamic import for exact HTML generator
 import AIModal from "./ai-modal"
 import ResumeAnalysis from "./resume-analysis"
 import TemplateSelector from "./template-selector"
@@ -465,178 +465,35 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     summary.value,
   ])
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
+    // Save the resume first
     saveResume()
 
-    const doc = new jsPDF()
-
-    // Set font styles
-    doc.setFont("Times", "normal")
-    doc.setFontSize(12)
-
-    // Add content to the PDF (same as before)
-    doc.setFont("Times", "bold")
-    doc.setFontSize(16)
-    doc.text(resumeData.personalInfo.name.toUpperCase(), 105, 20, { align: "center" })
-
-    doc.setFontSize(12)
-    doc.setFont("Times", "normal")
-    doc.text(resumeData.personalInfo.title, 105, 28, { align: "center" })
-    doc.setFontSize(10)
-    doc.text(
-      `${resumeData.personalInfo.email} | ${resumeData.personalInfo.phone} | ${resumeData.personalInfo.location}`,
-      105,
-      34,
-      { align: "center" },
-    )
-
-    let yPos = 45
-
-    // Links
-    if (resumeData.links.length > 0 && resumeData.links.some((link) => link.name && link.url)) {
-      const links = resumeData.links
-        .filter((link) => link.name && link.url)
-        .map((link) => link.name)
-        .join(" | ")
-      doc.text(links, 105, yPos, { align: "center" })
-      yPos += 10
-    }
-
-    // Summary
-    if (resumeData.personalInfo.summary) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("SUMMARY", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      const splitSummary = doc.splitTextToSize(resumeData.personalInfo.summary, 180)
-      doc.text(splitSummary, 10, yPos)
-      yPos += splitSummary.length * 5 + 5
-    }
-
-    // Education
-    if (resumeData.education.some((edu) => edu.school)) {
-      doc.setFont("Times", "bold")
-      doc.text("EDUCATION", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.education
-        .filter((edu) => edu.school)
-        .forEach((edu) => {
-          doc.text(edu.school, 10, yPos)
-          doc.text(edu.date, 200, yPos, { align: "right" })
-          yPos += 5
-          doc.text(edu.degree, 10, yPos)
-          if (edu.gpa) {
-            doc.text(`GPA: ${edu.gpa}`, 10, yPos + 5)
-            yPos += 5
-          }
-          yPos += 8
-        })
-    }
-
-    // Skills
-    if (resumeData.skills.languages || resumeData.skills.frameworks || resumeData.skills.tools) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("SKILLS", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      if (resumeData.skills.languages) {
-        doc.text(`Programming Languages: ${resumeData.skills.languages}`, 10, yPos)
-        yPos += 5
+    try {
+      // Find the selected template object
+      const templateObj = RESUME_TEMPLATES.find(t => t.id === selectedTemplate)
+      
+      if (!templateObj) {
+        throw new Error('Template not found')
       }
-      if (resumeData.skills.frameworks) {
-        doc.text(`Libraries/Frameworks: ${resumeData.skills.frameworks}`, 10, yPos)
-        yPos += 5
-      }
-      if (resumeData.skills.tools) {
-        doc.text(`Tools/Platforms: ${resumeData.skills.tools}`, 10, yPos)
-        yPos += 5
-      }
-      yPos += 3
-    }
 
-    // Experience
-    if (resumeData.experience.some((exp) => exp.jobTitle)) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("EXPERIENCE", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.experience
-        .filter((exp) => exp.jobTitle)
-        .forEach((exp) => {
-          doc.setFont("Times", "bold")
-          doc.text(`${exp.jobTitle} at ${exp.company}`, 10, yPos)
-          doc.setFont("Times", "normal")
-          doc.text(exp.date, 200, yPos, { align: "right" })
-          yPos += 5
-          if (exp.responsibilities) {
-            const splitResponsibilities = doc.splitTextToSize(exp.responsibilities, 180)
-            doc.text(splitResponsibilities, 10, yPos)
-            yPos += splitResponsibilities.length * 5 + 5
-          }
-        })
+      // Use our EXACT HTML-to-PDF generation system
+      const { downloadExactResumePDF } = await import('../../lib/exact-html-generator')
+      await downloadExactResumePDF(templateObj, resumeData)
+      
+      toast({
+        title: "Success! 🎉",
+        description: `Your ${templateObj.name} resume has been downloaded.`,
+      })
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      toast({
+        title: "Download Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      })
     }
-
-    // Projects
-    if (resumeData.projects.some((project) => project.name)) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("PROJECTS", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.projects
-        .filter((project) => project.name)
-        .forEach((project) => {
-          doc.setFont("Times", "bold")
-          doc.text(project.name, 10, yPos)
-          yPos += 5
-          doc.setFont("Times", "normal")
-          if (project.description) {
-            const splitDescription = doc.splitTextToSize(project.description, 180)
-            doc.text(splitDescription, 10, yPos)
-            yPos += splitDescription.length * 5
-          }
-          if (project.technologies) {
-            doc.text(`Technologies: ${project.technologies}`, 10, yPos)
-            yPos += 5
-          }
-          yPos += 3
-        })
-    }
-
-    // Certifications
-    if (resumeData.certifications.some((cert) => cert.name)) {
-      yPos += 5
-      doc.setFont("Times", "bold")
-      doc.text("CERTIFICATIONS", 10, yPos)
-      doc.line(10, yPos + 1, 200, yPos + 1)
-      yPos += 8
-      doc.setFont("Times", "normal")
-      resumeData.certifications
-        .filter((cert) => cert.name)
-        .forEach((cert) => {
-          doc.text(`• ${cert.name}`, 15, yPos)
-          if (cert.issuer) {
-            doc.text(` - ${cert.issuer}`, 15 + doc.getTextWidth(`• ${cert.name}`), yPos)
-          }
-          if (cert.date) {
-            doc.text(cert.date, 200, yPos, { align: "right" })
-          }
-          yPos += 5
-        })
-    }
-
-    // Save the document
-    doc.save(`${resumeData.personalInfo.name || "Resume"}_Resume.pdf`)
-  }, [resumeData, saveResume])
+  }, [resumeData, selectedTemplate, saveResume])
 
   const handleAIGenerate = async (type: "summary" | "experience" | "project", query: string, index?: number) => {
     try {
