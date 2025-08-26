@@ -2,7 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+let genAI: GoogleGenerativeAI
+try {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set')
+  }
+  genAI = new GoogleGenerativeAI(apiKey)
+} catch (error) {
+  console.error('Failed to initialize GoogleGenerativeAI:', error)
+  throw error
+}
 
 export async function POST(request: NextRequest) {
   let resumeData: any = null
