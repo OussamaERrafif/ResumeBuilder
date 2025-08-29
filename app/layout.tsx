@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
@@ -13,7 +13,14 @@ const inter = Inter({
   variable: "--font-inter",
 })
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#8B5CF6",
+}
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://apexresume.com"),
   title: "ApexResume - Professional AI-Powered Resume Builder | Create ATS-Optimized Resumes",
   description:
     "Build professional, ATS-optimized resumes in minutes with AI assistance. Choose from 7 beautiful templates, get AI-powered content suggestions, and land your dream job faster. Free to start.",
@@ -36,8 +43,6 @@ export const metadata: Metadata = {
   authors: [{ name: "ApexResume Team" }],
   creator: "ApexResume",
   publisher: "ApexResume",
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#8B5CF6",
   robots: "index, follow",
   openGraph: {
     type: "website",
