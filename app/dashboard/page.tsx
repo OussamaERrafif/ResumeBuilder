@@ -4,8 +4,6 @@ import React, { useState, useEffect, useMemo, useCallback, Suspense, memo } from
 import Link from "next/link"
 import {
   FileText,
-  Moon,
-  Sun,
   Plus,
   Trash2,
   User,
@@ -28,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useToast } from "@/hooks/use-toast"
 
 import ProtectedRoute from "@/components/auth/protected-route"
@@ -68,35 +67,6 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 // Simple local storage hook
-function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === "undefined") {
-      return initialValue
-    }
-    try {
-      const item = window.localStorage.getItem(key)
-      return item ? JSON.parse(item) : initialValue
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error)
-      return initialValue
-    }
-  })
-
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value
-      setStoredValue(valueToStore)
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore))
-      }
-    } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error)
-    }
-  }
-
-  return [storedValue, setValue] as const
-}
-
 // Add Resume Card Component
 const AddResumeCard = memo(({ onClick }: { onClick: () => void }) => (
   <motion.div
@@ -253,7 +223,6 @@ export default function Dashboard() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
 
-  const [isDarkMode, setIsDarkMode] = useLocalStorage("theme", false)
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [currentView, setCurrentView] = useState<"dashboard" | "builder">("dashboard")
@@ -268,12 +237,6 @@ export default function Dashboard() {
 
   // Debounced search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
-
-  // THEME
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode)
-    document.documentElement.classList.toggle("light", !isDarkMode)
-  }, [isDarkMode])
 
   // DATA
   useEffect(() => {
@@ -435,7 +398,7 @@ export default function Dashboard() {
                       <FileText className="h-6 w-6 text-primary-foreground" />
                     </div>
                     <div>
-                      <h1 className="text-2xl font-bold text-foreground">ResumeAI</h1>
+                      <h1 className="text-2xl font-bold text-foreground">ApexResume</h1>
                       <p className="text-muted-foreground text-sm">Professional Resume Builder</p>
                     </div>
                   </div>
@@ -469,10 +432,8 @@ export default function Dashboard() {
                       Sign Out
                     </Button>
 
-                    <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-                      <Sun className="h-4 w-4 text-muted-foreground" />
-                      <Switch checked={isDarkMode} onCheckedChange={setIsDarkMode} />
-                      <Moon className="h-4 w-4 text-muted-foreground" />
+                    <div className="bg-muted rounded-lg p-1">
+                      <ThemeToggle />
                     </div>
                   </div>
                 </div>

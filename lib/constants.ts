@@ -1,6 +1,6 @@
 // Centralized constants for better maintainability
 export const APP_CONFIG = {
-  name: "ResumeAI",
+  name: "ApexResume",
   description: "Professional Resume Builder",
   version: "2.0.0",
   maxFileSize: 10 * 1024 * 1024, // 10MB

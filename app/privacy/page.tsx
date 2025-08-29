@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                At Resume Generator, we take your privacy seriously. This Privacy Policy explains how we collect, use,
+                At ApexResume, we take your privacy seriously. This Privacy Policy explains how we collect, use,
                 disclose, and safeguard your information when you use our AI-powered resume building service.
               </p>
               <p className="text-muted-foreground">

@@ -38,7 +38,7 @@ export default function TermsOfService() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Welcome to Resume Generator. These Terms of Service ("Terms") govern your use of our AI-powered resume
+                Welcome to ApexResume. These Terms of Service ("Terms") govern your use of our AI-powered resume
                 building platform. By accessing or using our service, you agree to be bound by these Terms.
               </p>
               <p className="text-muted-foreground">
@@ -60,7 +60,7 @@ export default function TermsOfService() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Resume Generator provides an AI-powered platform that helps users create professional resumes through:
+                ApexResume provides an AI-powered platform that helps users create professional resumes through:
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Multiple professional resume templates</li>
@@ -146,7 +146,7 @@ export default function TermsOfService() {
               <div>
                 <h4 className="font-semibold mb-2">Our Rights</h4>
                 <p className="text-muted-foreground">
-                  Resume Generator owns all rights to our platform, including but not limited to:
+                  ApexResume owns all rights to our platform, including but not limited to:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>Software, algorithms, and AI technology</li>

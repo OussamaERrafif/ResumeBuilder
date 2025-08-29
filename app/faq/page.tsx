@@ -33,9 +33,9 @@ const FAQ_DATA = [
   {
     id: 1,
     category: "general",
-    question: "What is Resume Generator?",
+    question: "What is ApexResume?",
     answer:
-      "Resume Generator is an AI-powered platform that helps you create professional resumes quickly and easily. Our advanced AI technology provides personalized suggestions for content, formatting, and design to help you stand out to employers.",
+      "ApexResume is an AI-powered platform that helps you create professional resumes quickly and easily. Our advanced AI technology provides personalized suggestions for content, formatting, and design to help you stand out to employers.",
   },
   {
     id: 2,
@@ -47,7 +47,7 @@ const FAQ_DATA = [
   {
     id: 3,
     category: "general",
-    question: "Is Resume Generator free to use?",
+    question: "Is ApexResume free to use?",
     answer:
       "We offer both free and premium plans. The free plan includes basic templates and limited AI features. Premium plans unlock advanced templates, unlimited AI assistance, and additional customization options.",
   },
@@ -170,7 +170,7 @@ export default function FAQ() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Frequently Asked Questions</h1>
-              <p className="text-muted-foreground text-sm">Find answers to common questions about Resume Generator</p>
+              <p className="text-muted-foreground text-sm">Find answers to common questions about ApexResume</p>
             </div>
           </div>
         </div>
@@ -297,7 +297,7 @@ export default function FAQ() {
               <CardContent className="space-y-4">
                 <p className="text-muted-foreground">
                   Can't find the answer you're looking for? Our support team is here to help you get the most out of
-                  Resume Generator.
+                  ApexResume.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button className="flex-1">
