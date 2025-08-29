@@ -1,6 +1,7 @@
 "use client"
 
 import type { Template } from "../types/templates"
+import { DefaultAvatar } from "@/components/ui/default-avatar"
 
 interface ResumeData {
   personalInfo: {
@@ -37,14 +38,16 @@ export function ClassicTemplate({ data, template }: TemplatePreviewProps) {
       <div className="pb-6 border-b-2 border-gray-800">
         <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
           {/* Profile Image */}
-          {data.personalInfo.profileImage && (
+          {data.personalInfo.profileImage ? (
             <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-600 flex-shrink-0">
               <img
-                src={data.personalInfo.profileImage || "/placeholder.svg"}
+                src={data.personalInfo.profileImage}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
+          ) : (
+            <DefaultAvatar className="w-24 h-24" size={24} />
           )}
 
           {/* Contact Info */}
@@ -213,16 +216,23 @@ export function ModernTemplate({ data, template }: TemplatePreviewProps) {
             boxShadow: "0 2px 8px rgba(59, 130, 246, 0.15)",
           }}
         >
-          {data.personalInfo.profileImage && (
+          {data.personalInfo.profileImage ? (
             <div
               className="w-24 h-24 rounded-full overflow-hidden border-3 flex-shrink-0"
               style={{ borderColor: template.colors.primary }}
             >
               <img
-                src={data.personalInfo.profileImage || "/placeholder.svg"}
+                src={data.personalInfo.profileImage}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
+            </div>
+          ) : (
+            <div
+              className="w-24 h-24 rounded-full border-3 flex-shrink-0 bg-muted flex items-center justify-center"
+              style={{ borderColor: template.colors.primary }}
+            >
+              <DefaultAvatar className="w-full h-full" size={24} />
             </div>
           )}
           <div className="flex-1 text-center sm:text-left">
@@ -564,16 +574,23 @@ export function CreativeTemplate({ data, template }: TemplatePreviewProps) {
               transform: "translate(25%, -25%)",
             }}
           ></div>
-          {data.personalInfo.profileImage && (
+          {data.personalInfo.profileImage ? (
             <div
               className="w-24 h-24 rounded-full overflow-hidden border-3 flex-shrink-0 relative z-10"
               style={{ borderColor: template.colors.primary }}
             >
               <img
-                src={data.personalInfo.profileImage || "/placeholder.svg"}
+                src={data.personalInfo.profileImage}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
+            </div>
+          ) : (
+            <div
+              className="w-24 h-24 rounded-full border-3 flex-shrink-0 relative z-10 bg-muted flex items-center justify-center"
+              style={{ borderColor: template.colors.primary }}
+            >
+              <DefaultAvatar className="w-full h-full" size={24} />
             </div>
           )}
           <div className="relative z-10 flex-1 text-center sm:text-left">
@@ -858,13 +875,17 @@ export function MinimalTemplate({ data, template }: TemplatePreviewProps) {
     <div className="space-y-8 font-light text-sm max-w-2xl mx-auto leading-relaxed text-black bg-white">
       {/* Header */}
       <div className="text-center pb-8 border-b border-gray-300">
-        {data.personalInfo.profileImage && (
+        {data.personalInfo.profileImage ? (
           <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-black mx-auto mb-4">
             <img
-              src={data.personalInfo.profileImage || "/placeholder.svg"}
+              src={data.personalInfo.profileImage}
               alt="Profile"
               className="w-full h-full object-cover"
             />
+          </div>
+        ) : (
+          <div className="w-24 h-24 rounded-full border-2 border-black mx-auto mb-4 bg-gray-100 flex items-center justify-center">
+            <DefaultAvatar className="w-full h-full" size={24} />
           </div>
         )}
         <h1 className="text-3xl font-light tracking-wide mb-3 text-black">{data.personalInfo.name || "Your Name"}</h1>
@@ -1005,16 +1026,23 @@ export function ExecutiveTemplate({ data, template }: TemplatePreviewProps) {
     >
       {/* Header */}
       <div className="text-center pb-8 border-b-2" style={{ borderColor: template.colors.primary }}>
-        {data.personalInfo.profileImage && (
+        {data.personalInfo.profileImage ? (
           <div
             className="w-28 h-28 rounded-full overflow-hidden border-3 mx-auto mb-4"
             style={{ borderColor: template.colors.accent }}
           >
             <img
-              src={data.personalInfo.profileImage || "/placeholder.svg"}
+              src={data.personalInfo.profileImage}
               alt="Profile"
               className="w-full h-full object-cover"
             />
+          </div>
+        ) : (
+          <div
+            className="w-28 h-28 rounded-full border-3 mx-auto mb-4 bg-muted flex items-center justify-center"
+            style={{ borderColor: template.colors.accent }}
+          >
+            <DefaultAvatar className="w-full h-full" size={28} />
           </div>
         )}
         <h1 className="text-3xl font-bold mb-3 tracking-wide" style={{ color: template.colors.primary }}>
@@ -1290,17 +1318,25 @@ export function PhotoTemplate({ data, template }: TemplatePreviewProps) {
           }}
         >
           <div className="flex flex-col items-center text-center mb-6">
-            {/* Large Profile Image - Required */}
-            <div
-              className="w-32 h-32 rounded-full overflow-hidden border-4 mb-6"
-              style={{ borderColor: template.colors.primary }}
-            >
-              <img
-                src={data.personalInfo.profileImage || "/placeholder.svg?height=128&width=128&text=Photo+Required"}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
+            {data.personalInfo.profileImage ? (
+              <div
+                className="w-32 h-32 rounded-full overflow-hidden border-4 mb-6"
+                style={{ borderColor: template.colors.primary }}
+              >
+                <img
+                  src={data.personalInfo.profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div
+                className="w-32 h-32 rounded-full border-4 mb-6 bg-muted flex items-center justify-center"
+                style={{ borderColor: template.colors.primary }}
+              >
+                <DefaultAvatar className="w-full h-full" size={32} />
+              </div>
+            )}
 
             <h1 className="text-3xl font-bold mb-2" style={{ color: template.colors.primary }}>
               {data.personalInfo.name || "Your Name"}
