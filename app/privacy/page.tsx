@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/landing">
+            <Link href="/">
               <Button variant="ghost" size="sm" className="rounded-full">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                At Resume Generator, we take your privacy seriously. This Privacy Policy explains how we collect, use,
+                At ApexResume, we take your privacy seriously. This Privacy Policy explains how we collect, use,
                 disclose, and safeguard your information when you use our AI-powered resume building service.
               </p>
               <p className="text-muted-foreground">

@@ -5,6 +5,7 @@ export interface Template {
   category: "classic" | "modern" | "creative" | "minimal" | "executive" | "tech" | "photo"
   preview: string
   requiresPhoto: boolean
+  isPremium?: boolean
   colors: {
     primary: string
     secondary: string
@@ -23,7 +24,7 @@ export const RESUME_TEMPLATES: Template[] = [
     description: "Timeless design perfect for traditional corporate environments",
     category: "classic",
     requiresPhoto: false,
-    preview: "/placeholder.svg?height=300&width=200",
+    preview: "Classic professional template preview",
     colors: {
       primary: "#1f2937",
       secondary: "#374151",
@@ -40,7 +41,7 @@ export const RESUME_TEMPLATES: Template[] = [
     description: "Modern design with vibrant accents for progressive companies",
     category: "modern",
     requiresPhoto: false,
-    preview: "/placeholder.svg?height=300&width=200",
+    preview: "Modern professional template preview",
     colors: {
       primary: "#3b82f6",
       secondary: "#1e40af",
@@ -57,7 +58,8 @@ export const RESUME_TEMPLATES: Template[] = [
     description: "Bold design for creative fields with striking visual elements",
     category: "creative",
     requiresPhoto: false,
-    preview: "/placeholder.svg?height=300&width=200",
+    isPremium: true,
+    preview: "Creative template preview",
     colors: {
       primary: "#7c3aed",
       secondary: "#5b21b6",
@@ -74,7 +76,7 @@ export const RESUME_TEMPLATES: Template[] = [
     description: "Ultra-clean black and white design optimized for ATS systems",
     category: "minimal",
     requiresPhoto: false,
-    preview: "/placeholder.svg?height=300&width=200",
+    preview: "Minimal template preview",
     colors: {
       primary: "#000000",
       secondary: "#333333",
@@ -91,7 +93,8 @@ export const RESUME_TEMPLATES: Template[] = [
     description: "Premium design for senior-level positions and leadership roles",
     category: "executive",
     requiresPhoto: false,
-    preview: "/placeholder.svg?height=300&width=200",
+    isPremium: true,
+    preview: "Executive template preview",
     colors: {
       primary: "#059669",
       secondary: "#047857",
@@ -108,7 +111,7 @@ export const RESUME_TEMPLATES: Template[] = [
     description: "Clean, modern template optimized for technology professionals",
     category: "tech",
     requiresPhoto: false,
-    preview: "/placeholder.svg?height=300&width=200",
+    preview: "Tech template preview",
     colors: {
       primary: "#dc2626",
       secondary: "#b91c1c",
@@ -125,7 +128,8 @@ export const RESUME_TEMPLATES: Template[] = [
     description: "Elegant template that showcases your professional photo prominently",
     category: "photo",
     requiresPhoto: true,
-    preview: "/placeholder.svg?height=300&width=200",
+    isPremium: true,
+    preview: "Photo-focused template preview",
     colors: {
       primary: "#1f2937",
       secondary: "#374151",

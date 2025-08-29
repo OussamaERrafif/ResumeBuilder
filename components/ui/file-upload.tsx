@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { X, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { DefaultAvatar } from "./default-avatar"
 
 interface FileUploadProps {
   label: string
@@ -64,7 +65,7 @@ export function FileUpload({ label, accept = "image/*", onFileSelect, preview, c
       {preview ? (
         <div className="relative">
           <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-            <img src={preview || "/placeholder.svg"} alt="Preview" className="w-full h-full object-cover" />
+            <img src={preview} alt="Preview" className="w-full h-full object-cover" />
           </div>
           <Button
             type="button"

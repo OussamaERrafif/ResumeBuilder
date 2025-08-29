@@ -1,6 +1,6 @@
 {
-  "name": "ResumeAI - Professional Resume Builder",
-  "short_name": "ResumeAI",
+  "name": "ApexResume - Professional Resume Builder",
+  "short_name": "ApexResume",
   "description": "Build professional, ATS-optimized resumes with AI assistance",
   "start_url": "/",
   "display": "standalone",

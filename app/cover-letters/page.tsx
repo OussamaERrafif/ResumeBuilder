@@ -36,6 +36,7 @@ import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 
 import ProtectedRoute from "@/components/auth/protected-route"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
 import { CoverLetterService, type CoverLetter } from "@/lib/cover-letter-service"
 import { ResumeService } from "@/lib/resume-service"
@@ -72,7 +73,6 @@ export default function CoverLettersPage() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingCoverLetter, setEditingCoverLetter] = useState<CoverLetter | null>(null)
-  const [isDarkMode, setIsDarkMode] = useState(false)
 
   // Form data
   const [formData, setFormData] = useState<CoverLetterFormData>({
@@ -86,18 +86,6 @@ export default function CoverLettersPage() {
   })
 
   const [resumeOptimizationSuggestions, setResumeOptimizationSuggestions] = useState<string[]>([])
-
-  // Theme management
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme")
-    setIsDarkMode(savedTheme === "dark")
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem("theme", isDarkMode ? "dark" : "light")
-    document.documentElement.classList.toggle("dark", isDarkMode)
-    document.documentElement.classList.toggle("light", !isDarkMode)
-  }, [isDarkMode])
 
   // Sign out handler
   const handleSignOut = useCallback(async () => {
@@ -806,7 +794,7 @@ export default function CoverLettersPage() {
                     <Mail className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-foreground">ResumeAI</h1>
+                    <h1 className="text-2xl font-bold text-foreground">ApexResume</h1>
                     <p className="text-muted-foreground text-sm">Professional Resume Builder</p>
                   </div>
                 </div>
@@ -840,10 +828,8 @@ export default function CoverLettersPage() {
                     Sign Out
                   </Button>
 
-                  <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-                    <Sun className="h-4 w-4 text-muted-foreground" />
-                    <Switch checked={isDarkMode} onCheckedChange={setIsDarkMode} />
-                    <Moon className="h-4 w-4 text-muted-foreground" />
+                  <div className="bg-muted rounded-lg p-1">
+                    <ThemeToggle />
                   </div>
                 </div>
               </div>

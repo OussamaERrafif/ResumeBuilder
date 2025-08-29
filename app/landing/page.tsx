@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { RESUME_TEMPLATES } from "../types/templates"
 
 const FEATURES = [
@@ -77,7 +78,7 @@ const TESTIMONIALS = [
     role: "Software Engineer",
     company: "Google",
     content:
-      "Resume Generator helped me land my dream job at Google. The AI suggestions were spot-on and saved me hours of writing.",
+      "ApexResume helped me land my dream job at Google. The AI suggestions were spot-on and saved me hours of writing.",
     rating: 5,
     avatar: "/professional-woman.png",
   },
@@ -86,7 +87,7 @@ const TESTIMONIALS = [
     role: "Marketing Manager",
     company: "Microsoft",
     content:
-      "The templates are beautiful and professional. I got 3x more interview calls after using Resume Generator.",
+      "The templates are beautiful and professional. I got 3x more interview calls after using ApexResume.",
     rating: 5,
     avatar: "/professional-man.png",
   },
@@ -152,20 +153,8 @@ const PRICING_PLANS = [
 ]
 
 export default function LandingPage() {
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState(0)
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme")
-    setIsDarkMode(savedTheme === "dark")
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem("theme", isDarkMode ? "dark" : "light")
-    document.documentElement.classList.toggle("dark", isDarkMode)
-    document.documentElement.classList.toggle("light", !isDarkMode)
-  }, [isDarkMode])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -184,7 +173,7 @@ export default function LandingPage() {
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <FileText className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Resume Generator</span>
+              <span className="text-xl font-bold text-foreground">ApexResume</span>
             </div>
 
             {/* Desktop Navigation */}
@@ -204,10 +193,8 @@ export default function LandingPage() {
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
-              <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-                <Sun className="h-4 w-4 text-muted-foreground" />
-                <Switch checked={isDarkMode} onCheckedChange={setIsDarkMode} />
-                <Moon className="h-4 w-4 text-muted-foreground" />
+              <div className="bg-muted rounded-lg p-1">
+                <ThemeToggle />
               </div>
               <Link href="/dashboard">
                 <Button variant="outline">Sign In</Button>
@@ -245,10 +232,8 @@ export default function LandingPage() {
                   <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
                     FAQ
                   </Link>
-                  <div className="flex items-center gap-2 bg-muted rounded-lg p-1 w-fit">
-                    <Sun className="h-4 w-4 text-muted-foreground" />
-                    <Switch checked={isDarkMode} onCheckedChange={setIsDarkMode} />
-                    <Moon className="h-4 w-4 text-muted-foreground" />
+                  <div className="bg-muted rounded-lg p-1 w-fit">
+                    <ThemeToggle />
                   </div>
                   <div className="flex flex-col space-y-2">
                     <Link href="/dashboard">
@@ -281,7 +266,7 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <Badge variant="secondary" className="w-fit">
                   <Sparkles className="h-3 w-3 mr-1" />
-                  AI-Powered Resume Builder
+                  AI-Powered ApexResume
                 </Badge>
                 <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
                   Create Your Perfect Resume in <span className="text-primary">Minutes</span>
@@ -311,12 +296,12 @@ export default function LandingPage() {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="w-8 h-8 rounded-full bg-muted border-2 border-background"
-                        style={{
-                          backgroundImage: `url(/placeholder.svg?height=32&width=32&query=user${i})`,
-                          backgroundSize: "cover",
-                        }}
-                      />
+                        className="w-8 h-8 rounded-full bg-primary border-2 border-background flex items-center justify-center"
+                      >
+                        <span className="text-xs text-primary-foreground font-semibold">
+                          {String.fromCharCode(64 + i)}
+                        </span>
+                      </div>
                     ))}
                   </div>
                   <span className="text-sm text-muted-foreground">50,000+ users</span>
@@ -532,7 +517,7 @@ export default function LandingPage() {
             </Badge>
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Loved by Job Seekers Worldwide</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Join thousands of professionals who have successfully landed their dream jobs using Resume Generator.
+              Join thousands of professionals who have successfully landed their dream jobs using ApexResume.
             </p>
           </motion.div>
 
@@ -656,7 +641,7 @@ export default function LandingPage() {
           >
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Ready to Build Your Perfect Resume?</h2>
             <p className="text-xl text-muted-foreground mb-8">
-              Join thousands of job seekers who have successfully landed their dream jobs with Resume Generator.
+              Join thousands of job seekers who have successfully landed their dream jobs with ApexResume.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/dashboard">
@@ -684,7 +669,7 @@ export default function LandingPage() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <FileText className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">Resume Generator</span>
+                <span className="text-lg font-bold text-foreground">ApexResume</span>
               </div>
               <p className="text-muted-foreground">
                 AI-powered resume builder helping professionals land their dream jobs.
@@ -782,7 +767,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-muted-foreground text-sm">© 2024 Resume Generator. All rights reserved.</p>
+            <p className="text-muted-foreground text-sm">© 2024 ApexResume. All rights reserved.</p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <Button variant="ghost" size="sm">
                 <Mail className="h-4 w-4 mr-2" />

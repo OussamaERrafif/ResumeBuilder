@@ -48,7 +48,7 @@ export default function TemplateSelector({ selectedTemplate, onTemplateSelect, o
       phone: "+1 (555) 123-4567",
       location: "San Francisco, CA",
       summary: "Highly motivated software engineer with 5 years of experience in developing scalable web applications.",
-      profileImage: "/placeholder.svg?height=100&width=100",
+      profileImage: "",
     },
     links: [{ name: "LinkedIn", url: "#" }],
     education: [{ school: "University of Tech", degree: "B.S. Computer Science", date: "2020" }],

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   FileText,
@@ -222,7 +223,6 @@ interface ResumeBuilderProps {
 
 export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilderProps) {
   const [currentSection, setCurrentSection] = useState("personal")
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
   const [aiModalType, setAiModalType] = useState<"summary" | "experience" | "project" | null>(null)
   const [aiModalIndex, setAiModalIndex] = useState<number | null>(null)
@@ -347,17 +347,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
     loadResumeData()
   }, [editingResumeId, user])
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme")
-    setIsDarkMode(savedTheme === "dark")
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem("theme", isDarkMode ? "dark" : "light")
-    document.documentElement.classList.toggle("dark", isDarkMode)
-    document.documentElement.classList.toggle("light", !isDarkMode)
-  }, [isDarkMode])
 
   const saveResume = useCallback(async () => {
     if (!user) return
@@ -742,10 +731,8 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 {isAutoSaving ? 'Saving...' : 'Save Now'}
               </Button>
 
-              <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-                <Sun className="h-4 w-4 text-muted-foreground" />
-                <Switch checked={isDarkMode} onCheckedChange={setIsDarkMode} />
-                <Moon className="h-4 w-4 text-muted-foreground" />
+              <div className="bg-muted rounded-lg p-1">
+                <ThemeToggle />
               </div>
             </div>
           </div>

@@ -125,7 +125,7 @@ export default function AuthForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary to-background p-4">
       <Card className="w-full max-w-md bg-card border-border rounded-xl shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-foreground">Resume Builder</CardTitle>
+          <CardTitle className="text-2xl font-bold text-foreground">ApexResume</CardTitle>
           <CardDescription className="text-muted-foreground">
             Create professional resumes with AI assistance
           </CardDescription>
