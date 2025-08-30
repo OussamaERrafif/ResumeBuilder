@@ -74,20 +74,11 @@ CREATE TRIGGER handle_cover_letters_updated_at
 
 // Function to test the connection and provide setup guidance
 export async function setupGuidance() {
-  console.log('🔍 Checking cover letters table status...')
-  
   const result = await checkCoverLettersTable()
   
   if (result.exists) {
-    console.log('✅ Cover letters table is ready!')
     return true
   } else {
-    console.log('❌ Cover letters table needs to be created.')
-    console.log('\n📋 Follow these steps:')
-    console.log('1. Go to your Supabase project dashboard')
-    console.log('2. Navigate to the SQL Editor')
-    console.log('3. Copy and run the following SQL:')
-    console.log(result.sqlScript)
     return false
   }
 }

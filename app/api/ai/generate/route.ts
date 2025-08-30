@@ -129,22 +129,13 @@ function getFallbackContent(type: string, query: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('=== AI Generate API Called ===')
-  
   try {
     const body = await request.json()
     const { type, query } = body
-    
-    console.log('Request body:', { type, query })
-    console.log('Environment check:')
-    console.log('- GEMINI_API_KEY exists:', Boolean(process.env.GEMINI_API_KEY))
-    console.log('- Key length:', process.env.GEMINI_API_KEY?.length || 0)
-    console.log('- Key starts with:', process.env.GEMINI_API_KEY?.substring(0, 10) || 'NOT_FOUND')
 
     // Validate the request
     const validation = validateAIRequest(type, query)
     if (!validation.valid) {
-      console.log('❌ Validation failed:', validation.error)
       return NextResponse.json(
         { error: validation.error },
         { status: 400 }
@@ -153,7 +144,6 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-      console.log('❌ No API key found, using fallback')
       const fallbackContent = getFallbackContent(type, query)
       return NextResponse.json({
         content: fallbackContent,
@@ -163,16 +153,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log('✅ API key found! Attempting AI generation...')
-    
     try {
       const genAI = new GoogleGenerativeAI(apiKey)
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
       const prompt = AI_PROMPTS[type as keyof typeof AI_PROMPTS](query)
-      
-      console.log('Sending prompt to Gemini API...')
-      console.log('Model: gemini-2.0-flash-exp')
-      console.log('Prompt preview:', prompt.substring(0, 100) + '...')
       
       const result = await model.generateContent(prompt)
       const response = await result.response
@@ -181,21 +165,12 @@ export async function POST(request: NextRequest) {
       // Clean any markdown formatting
       const cleanedText = cleanMarkdownFormatting(text)
 
-      console.log('🎉 AI generation successful! Length:', cleanedText.length)
-      console.log('Response preview:', cleanedText.substring(0, 100) + '...')
       return NextResponse.json({ 
         content: cleanedText,
         success: true,
         debug: 'AI generation successful with gemini-2.0-flash-exp'
       })
     } catch (aiError) {
-      console.error('❌ Gemini API Error:', aiError)
-      console.error('Error details:', {
-        name: aiError instanceof Error ? aiError.name : 'Unknown',
-        message: aiError instanceof Error ? aiError.message : 'Unknown error',
-        stack: aiError instanceof Error ? aiError.stack : 'No stack trace'
-      })
-      
       const fallbackContent = getFallbackContent(type, query)
       const cleanedFallback = cleanMarkdownFormatting(fallbackContent)
       return NextResponse.json({
@@ -207,8 +182,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ General error in API:', error)
-    
     return NextResponse.json({
       content: "Professional content will be generated based on your input.",
       success: true,

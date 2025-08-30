@@ -35,7 +35,7 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
       // Call the parent's generate function (now async)
       await onGenerate(type, query, index !== null ? index : undefined)
     } catch (error) {
-      console.error('Error generating content:', error)
+      // Error generating content
     } finally {
       setIsGenerating(false)
       setQuery("")
