@@ -21,7 +21,8 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, 
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error details if needed
+    // Log error details for debugging purposes
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {
