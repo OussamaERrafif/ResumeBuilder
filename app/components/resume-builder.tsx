@@ -316,7 +316,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         const { data, error } = await ResumeService.getResume(editingResumeId, user.id)
 
         if (error) {
-          console.error("Error loading resume:", error)
           return
         }
 
@@ -387,7 +386,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
       if (error) {
         setSaveError("Failed to save resume")
-        console.error("Error updating resume:", error)
       }
     } else {
       // Create new resume
@@ -400,7 +398,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
       if (error) {
         setSaveError("Failed to create resume")
-        console.error("Error creating resume:", error)
       }
     }
   }, [
@@ -475,7 +472,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         description: `Your ${templateObj.name} resume has been downloaded.`,
       })
     } catch (error) {
-      console.error('PDF generation error:', error)
       toast({
         title: "Download Error",
         description: "Failed to generate PDF. Please try again.",
@@ -557,8 +553,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         })
       }
     } catch (error) {
-      console.error('Error calling AI API:', error)
-      
       // Fallback to mock data
       const mockData = generateMockAIData(type, query)
       
@@ -704,18 +698,10 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
             <div className="flex flex-wrap items-center gap-3">
               <Button 
                 onClick={() => {
-                  alert('🚀 AI Analysis Button Clicked! Opening modal...')
-                  console.log('🚀 === AI Analysis Button Clicked (Header) ===')
-                  console.log('📊 Resume data exists:', !!resumeData)
-                  console.log('📊 Resume data keys:', Object.keys(resumeData))
-                  console.log('📋 Resume data structure:', JSON.stringify(resumeData, null, 2))
-                  console.log('🔄 Setting showAnalysis to true...')
                   setShowAnalysis(true)
-                  console.log('✅ showAnalysis state updated')
                 }} 
                 variant="outline" 
                 size="sm"
-                className="bg-accent/10 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI Analysis
@@ -729,6 +715,11 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
               <Button onClick={saveResume} variant="outline" size="sm" disabled={isAutoSaving}>
                 <Save className="h-4 w-4 mr-2" />
                 {isAutoSaving ? 'Saving...' : 'Save Now'}
+              </Button>
+
+              <Button onClick={handleDownload} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Download
               </Button>
 
               <div className="bg-muted rounded-lg p-1">
@@ -898,13 +889,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           </Card>
         </div>
 
-        {/* Download Button */}
-        <div className="flex justify-center mt-12">
-          <Button onClick={handleDownload} size="lg" className="px-12 py-4 text-lg">
-            <Download className="mr-3 h-6 w-6" />
-            Download Resume
-          </Button>
-        </div>
       </div>
 
       {/* AI Modal */}
@@ -949,7 +933,6 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
       <ResumeAnalysis
         isOpen={showAnalysis}
         onClose={() => {
-          console.log('🔄 Closing analysis modal...')
           setShowAnalysis(false)
         }}
         resumeData={resumeData}
@@ -1512,18 +1495,10 @@ const ReviewStep = ({ data, onDownload }: { data: ResumeData; onDownload: () => 
             </div>
             <Button 
               onClick={() => {
-                alert('🚀 AI Analysis Button Clicked! (Review Step)')
-                console.log('🚀 === AI Analysis Button Clicked (Review Step) ===')
-                console.log('📊 Resume data exists:', !!data)
-                console.log('📊 Resume data keys:', Object.keys(data))
-                console.log('📋 Personal info:', data.personalInfo)
-                console.log('📋 Full resume data:', JSON.stringify(data, null, 2))
-                console.log('🔄 Setting showAnalysis to true...')
                 setShowAnalysis(true)
-                console.log('✅ showAnalysis state updated')
               }}
-              variant="outline"
-              className="bg-accent/10 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+              size="lg"
+              className="px-12 py-4 text-lg"
             >
               <Target className="mr-2 h-4 w-4" />
               Analyze Resume
@@ -1537,14 +1512,6 @@ const ReviewStep = ({ data, onDownload }: { data: ResumeData; onDownload: () => 
           </div>
         </CardContent>
       </Card>
-
-      <div className="text-center space-y-4">
-        <Button onClick={onDownload} size="lg" className="px-12 py-4 text-lg">
-          <Download className="mr-3 h-6 w-6" />
-          Download Your Resume
-        </Button>
-        <p className="text-muted-foreground text-sm">Your resume will be saved automatically</p>
-      </div>
 
       <ResumeAnalysis
         isOpen={showAnalysis}

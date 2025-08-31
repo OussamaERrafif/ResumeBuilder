@@ -13,8 +13,14 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error(error)
+    // Global error occurred
+    if (error) {
+      // Log error to console for monitoring and debugging
+      console.error("Global error caught by GlobalError boundary:", error);
+
+      // TODO: Integrate with external error tracking service here, e.g. Sentry
+      // Sentry.captureException(error);
+    }
   }, [error])
 
   return (

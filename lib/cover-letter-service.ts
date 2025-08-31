@@ -46,7 +46,6 @@ export class CoverLetterService {
       if (error) {
         // If table doesn't exist, return empty array instead of error
         if (error.code === 'PGRST106' || error.message?.includes('does not exist')) {
-          console.warn('Cover letters table does not exist yet. Please run the database setup script.')
           return { data: [], error: null }
         }
         throw error
@@ -122,7 +121,6 @@ export class CoverLetterService {
       if (error) {
         // If table doesn't exist, return null instead of error
         if (error.code === 'PGRST106' || error.message?.includes('does not exist')) {
-          console.warn('Cover letters table does not exist yet. Please run the database setup script.')
           return { data: null, error: null }
         }
         throw error

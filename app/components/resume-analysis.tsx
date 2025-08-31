@@ -143,7 +143,6 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
             <Button 
               onClick={handleAnalyze}
               size="lg"
-              className="bg-accent hover:bg-accent/90 text-accent-foreground"
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Start AI Analysis
@@ -372,13 +371,11 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
               <Button
                 onClick={handleAnalyze}
                 variant="outline"
-                className="bg-transparent border-border text-foreground hover:bg-secondary"
               >
                 Re-analyze
               </Button>
               <Button
                 onClick={onClose}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground"
               >
                 Close Analysis
               </Button>

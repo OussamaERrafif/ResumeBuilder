@@ -42,13 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Handle different auth events
       if (event === "SIGNED_IN") {
-        console.log("User signed in:", session?.user?.email)
+        // User signed in
       } else if (event === "SIGNED_OUT") {
-        console.log("User signed out")
         // Clear any cached data
         localStorage.removeItem("savedResumes")
       } else if (event === "TOKEN_REFRESHED") {
-        console.log("Token refreshed")
+        // Token refreshed
       }
     })
 

@@ -250,13 +250,11 @@ export default function Dashboard() {
       const { data, error } = await ResumeService.getUserResumes(user.id)
       if (error) {
         setError("Failed to load resumes")
-        console.error(error)
       } else {
         setSavedResumes(data || [])
       }
     } catch (err) {
       setError("An unexpected error occurred")
-      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -274,7 +272,6 @@ export default function Dashboard() {
         }
       } catch (err) {
         setError("Failed to delete resume")
-        console.error(err)
       }
     },
     [user],
@@ -301,7 +298,6 @@ export default function Dashboard() {
         }
       } catch (err) {
         setError("Failed to duplicate resume")
-        console.error(err)
       }
     },
     [user, savedResumes, loadSavedResumes],
@@ -331,7 +327,6 @@ export default function Dashboard() {
       if (error) setError("Failed to sign out")
     } catch (err) {
       setError("Failed to sign out")
-      console.error(err)
     }
   }, [signOut])
 
@@ -567,7 +562,6 @@ export default function Dashboard() {
               isOpen={showUploadModal}
               onClose={() => setShowUploadModal(false)}
               onAnalysisComplete={async (data: { resumeData: any }) => {
-                console.log('📄 Resume data received:', data.resumeData)
                 
                 if (user) {
                   try {
@@ -585,14 +579,12 @@ export default function Dashboard() {
 
                     if (error) {
                       setError("Failed to create resume from uploaded file")
-                      console.error(error)
                       toast({
                         title: "Error",
                         description: "Failed to create resume from uploaded file",
                         variant: "destructive",
                       })
                     } else {
-                      console.log('✅ Resume created successfully from uploaded file')
                       toast({
                         title: "Success!",
                         description: `Resume "${resumeName}" created successfully from your uploaded file`,
@@ -601,7 +593,6 @@ export default function Dashboard() {
                     }
                   } catch (err) {
                     setError("An unexpected error occurred while creating the resume")
-                    console.error(err)
                     toast({
                       title: "Error",
                       description: "An unexpected error occurred while creating the resume",
