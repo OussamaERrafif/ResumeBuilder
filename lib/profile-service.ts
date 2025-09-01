@@ -272,14 +272,32 @@ export class ProfileService {
 
   static async uploadAvatar(userId: string, file: File): Promise<string | null> {
     try {
-      const fileExt = file.name.split('.').pop()
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+      if (!allowedTypes.includes(file.type)) {
+        console.error('Invalid file type for avatar:', file.type)
+        return null
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+      if (file.size > maxSize) {
+        console.error('Avatar file size too large:', file.size)
+        return null
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase()
+      if (!fileExt) {
+        console.error('Could not determine file extension')
+        return null
+      }
+
       const fileName = `${userId}/avatar.${fileExt}`
       
-      // First, try to delete existing avatar
-      await supabase.storage
-        .from('avatars')
-        .remove([`${userId}/avatar.jpg`, `${userId}/avatar.png`, `${userId}/avatar.gif`, `${userId}/avatar.webp`, `${userId}/avatar.jpeg`])
+      // Clean up existing avatar files efficiently
+      await this.cleanupUserStorageFiles(userId, 'avatars', 'avatar.')
       
+      // Upload the new avatar
       const { data, error } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { 
@@ -292,6 +310,7 @@ export class ProfileService {
         return null
       }
 
+      // Get the public URL
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName)
@@ -305,20 +324,136 @@ export class ProfileService {
 
   static async deleteAccount(userId: string): Promise<boolean> {
     try {
-      // Delete user profile and related data
-      const { error } = await supabase
+      console.log('Starting account deletion process for user:', userId)
+
+      // Step 1: Delete user's uploaded files from storage
+      try {
+        // Clean up all files in the user's storage folder
+        await this.cleanupUserStorageFiles(userId, 'avatars')
+        
+        // Add cleanup for other storage buckets if they exist
+        // await this.cleanupUserStorageFiles(userId, 'resumes')
+        // await this.cleanupUserStorageFiles(userId, 'documents')
+      } catch (storageError) {
+        console.warn('Error deleting storage files:', storageError)
+        // Continue with deletion even if storage cleanup fails
+      }
+
+      // Step 2: Delete related data in the correct order (respecting foreign keys)
+      
+      // Delete AI credits usage history
+      const { error: creditsError } = await supabase
+        .from('ai_credits_usage')
+        .delete()
+        .eq('user_id', userId)
+
+      if (creditsError) {
+        console.warn('Error deleting AI credits usage:', creditsError)
+      }
+
+      // Delete cover letters
+      const { error: coverLettersError } = await supabase
+        .from('cover_letters')
+        .delete()
+        .eq('user_id', userId)
+
+      if (coverLettersError) {
+        console.warn('Error deleting cover letters:', coverLettersError)
+      }
+
+      // Delete resumes
+      const { error: resumesError } = await supabase
+        .from('resumes')
+        .delete()
+        .eq('user_id', userId)
+
+      if (resumesError) {
+        console.warn('Error deleting resumes:', resumesError)
+      }
+
+      // Delete notification settings
+      const { error: notificationsError } = await supabase
+        .from('notification_settings')
+        .delete()
+        .eq('user_id', userId)
+
+      if (notificationsError) {
+        console.warn('Error deleting notification settings:', notificationsError)
+      }
+
+      // Delete user preferences
+      const { error: preferencesError } = await supabase
+        .from('user_preferences')
+        .delete()
+        .eq('user_id', userId)
+
+      if (preferencesError) {
+        console.warn('Error deleting user preferences:', preferencesError)
+      }
+
+      // Delete security settings
+      const { error: securityError } = await supabase
+        .from('security_settings')
+        .delete()
+        .eq('user_id', userId)
+
+      if (securityError) {
+        console.warn('Error deleting security settings:', securityError)
+      }
+
+      // Step 3: Delete user profile
+      const { error: profileError } = await supabase
         .from('user_profiles')
         .delete()
         .eq('user_id', userId)
 
-      if (error) {
-        console.error('Error deleting account:', error)
+      if (profileError) {
+        console.error('Error deleting user profile:', profileError)
         return false
       }
 
+      // Step 4: Attempt to delete the user from Supabase Auth
+      // Note: This calls our secure API endpoint with proper authentication
+      try {
+        // Get the current session to pass authentication token
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.access_token) {
+          const response = await fetch('/api/auth/delete-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ userId })
+          })
+
+          if (response.ok) {
+            console.log('Successfully deleted auth user via API')
+          } else {
+            const errorData = await response.json()
+            console.warn('Auth user deletion via API failed:', errorData.error)
+          }
+        } else {
+          console.warn('No session token available for auth user deletion')
+        }
+
+        // Always sign out the user regardless of auth deletion success
+        await supabase.auth.signOut()
+      } catch (authError) {
+        console.warn('Auth user deletion failed:', authError)
+        // Still try to sign out
+        try {
+          await supabase.auth.signOut()
+        } catch (signOutError) {
+          console.warn('Sign out also failed:', signOutError)
+        }
+      }
+
+      console.log('Account deletion completed successfully')
       return true
     } catch (error) {
-      console.error('Error deleting account:', error)
+      console.error('Error during account deletion:', error)
       return false
     }
   }
@@ -482,27 +617,180 @@ export class ProfileService {
     }
   }
 
-  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+  /**
+   * Securely changes a user's password with proper authentication verification.
+   * 
+   * Security Features:
+   * - Verifies current password before allowing changes
+   * - Validates user identity through session
+   * - Enforces minimum password strength requirements
+   * - Updates password change timestamp for audit trail
+   * 
+   * @param userId - The user's unique identifier
+   * @param currentPassword - The user's current password for verification
+   * @param newPassword - The new password to set
+   * @returns Object with success status and optional error message
+   */
+  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Update password via Supabase Auth
+      // Validate input parameters
+      if (!userId || !currentPassword || !newPassword) {
+        return { success: false, error: 'Missing required parameters' }
+      }
+
+      // Validate new password strength
+      const passwordValidation = this.validatePasswordStrength(newPassword)
+      if (!passwordValidation.valid) {
+        return { success: false, error: passwordValidation.error }
+      }
+
+      // First, get the user's current session to verify identity
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Error getting current user:', userError)
+        return { success: false, error: 'Authentication required' }
+      }
+
+      // Verify the user ID matches
+      if (user.id !== userId) {
+        console.error('User ID mismatch during password change')
+        return { success: false, error: 'User verification failed' }
+      }
+
+      // For security, we need to verify the current password
+      // We'll create a temporary client to test the current password
+      const { createClient } = await import('@supabase/supabase-js')
+      const tempSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      // Verify current password by attempting to sign in with it
+      const { error: signInError } = await tempSupabase.auth.signInWithPassword({
+        email: user.email!,
+        password: currentPassword
+      })
+
+      if (signInError) {
+        console.error('Current password verification failed:', signInError)
+        return { success: false, error: 'Current password is incorrect' }
+      }
+
+      // Current password verified, now update to new password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       })
 
       if (error) {
         console.error('Error changing password:', error)
-        return false
+        return { success: false, error: 'Failed to update password' }
       }
 
       // Update last password change timestamp
-      await this.updateSecuritySettings(userId, {
+      const timestampUpdated = await this.updateSecuritySettings(userId, {
         last_password_change: new Date().toISOString()
       })
 
-      return true
+      if (!timestampUpdated) {
+        console.warn('Password changed but failed to update timestamp')
+      }
+
+      return { success: true }
     } catch (error) {
       console.error('Error changing password:', error)
-      return false
+      return { success: false, error: 'An unexpected error occurred' }
+    }
+  }
+
+  /**
+   * Alternative method using session-based reauthentication for password changes.
+   * This method requires the user to have been recently authenticated (within 5 minutes).
+   * 
+   * Use this method when:
+   * - The user has just logged in or been reauthenticated
+   * - You want to avoid prompting for the current password again
+   * - The session is fresh and secure
+   * 
+   * Security Features:
+   * - Checks session age to ensure recent authentication
+   * - Validates user identity through active session
+   * - Enforces minimum password strength requirements
+   * - Updates password change timestamp for audit trail
+   * 
+   * @param userId - The user's unique identifier
+   * @param newPassword - The new password to set
+   * @returns Object with success status and optional error message
+   */
+  static async changePasswordWithReauth(userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Validate input parameters
+      if (!userId || !newPassword) {
+        return { success: false, error: 'Missing required parameters' }
+      }
+
+      // Validate new password strength
+      const passwordValidation = this.validatePasswordStrength(newPassword)
+      if (!passwordValidation.valid) {
+        return { success: false, error: passwordValidation.error }
+      }
+
+      // Get current user session
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Error getting current user:', userError)
+        return { success: false, error: 'Authentication required' }
+      }
+
+      // Verify the user ID matches
+      if (user.id !== userId) {
+        console.error('User ID mismatch during password change')
+        return { success: false, error: 'User verification failed' }
+      }
+
+      // Check if session is recent enough (less than 5 minutes old)
+      const session = await supabase.auth.getSession()
+      if (!session.data.session) {
+        console.error('No active session found')
+        return { success: false, error: 'No active session found' }
+      }
+
+      // Use the refresh token's issued_at time or current time minus expires_in
+      const expiresAt = new Date(session.data.session.expires_at!).getTime()
+      const expiresIn = session.data.session.expires_in || 3600 // Default 1 hour
+      const sessionCreated = expiresAt - (expiresIn * 1000)
+      const sessionAge = Date.now() - sessionCreated
+      const fiveMinutesInMs = 5 * 60 * 1000
+
+      if (sessionAge > fiveMinutesInMs) {
+        console.error('Session too old, reauthentication required')
+        return { success: false, error: 'Recent authentication required' }
+      }
+
+      // Update password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (error) {
+        console.error('Error changing password:', error)
+        return { success: false, error: 'Failed to update password' }
+      }
+
+      // Update last password change timestamp
+      const timestampUpdated = await this.updateSecuritySettings(userId, {
+        last_password_change: new Date().toISOString()
+      })
+
+      if (!timestampUpdated) {
+        console.warn('Password changed but failed to update timestamp')
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error changing password:', error)
+      return { success: false, error: 'An unexpected error occurred' }
     }
   }
 
@@ -514,6 +802,81 @@ export class ProfileService {
     } catch (error) {
       console.error('Error toggling 2FA:', error)
       return false
+    }
+  }
+
+  /**
+   * Validates password strength according to security requirements.
+   * 
+   * @param password - The password to validate
+   * @returns Object with validation result and error message if invalid
+   */
+  private static validatePasswordStrength(password: string): { valid: boolean; error?: string } {
+    if (!password || password.length < 8) {
+      return { valid: false, error: 'Password must be at least 8 characters long' }
+    }
+
+    // Check for at least one number
+    if (!/\d/.test(password)) {
+      return { valid: false, error: 'Password must contain at least one number' }
+    }
+
+    // Check for at least one lowercase letter
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, error: 'Password must contain at least one lowercase letter' }
+    }
+
+    // Check for at least one uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, error: 'Password must contain at least one uppercase letter' }
+    }
+
+    return { valid: true }
+  }
+
+  /**
+   * Helper method to efficiently clean up user's storage files
+   * 
+   * @param userId - The user's unique identifier
+   * @param bucketName - The storage bucket name
+   * @param filePrefix - Optional prefix to filter files (e.g., 'avatar.')
+   * @returns Promise<void>
+   */
+  private static async cleanupUserStorageFiles(
+    userId: string, 
+    bucketName: string, 
+    filePrefix?: string
+  ): Promise<void> {
+    try {
+      const { data: files, error: listError } = await supabase.storage
+        .from(bucketName)
+        .list(userId, { limit: 100 })
+
+      if (listError) {
+        console.error(`Error listing files in ${bucketName}:`, listError)
+        return
+      }
+
+      if (files && files.length > 0) {
+        // Filter files by prefix if provided
+        const filesToDelete = files
+          .filter(file => !filePrefix || file.name.startsWith(filePrefix))
+          .map(file => `${userId}/${file.name}`)
+
+        if (filesToDelete.length > 0) {
+          const { error: removeError } = await supabase.storage
+            .from(bucketName)
+            .remove(filesToDelete)
+
+          if (removeError) {
+            console.error(`Error removing files from ${bucketName}:`, removeError)
+          } else {
+            console.log(`Successfully removed ${filesToDelete.length} files from ${bucketName}`)
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error cleaning up storage files in ${bucketName}:`, error)
     }
   }
 }

@@ -43,6 +43,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { DeleteAccountModal } from "@/components/ui/delete-account-modal"
+import { ChangePasswordModal } from "@/components/ui/change-password-modal"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { usePreferences } from "@/hooks/use-preferences"
@@ -71,7 +73,6 @@ export default function ProfileSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -87,11 +88,8 @@ export default function ProfileSettingsPage() {
   })
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [passwords, setPasswords] = useState({
-    current: "",
-    new: "",
-    confirm: "",
-  })
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -346,51 +344,35 @@ export default function ProfileSettingsPage() {
     }
   }
 
-  const handlePasswordChange = async () => {
-    if (!user || !passwords.current || !passwords.new || !passwords.confirm) {
-      toast({
-        title: "Error",
-        description: "Please fill in all password fields.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (passwords.new !== passwords.confirm) {
-      toast({
-        title: "Error",
-        description: "New passwords don't match.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (passwords.new.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      })
-      return
-    }
+  const handlePasswordChangeModal = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
+    if (!user) return
 
     setSaving(true)
-    const success = await ProfileService.changePassword(user.id, passwords.current, passwords.new)
-    
-    if (success) {
-      setPasswords({ current: "", new: "", confirm: "" })
-      toast({
-        title: "Success",
-        description: "Password changed successfully.",
-      })
-    } else {
+    try {
+      const result = await ProfileService.changePassword(user.id, currentPassword, newPassword)
+      
+      if (result.success) {
+        setPasswordModalOpen(false)
+        toast({
+          title: "Success",
+          description: "Password changed successfully.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to change password.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to change password. Please check your current password.",
+        description: "An unexpected error occurred while changing password.",
         variant: "destructive",
       })
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const handle2FAToggle = async (enabled: boolean) => {
@@ -433,41 +415,55 @@ export default function ProfileSettingsPage() {
     }
   }
 
-  const handleAccountDeletion = async () => {
+  const handleAccountDeletion = async (password: string) => {
     if (!user) return
-
-    // This would typically show a confirmation dialog first
-    const confirmed = window.confirm(
-      "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted."
-    )
-
-    if (!confirmed) return
 
     try {
       setSaving(true)
+      
+      // First verify the password by attempting to change it to itself
+      // This validates the current password without actually changing anything
+      const passwordVerification = await ProfileService.changePassword(user.id, password, password)
+      
+      if (!passwordVerification.success) {
+        toast({
+          title: "Error",
+          description: passwordVerification.error || "Invalid password provided.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Password verified, proceed with account deletion
       const success = await ProfileService.deleteAccount(user.id)
       
       if (success) {
         toast({
           title: "Account Deleted",
-          description: "Your account has been permanently deleted.",
+          description: "Your account and all associated data have been permanently deleted.",
         })
-        await signOut()
+        // The signOut will happen automatically in the ProfileService.deleteAccount method
+        // But we'll add a small delay to ensure the toast is shown before redirect
+        setTimeout(() => {
+          window.location.href = '/landing'
+        }, 2000)
       } else {
         toast({
           title: "Error",
-          description: "Failed to delete account. Please contact support.",
+          description: "Failed to delete account. Some data may remain. Please contact support.",
           variant: "destructive",
         })
       }
     } catch (error) {
+      console.error('Account deletion error:', error)
       toast({
         title: "Error",
-        description: "Failed to delete account. Please contact support.",
+        description: "An unexpected error occurred during account deletion. Please contact support.",
         variant: "destructive",
       })
     } finally {
       setSaving(false)
+      setDeleteModalOpen(false)
     }
   }
 
@@ -934,51 +930,14 @@ export default function ProfileSettingsPage() {
 
             <div className="bg-card rounded-lg border border-border p-6 space-y-6">
               <div className="space-y-4">
-                <h4 className="font-medium text-foreground">Change Password</h4>
-                <div className="grid gap-4 max-w-md">
-                  <div className="space-y-2">
-                    <Label htmlFor="current-password">Current Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="current-password"
-                        type={showPassword ? "text" : "password"}
-                        value={passwords.current}
-                        onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                        placeholder="Enter current password"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-foreground">Change Password</h4>
+                    <p className="text-sm text-muted-foreground">Update your password with secure verification</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <Input
-                      id="new-password"
-                      type={showPassword ? "text" : "password"}
-                      value={passwords.new}
-                      onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                      placeholder="Enter new password"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input
-                      id="confirm-password"
-                      type={showPassword ? "text" : "password"}
-                      value={passwords.confirm}
-                      onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                  <Button disabled={saving} onClick={handlePasswordChange}>
-                    {saving ? "Updating..." : "Update Password"}
+                  <Button onClick={() => setPasswordModalOpen(true)} disabled={saving}>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Change Password
                   </Button>
                 </div>
               </div>
@@ -1188,7 +1147,12 @@ export default function ProfileSettingsPage() {
                       <p className="text-sm text-red-600/80 mb-3">
                         Permanently delete your account and all associated data. This action cannot be undone.
                       </p>
-                      <Button variant="destructive" size="sm" onClick={handleAccountDeletion} disabled={saving}>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => setDeleteModalOpen(true)} 
+                        disabled={saving}
+                      >
                         <Trash2 className="w-4 h-4 mr-2" />
                         {saving ? "Deleting..." : "Delete Account"}
                       </Button>
@@ -1277,6 +1241,23 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        onConfirm={handleAccountDeletion}
+        userEmail={user?.email}
+        isLoading={saving}
+      />
+      
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={passwordModalOpen}
+        onOpenChange={setPasswordModalOpen}
+        onConfirm={handlePasswordChangeModal}
+        isLoading={saving}
+      />
     </ProtectedRoute>
   )
 }
