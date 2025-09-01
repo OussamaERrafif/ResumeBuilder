@@ -1,0 +1,10 @@
+-- Add additional profile fields to user_profiles table
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS location VARCHAR(100);
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS website VARCHAR(255);
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS linkedin VARCHAR(255);
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS github VARCHAR(255);
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS twitter VARCHAR(255);
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS job_title VARCHAR(100);
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS company VARCHAR(100);

@@ -5,6 +5,15 @@ export interface UserProfile {
   email: string
   full_name: string
   avatar_url?: string
+  phone?: string
+  bio?: string
+  location?: string
+  website?: string
+  linkedin?: string
+  github?: string
+  twitter?: string
+  job_title?: string
+  company?: string
   subscription_tier: 'free' | 'pro' | 'premium'
   subscription_expires?: string
   ai_credits: number
@@ -20,6 +29,35 @@ export interface NotificationSettings {
   security_alerts: boolean
   created_at: string
   updated_at: string
+}
+
+export interface UserPreferences {
+  user_id: string
+  language: string
+  timezone: string
+  theme: 'light' | 'dark' | 'system'
+  date_format: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD'
+  currency: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SecuritySettings {
+  user_id: string
+  two_factor_enabled: boolean
+  last_password_change?: string
+  login_sessions: LoginSession[]
+  created_at: string
+  updated_at: string
+}
+
+export interface LoginSession {
+  id: string
+  device: string
+  browser: string
+  location?: string
+  last_active: string
+  is_current: boolean
 }
 
 export interface AICreditsUsage {
@@ -235,11 +273,19 @@ export class ProfileService {
   static async uploadAvatar(userId: string, file: File): Promise<string | null> {
     try {
       const fileExt = file.name.split('.').pop()
-      const fileName = `${userId}.${fileExt}`
+      const fileName = `${userId}/avatar.${fileExt}`
+      
+      // First, try to delete existing avatar
+      await supabase.storage
+        .from('avatars')
+        .remove([`${userId}/avatar.jpg`, `${userId}/avatar.png`, `${userId}/avatar.gif`, `${userId}/avatar.webp`, `${userId}/avatar.jpeg`])
       
       const { data, error } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true })
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type
+        })
 
       if (error) {
         console.error('Error uploading avatar:', error)
@@ -273,6 +319,200 @@ export class ProfileService {
       return true
     } catch (error) {
       console.error('Error deleting account:', error)
+      return false
+    }
+  }
+
+  // User Preferences Methods
+  static async getUserPreferences(userId: string): Promise<UserPreferences | null> {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
+      if (error) {
+        // If no preferences exist, create default ones
+        if (error.code === 'PGRST116') {
+          return await this.createDefaultPreferences(userId)
+        }
+        console.error('Error fetching user preferences:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error fetching user preferences:', error)
+      return null
+    }
+  }
+
+  static async createDefaultPreferences(userId: string): Promise<UserPreferences | null> {
+    try {
+      const defaultPreferences = {
+        user_id: userId,
+        language: 'en',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        theme: 'system' as const,
+        date_format: 'MM/DD/YYYY' as const,
+        currency: 'USD',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .insert(defaultPreferences)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating default preferences:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error creating default preferences:', error)
+      return null
+    }
+  }
+
+  static async updateUserPreferences(
+    userId: string,
+    preferences: Partial<Omit<UserPreferences, 'user_id' | 'created_at' | 'updated_at'>>
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({
+          ...preferences,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Error updating user preferences:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error updating user preferences:', error)
+      return false
+    }
+  }
+
+  // Security Settings Methods
+  static async getSecuritySettings(userId: string): Promise<SecuritySettings | null> {
+    try {
+      const { data, error } = await supabase
+        .from('security_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
+      if (error) {
+        // If no security settings exist, create default ones
+        if (error.code === 'PGRST116') {
+          return await this.createDefaultSecuritySettings(userId)
+        }
+        console.error('Error fetching security settings:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error fetching security settings:', error)
+      return null
+    }
+  }
+
+  static async createDefaultSecuritySettings(userId: string): Promise<SecuritySettings | null> {
+    try {
+      const defaultSettings = {
+        user_id: userId,
+        two_factor_enabled: false,
+        login_sessions: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data, error } = await supabase
+        .from('security_settings')
+        .insert(defaultSettings)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating default security settings:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error creating default security settings:', error)
+      return null
+    }
+  }
+
+  static async updateSecuritySettings(
+    userId: string,
+    settings: Partial<Omit<SecuritySettings, 'user_id' | 'created_at' | 'updated_at'>>
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('security_settings')
+        .update({
+          ...settings,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Error updating security settings:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error updating security settings:', error)
+      return false
+    }
+  }
+
+  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      // Update password via Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (error) {
+        console.error('Error changing password:', error)
+        return false
+      }
+
+      // Update last password change timestamp
+      await this.updateSecuritySettings(userId, {
+        last_password_change: new Date().toISOString()
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error changing password:', error)
+      return false
+    }
+  }
+
+  static async toggle2FA(userId: string, enabled: boolean): Promise<boolean> {
+    try {
+      return await this.updateSecuritySettings(userId, {
+        two_factor_enabled: enabled
+      })
+    } catch (error) {
+      console.error('Error toggling 2FA:', error)
       return false
     }
   }

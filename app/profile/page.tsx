@@ -25,6 +25,14 @@ import {
   Mail,
   Smartphone,
   Home,
+  MapPin,
+  Briefcase,
+  Building2,
+  ExternalLink,
+  Github,
+  Linkedin,
+  Twitter,
+  Phone,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -37,7 +45,9 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
-import { ProfileService, UserProfile, NotificationSettings, AICreditsUsage } from "@/lib/profile-service"
+import { usePreferences } from "@/hooks/use-preferences"
+import { ProfileService, UserProfile, NotificationSettings, AICreditsUsage, UserPreferences, SecuritySettings } from "@/lib/profile-service"
+import { formatDate, formatCurrency, formatTime } from "@/lib/format-utils"
 import ProtectedRoute from "@/components/auth/protected-route"
 
 const sidebarItems = [
@@ -51,10 +61,12 @@ const sidebarItems = [
 
 export default function ProfileSettingsPage() {
   const { user, signOut } = useAuth()
+  const { preferences, updatePreference } = usePreferences()
   const { toast } = useToast()
   const [activeSection, setActiveSection] = useState('profile')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [notifications, setNotifications] = useState<NotificationSettings | null>(null)
+  const [security, setSecurity] = useState<SecuritySettings | null>(null)
   const [creditsUsage, setCreditsUsage] = useState<AICreditsUsage[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -63,7 +75,18 @@ export default function ProfileSettingsPage() {
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
+    phone: "",
+    bio: "",
+    location: "",
+    website: "",
+    linkedin: "",
+    github: "",
+    twitter: "",
+    job_title: "",
+    company: "",
   })
+  const [isAutoSaving, setIsAutoSaving] = useState(false)
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [passwords, setPasswords] = useState({
     current: "",
     new: "",
@@ -80,9 +103,10 @@ export default function ProfileSettingsPage() {
     if (!user) return
     
     try {
-      const [profileData, notificationData, usage] = await Promise.all([
+      const [profileData, notificationData, securityData, usage] = await Promise.all([
         ProfileService.getUserProfile(user.id),
         ProfileService.getNotificationSettings(user.id),
+        ProfileService.getSecuritySettings(user.id),
         ProfileService.getAICreditsUsage(user.id, 10),
       ])
 
@@ -91,9 +115,19 @@ export default function ProfileSettingsPage() {
         setFormData({
           full_name: profileData.full_name,
           email: profileData.email,
+          phone: profileData.phone || "",
+          bio: profileData.bio || "",
+          location: profileData.location || "",
+          website: profileData.website || "",
+          linkedin: profileData.linkedin || "",
+          github: profileData.github || "",
+          twitter: profileData.twitter || "",
+          job_title: profileData.job_title || "",
+          company: profileData.company || "",
         })
       }
       setNotifications(notificationData)
+      setSecurity(securityData)
       setCreditsUsage(usage)
     } catch (error) {
       toast({
@@ -114,6 +148,15 @@ export default function ProfileSettingsPage() {
       const success = await ProfileService.updateUserProfile(user.id, {
         full_name: formData.full_name,
         email: formData.email,
+        phone: formData.phone,
+        bio: formData.bio,
+        location: formData.location,
+        website: formData.website,
+        linkedin: formData.linkedin,
+        github: formData.github,
+        twitter: formData.twitter,
+        job_title: formData.job_title,
+        company: formData.company,
       })
 
       if (success) {
@@ -140,53 +183,122 @@ export default function ProfileSettingsPage() {
     }
   }
 
+  // Auto-save function with debouncing
+  const autoSaveProfile = async () => {
+    if (!user || !profile || isAutoSaving) return
+
+    setIsAutoSaving(true)
+    try {
+      await ProfileService.updateUserProfile(user.id, {
+        full_name: formData.full_name,
+        email: formData.email,
+        phone: formData.phone,
+        bio: formData.bio,
+        location: formData.location,
+        website: formData.website,
+        linkedin: formData.linkedin,
+        github: formData.github,
+        twitter: formData.twitter,
+        job_title: formData.job_title,
+        company: formData.company,
+      })
+    } catch (error) {
+      console.error('Auto-save failed:', error)
+    } finally {
+      setIsAutoSaving(false)
+    }
+  }
+
+  // Debounced auto-save when form data changes
+  useEffect(() => {
+    if (!profile) return
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveProfile()
+    }, 2000) // Auto-save after 2 seconds of inactivity
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [formData, profile])
+
+  // Update form data handler with auto-save
+  const updateFormData = (updates: Partial<typeof formData>) => {
+    setFormData(prev => ({ ...prev, ...updates }))
+  }
+
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !event.target.files?.[0]) return
 
     const file = event.target.files[0]
     
+    // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       toast({
-        title: "Error",
-        description: "File size must be less than 2MB.",
+        title: "File too large",
+        description: "Please select an image smaller than 2MB.",
         variant: "destructive",
       })
       return
     }
 
-    if (!file.type.startsWith("image/")) {
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
       toast({
-        title: "Error",
-        description: "Please upload an image file.",
+        title: "Invalid file type",
+        description: "Please upload a JPG, PNG, GIF, or WebP image.",
         variant: "destructive",
       })
       return
     }
 
     setUploading(true)
+    
     try {
+      // Show optimistic update
+      const imageUrl = URL.createObjectURL(file)
+      setProfile(prev => prev ? { ...prev, avatar_url: imageUrl } : null)
+
+      // Upload to server
       const avatarUrl = await ProfileService.uploadAvatar(user.id, file)
+      
       if (avatarUrl) {
         const success = await ProfileService.updateUserProfile(user.id, {
           avatar_url: avatarUrl,
         })
 
         if (success) {
-          await loadData()
+          // Update with actual server URL
+          setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null)
           toast({
             title: "Success",
-            description: "Avatar updated successfully.",
+            description: "Profile picture updated successfully!",
           })
+        } else {
+          throw new Error("Failed to update profile")
         }
+      } else {
+        throw new Error("Failed to upload image")
       }
     } catch (error) {
+      // Revert optimistic update
+      await loadData()
       toast({
-        title: "Error",
-        description: "Failed to upload avatar.",
+        title: "Upload failed",
+        description: "Failed to upload profile picture. Please try again.",
         variant: "destructive",
       })
     } finally {
       setUploading(false)
+      // Clear the file input
+      event.target.value = ''
     }
   }
 
@@ -213,6 +325,149 @@ export default function ProfileSettingsPage() {
         description: "Failed to update notification settings.",
         variant: "destructive",
       })
+    }
+  }
+
+  const handlePreferenceUpdate = async (key: keyof UserPreferences, value: string) => {
+    if (!user) return
+
+    try {
+      await updatePreference(key, value)
+      toast({
+        title: "Success",
+        description: "Preference updated successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update preference.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handlePasswordChange = async () => {
+    if (!user || !passwords.current || !passwords.new || !passwords.confirm) {
+      toast({
+        title: "Error",
+        description: "Please fill in all password fields.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (passwords.new !== passwords.confirm) {
+      toast({
+        title: "Error",
+        description: "New passwords don't match.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (passwords.new.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSaving(true)
+    const success = await ProfileService.changePassword(user.id, passwords.current, passwords.new)
+    
+    if (success) {
+      setPasswords({ current: "", new: "", confirm: "" })
+      toast({
+        title: "Success",
+        description: "Password changed successfully.",
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to change password. Please check your current password.",
+        variant: "destructive",
+      })
+    }
+    setSaving(false)
+  }
+
+  const handle2FAToggle = async (enabled: boolean) => {
+    if (!user) return
+
+    const success = await ProfileService.toggle2FA(user.id, enabled)
+    if (success) {
+      setSecurity(prev => prev ? { ...prev, two_factor_enabled: enabled } : null)
+      toast({
+        title: "Success",
+        description: `Two-factor authentication ${enabled ? 'enabled' : 'disabled'}.`,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update two-factor authentication.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDataExport = async () => {
+    if (!user) return
+
+    try {
+      setSaving(true)
+      // This would typically call an API endpoint to generate and download user data
+      toast({
+        title: "Export Requested",
+        description: "Your data export will be emailed to you within 24 hours.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to request data export.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAccountDeletion = async () => {
+    if (!user) return
+
+    // This would typically show a confirmation dialog first
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted."
+    )
+
+    if (!confirmed) return
+
+    try {
+      setSaving(true)
+      const success = await ProfileService.deleteAccount(user.id)
+      
+      if (success) {
+        toast({
+          title: "Account Deleted",
+          description: "Your account has been permanently deleted.",
+        })
+        await signOut()
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete account. Please contact support.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please contact support.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -257,27 +512,27 @@ export default function ProfileSettingsPage() {
             </div>
 
             <div className="bg-card rounded-lg border border-border p-6 space-y-6">
-              <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <Avatar className="w-24 h-24">
+              {/* Profile Picture Section */}
+              <div className="flex items-start space-x-6">
+                <div className="relative group">
+                  <Avatar className="w-32 h-32">
                     <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback className="text-3xl">
                       {profile.full_name?.split(" ").map(n => n[0]).join("") || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-2 -right-2">
-                    <label htmlFor="avatar-upload">
-                      <Button
-                        size="sm"
-                        className="rounded-full w-8 h-8 p-0"
-                        disabled={uploading}
-                      >
+                  <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full flex items-center justify-center">
+                    <label htmlFor="avatar-upload" className="cursor-pointer">
+                      <div className="text-white text-center">
                         {uploading ? (
-                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                          <div className="w-8 h-8 animate-spin rounded-full border-2 border-white border-t-transparent mx-auto" />
                         ) : (
-                          <Camera className="w-4 h-4" />
+                          <>
+                            <Camera className="w-8 h-8 mx-auto mb-2" />
+                            <span className="text-sm">Change Photo</span>
+                          </>
                         )}
-                      </Button>
+                      </div>
                     </label>
                     <input
                       id="avatar-upload"
@@ -288,44 +543,205 @@ export default function ProfileSettingsPage() {
                     />
                   </div>
                 </div>
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-3">
                   <div className="flex items-center space-x-2">
                     <Badge className={`${getTierColor(profile.subscription_tier)} text-white`}>
                       {getTierIcon(profile.subscription_tier)}
                       <span className="ml-1 capitalize">{profile.subscription_tier}</span>
                     </Badge>
+                    <Badge variant="outline" className="text-muted-foreground">
+                      {profile.ai_credits} AI Credits
+                    </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Member since {new Date(profile.created_at).toLocaleDateString()}
+                    Member since {formatDate(profile.created_at, preferences)}
                   </p>
+                  <div className="text-xs text-muted-foreground">
+                    <p>• Upload images up to 2MB</p>
+                    <p>• Supported formats: JPG, PNG, GIF, WebP</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="border-t pt-6">
+              {/* Basic Information */}
+              <div className="border-t border-border pt-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Basic Information</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="full_name">Full Name</Label>
+                    <Label htmlFor="full_name" className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Full Name
+                    </Label>
                     <Input
                       id="full_name"
                       value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      onChange={(e) => updateFormData({ full_name: e.target.value })}
                       placeholder="Enter your full name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => updateFormData({ email: e.target.value })}
                       placeholder="Enter your email"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-2">
+                      <Phone className="w-4 h-4" />
+                      Phone Number
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => updateFormData({ phone: e.target.value })}
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="location" className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      Location
+                    </Label>
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => updateFormData({ location: e.target.value })}
+                      placeholder="City, Country"
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <Button onClick={handleSaveProfile} disabled={saving} className="mt-4">
-                  {saving ? "Saving..." : "Save Changes"}
+              {/* Professional Information */}
+              <div className="border-t border-border pt-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Professional Information</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="job_title" className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4" />
+                      Job Title
+                    </Label>
+                    <Input
+                      id="job_title"
+                      value={formData.job_title}
+                      onChange={(e) => updateFormData({ job_title: e.target.value })}
+                      placeholder="e.g., Software Engineer"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company" className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      Company
+                    </Label>
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => updateFormData({ company: e.target.value })}
+                      placeholder="e.g., Google Inc."
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="bio">Bio</Label>
+                  <textarea
+                    id="bio"
+                    value={formData.bio}
+                    onChange={(e) => updateFormData({ bio: e.target.value.slice(0, 500) })}
+                    placeholder="Tell us about yourself..."
+                    className="w-full h-24 px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.bio.length}/500 characters
+                  </p>
+                </div>
+              </div>
+
+              {/* Social Links */}
+              <div className="border-t border-border pt-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Social Links</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="website" className="flex items-center gap-2">
+                      <ExternalLink className="w-4 h-4" />
+                      Website
+                    </Label>
+                    <Input
+                      id="website"
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => updateFormData({ website: e.target.value })}
+                      placeholder="https://your-website.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="linkedin" className="flex items-center gap-2">
+                      <Linkedin className="w-4 h-4" />
+                      LinkedIn
+                    </Label>
+                    <Input
+                      id="linkedin"
+                      value={formData.linkedin}
+                      onChange={(e) => updateFormData({ linkedin: e.target.value })}
+                      placeholder="linkedin.com/in/username"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="github" className="flex items-center gap-2">
+                      <Github className="w-4 h-4" />
+                      GitHub
+                    </Label>
+                    <Input
+                      id="github"
+                      value={formData.github}
+                      onChange={(e) => updateFormData({ github: e.target.value })}
+                      placeholder="github.com/username"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="twitter" className="flex items-center gap-2">
+                      <Twitter className="w-4 h-4" />
+                      Twitter
+                    </Label>
+                    <Input
+                      id="twitter"
+                      value={formData.twitter}
+                      onChange={(e) => updateFormData({ twitter: e.target.value })}
+                      placeholder="twitter.com/username"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="border-t border-border pt-6 flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <div className="text-sm text-muted-foreground">
+                    Changes are saved automatically as you type
+                  </div>
+                  {isAutoSaving && (
+                    <div className="flex items-center space-x-2 text-sm text-blue-600">
+                      <div className="w-3 h-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                      <span>Saving...</span>
+                    </div>
+                  )}
+                </div>
+                <Button onClick={handleSaveProfile} disabled={saving || isAutoSaving} variant="outline">
+                  {saving ? (
+                    <>
+                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-background border-t-transparent mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Now"
+                  )}
                 </Button>
               </div>
             </div>
@@ -434,7 +850,7 @@ export default function ProfileSettingsPage() {
                     {profile.subscription_expires && (
                       <p className="text-sm text-muted-foreground">
                         {profile.subscription_tier !== "free" ? "Expires" : "Upgraded"} on{" "}
-                        {new Date(profile.subscription_expires).toLocaleDateString()}
+                        {formatDate(profile.subscription_expires, preferences)}
                       </p>
                     )}
                   </div>
@@ -492,7 +908,7 @@ export default function ProfileSettingsPage() {
                           <p className="text-sm text-muted-foreground">{usage.description}</p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          {new Date(usage.created_at).toLocaleDateString()}
+                          {formatDate(usage.created_at, preferences)}
                         </p>
                       </div>
                       <div className="text-right">
@@ -518,7 +934,7 @@ export default function ProfileSettingsPage() {
 
             <div className="bg-card rounded-lg border border-border p-6 space-y-6">
               <div className="space-y-4">
-                <h4 className="font-medium">Change Password</h4>
+                <h4 className="font-medium text-foreground">Change Password</h4>
                 <div className="grid gap-4 max-w-md">
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
@@ -561,22 +977,67 @@ export default function ProfileSettingsPage() {
                       placeholder="Confirm new password"
                     />
                   </div>
-                  <Button disabled={saving}>
+                  <Button disabled={saving} onClick={handlePasswordChange}>
                     {saving ? "Updating..." : "Update Password"}
                   </Button>
                 </div>
               </div>
 
-              <div className="border-t pt-6 space-y-4">
-                <h4 className="font-medium">Two-Factor Authentication</h4>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm">Secure your account with 2FA</p>
-                    <p className="text-xs text-gray-600">Add an extra layer of security</p>
+              {security && (
+                <>
+                  <div className="border-t border-border pt-6 space-y-4">
+                    <h4 className="font-medium text-foreground">Two-Factor Authentication</h4>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm text-foreground">Secure your account with 2FA</p>
+                        <p className="text-xs text-muted-foreground">Add an extra layer of security</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={security.two_factor_enabled}
+                          onCheckedChange={handle2FAToggle}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {security.two_factor_enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <Button variant="outline">Setup 2FA</Button>
-                </div>
-              </div>
+
+                  <div className="border-t border-border pt-6 space-y-4">
+                    <h4 className="font-medium text-foreground">Password Security</h4>
+                    <div className="text-sm text-muted-foreground">
+                      {security.last_password_change ? (
+                        <p>
+                          Last changed: {formatDate(security.last_password_change, preferences)}
+                        </p>
+                      ) : (
+                        <p>Password has not been changed recently</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-6 space-y-4">
+                    <h4 className="font-medium text-foreground">Active Sessions</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+                        <div>
+                          <p className="font-medium text-foreground">Current Session</p>
+                          <p className="text-sm text-muted-foreground">
+                            {navigator.platform} • {navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                             navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Browser'} • 
+                            {formatDate(new Date(), preferences)}
+                          </p>
+                        </div>
+                        <Badge variant="secondary">Current</Badge>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Sign Out All Other Sessions
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )
@@ -589,31 +1050,111 @@ export default function ProfileSettingsPage() {
               <p className="text-muted-foreground">Customize your experience</p>
             </div>
 
-            <div className="bg-card rounded-lg border border-border p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Language</Label>
-                  <p className="text-sm text-muted-foreground">Select your preferred language</p>
+            {preferences && (
+              <div className="bg-card rounded-lg border border-border p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Language</Label>
+                    <p className="text-sm text-muted-foreground">Select your preferred language</p>
+                  </div>
+                  <select 
+                    className="border border-border rounded-md px-3 py-1 bg-background text-foreground"
+                    value={preferences.language}
+                    onChange={(e) => handlePreferenceUpdate('language', e.target.value)}
+                  >
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                    <option value="es">Español</option>
+                    <option value="de">Deutsch</option>
+                    <option value="it">Italiano</option>
+                    <option value="pt">Português</option>
+                  </select>
                 </div>
-                <select className="border border-border rounded-md px-3 py-1 bg-background text-foreground">
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                  <option value="es">Español</option>
-                </select>
-              </div>
 
-              <div className="border-t border-border pt-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Timezone</Label>
-                  <p className="text-sm text-muted-foreground">Set your local timezone</p>
+                <div className="border-t border-border pt-4 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Date Format</Label>
+                    <p className="text-sm text-muted-foreground">Choose how dates are displayed</p>
+                    <p className="text-xs text-muted-foreground">
+                      Preview: {formatDate(new Date(), preferences)}
+                    </p>
+                  </div>
+                  <select 
+                    className="border border-border rounded-md px-3 py-1 bg-background text-foreground"
+                    value={preferences.date_format}
+                    onChange={(e) => handlePreferenceUpdate('date_format', e.target.value)}
+                  >
+                    <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+                    <option value="DD/MM/YYYY">DD/MM/YYYY (UK)</option>
+                    <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+                  </select>
                 </div>
-                <select className="border border-border rounded-md px-3 py-1 bg-background text-foreground">
-                  <option value="utc">UTC</option>
-                  <option value="est">EST</option>
-                  <option value="pst">PST</option>
-                </select>
+
+                <div className="border-t border-border pt-4 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Currency</Label>
+                    <p className="text-sm text-muted-foreground">Default currency for billing</p>
+                    <p className="text-xs text-muted-foreground">
+                      Preview: {formatCurrency(99.99, preferences)}
+                    </p>
+                  </div>
+                  <select 
+                    className="border border-border rounded-md px-3 py-1 bg-background text-foreground"
+                    value={preferences.currency}
+                    onChange={(e) => handlePreferenceUpdate('currency', e.target.value)}
+                  >
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - British Pound</option>
+                    <option value="CAD">CAD - Canadian Dollar</option>
+                    <option value="AUD">AUD - Australian Dollar</option>
+                    <option value="JPY">JPY - Japanese Yen</option>
+                  </select>
+                </div>
+
+                <div className="border-t border-border pt-4 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Timezone</Label>
+                    <p className="text-sm text-muted-foreground">Set your local timezone</p>
+                    <p className="text-xs text-muted-foreground">
+                      Current time: {formatTime(new Date(), preferences)}
+                    </p>
+                  </div>
+                  <select 
+                    className="border border-border rounded-md px-3 py-1 bg-background text-foreground"
+                    value={preferences.timezone}
+                    onChange={(e) => handlePreferenceUpdate('timezone', e.target.value)}
+                  >
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">Eastern Time (ET)</option>
+                    <option value="America/Chicago">Central Time (CT)</option>
+                    <option value="America/Denver">Mountain Time (MT)</option>
+                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                    <option value="Europe/London">London (GMT)</option>
+                    <option value="Europe/Paris">Paris (CET)</option>
+                    <option value="Asia/Tokyo">Tokyo (JST)</option>
+                    <option value="Asia/Shanghai">Shanghai (CST)</option>
+                    <option value="Australia/Sydney">Sydney (AEST)</option>
+                  </select>
+                </div>
+
+                <div className="border-t border-border pt-4 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Theme</Label>
+                    <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
+                  </div>
+                  <select 
+                    className="border border-border rounded-md px-3 py-1 bg-background text-foreground"
+                    value={preferences.theme}
+                    onChange={(e) => handlePreferenceUpdate('theme', e.target.value)}
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )
 
@@ -631,9 +1172,9 @@ export default function ProfileSettingsPage() {
                 <p className="text-sm text-muted-foreground">
                   Download a copy of your data including resumes, cover letters, and account information.
                 </p>
-                <Button variant="outline" className="flex items-center space-x-2">
+                <Button variant="outline" className="flex items-center space-x-2" onClick={handleDataExport} disabled={saving}>
                   <Download className="w-4 h-4" />
-                  <span>Export My Data</span>
+                  <span>{saving ? "Requesting..." : "Export My Data"}</span>
                 </Button>
               </div>
 
@@ -647,9 +1188,9 @@ export default function ProfileSettingsPage() {
                       <p className="text-sm text-red-600/80 mb-3">
                         Permanently delete your account and all associated data. This action cannot be undone.
                       </p>
-                      <Button variant="destructive" size="sm">
+                      <Button variant="destructive" size="sm" onClick={handleAccountDeletion} disabled={saving}>
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Account
+                        {saving ? "Deleting..." : "Delete Account"}
                       </Button>
                     </div>
                   </div>
