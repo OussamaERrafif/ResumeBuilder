@@ -82,6 +82,102 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          email: string
+          full_name: string
+          avatar_url: string | null
+          subscription_tier: 'free' | 'pro' | 'premium'
+          subscription_expires: string | null
+          ai_credits: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email: string
+          full_name?: string
+          avatar_url?: string | null
+          subscription_tier?: 'free' | 'pro' | 'premium'
+          subscription_expires?: string | null
+          ai_credits?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email?: string
+          full_name?: string
+          avatar_url?: string | null
+          subscription_tier?: 'free' | 'pro' | 'premium'
+          subscription_expires?: string | null
+          ai_credits?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      notification_settings: {
+        Row: {
+          id: string
+          user_id: string
+          email_notifications: boolean
+          marketing_emails: boolean
+          feature_updates: boolean
+          security_alerts: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email_notifications?: boolean
+          marketing_emails?: boolean
+          feature_updates?: boolean
+          security_alerts?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email_notifications?: boolean
+          marketing_emails?: boolean
+          feature_updates?: boolean
+          security_alerts?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      ai_credits_usage: {
+        Row: {
+          id: string
+          user_id: string
+          feature: string
+          credits_used: number
+          description: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          feature: string
+          credits_used: number
+          description?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          feature?: string
+          credits_used?: number
+          description?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
