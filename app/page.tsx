@@ -72,40 +72,48 @@ const FEATURES = [
   },
 ]
 
-const TESTIMONIALS = [
+const COMMUNITY_FEATURES = [
   {
-    name: "Sarah Johnson",
-    role: "Software Engineer",
-    company: "Google",
-    content:
-      "ApexResume helped me land my dream job at Google. The AI suggestions were spot-on and saved me hours of writing.",
-    rating: 5,
-    avatar: "/professional-woman.png",
+    icon: Github,
+    title: "Open Source",
+    description: "Built in the open with full transparency. Contribute to the project and help make it better for everyone.",
+    link: "https://github.com/OussamaERrafif/ResumeBuilder",
   },
   {
-    name: "Michael Chen",
-    role: "Marketing Manager",
-    company: "Microsoft",
-    content:
-      "The templates are beautiful and professional. I got 3x more interview calls after using ApexResume.",
-    rating: 5,
-    avatar: "/professional-man.png",
+    icon: Award,
+    title: "Product Hunt Featured",
+    description: "Discover why our resume builder is gaining traction in the tech community and beyond.",
+    link: "#",
   },
   {
-    name: "Emily Rodriguez",
-    role: "Data Scientist",
-    company: "Netflix",
-    content: "As someone who hates writing, the AI content generation was a game-changer. Highly recommend!",
-    rating: 5,
-    avatar: "/woman-scientist.png",
+    icon: Users,
+    title: "Community Driven",
+    description: "Join our growing community of developers and job seekers sharing tips, templates, and success stories.",
+    link: "#",
   },
 ]
 
-const STATS = [
-  { number: "50,000+", label: "Resumes Created" },
-  { number: "95%", label: "Success Rate" },
-  { number: "4.9/5", label: "User Rating" },
-  { number: "24/7", label: "Support" },
+const VALUE_PROPS = [
+  { 
+    icon: "🎯", 
+    title: "Free Forever Plan", 
+    description: "Start building professional resumes at no cost. No credit card required, no hidden fees." 
+  },
+  { 
+    icon: "⚡", 
+    title: "7-Day Pro Trial", 
+    description: "Experience all premium features risk-free. Cancel anytime, no questions asked." 
+  },
+  { 
+    icon: "🌟", 
+    title: "Open Source", 
+    description: "Transparent development, community-driven improvements, and complete code visibility on GitHub." 
+  },
+  { 
+    icon: "🚀", 
+    title: "ATS-Optimized", 
+    description: "All templates designed to pass applicant tracking systems used by 95% of Fortune 500 companies." 
+  },
 ]
 
 const PRICING_PLANS = [
@@ -113,7 +121,7 @@ const PRICING_PLANS = [
     name: "Free",
     price: "$0",
     period: "forever",
-    description: "Perfect for getting started",
+    description: "Free forever. Start building professional resumes without any cost or commitment.",
     features: ["1 resume template", "Basic AI suggestions", "PDF download", "Email support"],
     cta: "Get Started Free",
     popular: false,
@@ -122,7 +130,7 @@ const PRICING_PLANS = [
     name: "Pro",
     price: "$9.99",
     period: "month",
-    description: "Best for job seekers",
+    description: "Best for serious job seekers who want all features",
     features: [
       "All 6 premium templates",
       "Unlimited AI assistance",
@@ -131,7 +139,7 @@ const PRICING_PLANS = [
       "Cover letter builder",
       "LinkedIn optimization",
     ],
-    cta: "Start Free Trial",
+    cta: "Start 7-Day Free Trial",
     popular: true,
   },
   {
@@ -173,7 +181,7 @@ export default function LandingPage() {
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <FileText className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">ApexResume</span>
+              <span className="text-xl font-bold text-foreground">ResumeBuilder</span>
             </div>
 
             {/* Desktop Navigation */}
@@ -266,15 +274,28 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <Badge variant="secondary" className="w-fit">
                   <Sparkles className="h-3 w-3 mr-1" />
-                  AI-Powered ApexResume
+                  Open Source Resume Builder
                 </Badge>
                 <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                  Create Your Perfect Resume in <span className="text-primary">Minutes</span>
+                  Build Professional Resumes <span className="text-primary">That Get You Hired</span>
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  Our AI-powered platform helps you build professional resumes that get noticed by employers. Choose
-                  from beautiful templates and let our smart technology guide you to success.
+                  Open-source resume builder with AI assistance. Start free, upgrade when you need more. 
+                  No fake promises, just a tool that works.
                 </p>
+              </div>
+
+              {/* Product Hunt Badge */}
+              <div className="flex items-center justify-start">
+                <a href="https://www.producthunt.com/products/apexresume?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-apexresume" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                  <img 
+                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1010727&theme=light&t=1756832115863" 
+                    alt="apexresume - AI ATS friendly Resume generator and cover letter generator | Product Hunt" 
+                    className="w-[250px] h-[54px]" 
+                    width="250" 
+                    height="54" 
+                  />
+                </a>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -284,33 +305,24 @@ export default function LandingPage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-6 bg-transparent">
+                {/* <Button variant="outline" size="lg" className="text-lg px-8 py-6 bg-transparent">
                   <Play className="mr-2 h-5 w-5" />
                   Watch Demo
-                </Button>
+                </Button> */}
               </div>
 
               <div className="flex items-center space-x-8 pt-4">
                 <div className="flex items-center space-x-2">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 rounded-full bg-primary border-2 border-background flex items-center justify-center"
-                      >
-                        <span className="text-xs text-primary-foreground font-semibold">
-                          {String.fromCharCode(64 + i)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <span className="text-sm text-muted-foreground">50,000+ users</span>
+                  <Badge variant="secondary" className="flex items-center space-x-1">
+                    <Github className="h-3 w-3" />
+                    <span className="text-xs">Open Source</span>
+                  </Badge>
                 </div>
                 <div className="flex items-center space-x-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                  <span className="text-sm text-muted-foreground ml-2">4.9/5 rating</span>
+                  <Badge variant="secondary" className="flex items-center space-x-1">
+                    <Zap className="h-3 w-3" />
+                    <span className="text-xs">Free Trial</span>
+                  </Badge>
                 </div>
               </div>
             </motion.div>
@@ -351,11 +363,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Value Props Section */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {STATS.map((stat, index) => (
+            {VALUE_PROPS.map((prop, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -364,8 +376,9 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-3xl lg:text-4xl font-bold text-primary mb-2">{stat.number}</div>
-                <div className="text-muted-foreground">{stat.label}</div>
+                <div className="text-4xl mb-3">{prop.icon}</div>
+                <div className="text-lg font-semibold text-foreground mb-2">{prop.title}</div>
+                <div className="text-sm text-muted-foreground">{prop.description}</div>
               </motion.div>
             ))}
           </div>
@@ -387,11 +400,11 @@ export default function LandingPage() {
               Powerful Features
             </Badge>
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
-              Everything You Need to Land Your Dream Job
+              Everything You Need, Nothing You Don't
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Our comprehensive suite of tools and AI-powered features ensures your resume stands out from the
-              competition and gets you noticed by the right employers.
+              No bloated features or marketing gimmicks. Just clean, professional tools that help you 
+              create resumes that actually work in today's job market.
             </p>
           </motion.div>
 
@@ -437,8 +450,8 @@ export default function LandingPage() {
             </Badge>
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Choose Your Perfect Template</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Select from our collection of professionally designed templates, each optimized for different industries
-              and career levels.
+              Select from our collection of professionally designed, ATS-optimized templates. 
+              Each template is crafted to help you stand out while ensuring compatibility with applicant tracking systems.
             </p>
           </motion.div>
 
@@ -501,7 +514,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Community & Trust Section */}
       <section className="py-20">
         <div className="container mx-auto px-6">
           <motion.div
@@ -512,17 +525,17 @@ export default function LandingPage() {
             className="text-center mb-16"
           >
             <Badge variant="secondary" className="mb-4">
-              <Users className="h-3 w-3 mr-1" />
-              Success Stories
+              <Github className="h-3 w-3 mr-1" />
+              Open Source & Community
             </Badge>
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Loved by Job Seekers Worldwide</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Built by Developers, for Everyone</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Join thousands of professionals who have successfully landed their dream jobs using ApexResume.
+              Our commitment to transparency, community collaboration, and free access makes us different from other resume builders.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {TESTIMONIALS.map((testimonial, index) => (
+            {COMMUNITY_FEATURES.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -530,34 +543,58 @@ export default function LandingPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <Card className="h-full">
-                  <CardContent className="p-6">
-                    <div className="flex items-center mb-4">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      ))}
+                <Card className="h-full hover:shadow-lg transition-shadow duration-300 cursor-pointer group">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:bg-primary/20 transition-colors">
+                      <feature.icon className="h-6 w-6 text-primary" />
                     </div>
-                    <p className="text-muted-foreground mb-6 italic">"{testimonial.content}"</p>
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className="w-10 h-10 rounded-full bg-muted"
-                        style={{
-                          backgroundImage: `url(${testimonial.avatar})`,
-                          backgroundSize: "cover",
-                        }}
-                      />
-                      <div>
-                        <div className="font-semibold text-foreground">{testimonial.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {testimonial.role} at {testimonial.company}
-                        </div>
-                      </div>
-                    </div>
+                    <h3 className="font-semibold text-xl mb-3 text-foreground">{feature.title}</h3>
+                    <p className="text-muted-foreground mb-4">{feature.description}</p>
+                    {feature.link !== "#" && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={feature.link} target="_blank" rel="noopener noreferrer" className="bg-transparent">
+                          Learn More
+                          <ChevronRight className="h-3 w-3 ml-1" />
+                        </a>
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
           </div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            viewport={{ once: true }}
+            className="text-center mt-12"
+          >
+            <Card className="max-w-2xl mx-auto bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-bold text-foreground mb-4">🎉 Try Everything Free</h3>
+                <p className="text-muted-foreground mb-6">
+                  Start with our forever-free plan or experience all premium features with a 7-day trial. 
+                  No credit card required, cancel anytime.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href="/dashboard">
+                    <Button size="lg" className="min-w-[160px]">
+                      Start Free Trial
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="lg" asChild className="min-w-[160px] bg-transparent">
+                    <a href="https://github.com/OussamaERrafif/ResumeBuilder" target="_blank" rel="noopener noreferrer">
+                      <Github className="mr-2 h-4 w-4" />
+                      View on GitHub
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
 
@@ -575,9 +612,9 @@ export default function LandingPage() {
               <CheckCircle className="h-3 w-3 mr-1" />
               Simple Pricing
             </Badge>
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Choose Your Plan</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Simple, Honest Pricing</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Start for free and upgrade when you need more features. No hidden fees, cancel anytime.
+              No hidden fees, no locked features behind paywalls. Start free, upgrade if you need more. Cancel anytime.
             </p>
           </motion.div>
 
@@ -639,9 +676,10 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center max-w-4xl mx-auto"
           >
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Ready to Build Your Perfect Resume?</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Ready to Build Your Resume?</h2>
             <p className="text-xl text-muted-foreground mb-8">
-              Join thousands of job seekers who have successfully landed their dream jobs with ApexResume.
+              Start building today with our free plan. No credit card required, no hidden fees. 
+              Upgrade to Pro when you need advanced features.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/dashboard">
@@ -669,20 +707,27 @@ export default function LandingPage() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <FileText className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">ApexResume</span>
+                <span className="text-lg font-bold text-foreground">ResumeBuilder</span>
               </div>
               <p className="text-muted-foreground">
-                AI-powered resume builder helping professionals land their dream jobs.
+                Open-source resume builder helping job seekers create professional resumes. 
+                Built with transparency and community in mind.
               </p>
               <div className="flex space-x-4">
-                <Button variant="ghost" size="sm">
-                  <Twitter className="h-4 w-4" />
+                <Button variant="ghost" size="sm" asChild>
+                  <a href="https://github.com/OussamaERrafif/ResumeBuilder" target="_blank" rel="noopener noreferrer">
+                    <Github className="h-4 w-4" />
+                  </a>
                 </Button>
-                <Button variant="ghost" size="sm">
-                  <Linkedin className="h-4 w-4" />
+                <Button variant="ghost" size="sm" asChild>
+                  <a href="https://www.producthunt.com/products/apexresume" target="_blank" rel="noopener noreferrer">
+                    <Twitter className="h-4 w-4" />
+                  </a>
                 </Button>
-                <Button variant="ghost" size="sm">
-                  <Github className="h-4 w-4" />
+                <Button variant="ghost" size="sm" asChild>
+                  <a href="https://www.producthunt.com/products/apexresume" target="_blank" rel="noopener noreferrer">
+                    <Linkedin className="h-4 w-4" />
+                  </a>
                 </Button>
               </div>
             </div>
@@ -706,34 +751,54 @@ export default function LandingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
-                    FAQ
-                  </Link>
+                  <a 
+                    href="https://github.com/OussamaERrafif/ResumeBuilder" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Open Source
+                  </a>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="font-semibold text-foreground mb-4">Company</h3>
+              <h3 className="font-semibold text-foreground mb-4">Community</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-                    About
-                  </Link>
+                  <a 
+                    href="https://github.com/OussamaERrafif/ResumeBuilder" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    GitHub
+                  </a>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Blog
-                  </Link>
+                  <a 
+                    href="https://github.com/OussamaERrafif/ResumeBuilder/issues" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Report Issues
+                  </a>
                 </li>
                 <li>
-                  <Link href="/careers" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Careers
-                  </Link>
+                  <a 
+                    href="https://github.com/OussamaERrafif/ResumeBuilder/blob/main/CONTRIBUTING.md" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Contribute
+                  </a>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Contact
+                  <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
+                    FAQ
                   </Link>
                 </li>
               </ul>
@@ -767,11 +832,13 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-muted-foreground text-sm">© 2024 ApexResume. All rights reserved.</p>
+            <p className="text-muted-foreground text-sm">© 2024 ResumeBuilder. Open source project by OussamaERrafif.</p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
-              <Button variant="ghost" size="sm">
-                <Mail className="h-4 w-4 mr-2" />
-                support@resumegenerator.com
+              <Button variant="ghost" size="sm" asChild>
+                <a href="https://github.com/OussamaERrafif/ResumeBuilder/issues" target="_blank" rel="noopener noreferrer">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Get Support on GitHub
+                </a>
               </Button>
             </div>
           </div>
