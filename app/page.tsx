@@ -290,7 +290,7 @@ export default function LandingPage() {
                 <a href="https://www.producthunt.com/products/apexresume?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-apexresume" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                   <img 
                     src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1010727&theme=light&t=1756832115863" 
-                    alt="apexresume - AI ATS freindly Resume generator and cover letter generator | Product Hunt" 
+                    alt="apexresume - AI ATS friendly Resume generator and cover letter generator | Product Hunt" 
                     className="w-[250px] h-[54px]" 
                     width="250" 
                     height="54" 
