@@ -6,9 +6,9 @@ import { useEffect, useRef, useState } from "react"
 
 export function useIntersectionObserver(
   options: IntersectionObserverInit = {},
-): [React.RefObject<HTMLDivElement>, boolean] {
+): [React.RefObject<HTMLDivElement | null>, boolean] {
   const [isIntersecting, setIsIntersecting] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {

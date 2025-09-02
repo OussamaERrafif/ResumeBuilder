@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
+import { PreferencesProvider } from "@/hooks/use-preferences"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -94,8 +95,10 @@ export default function RootLayout({
           disableTransitionOnChange={false}
         >
           <AuthProvider>
-            {children}
-            <Toaster />
+            <PreferencesProvider>
+              {children}
+              <Toaster />
+            </PreferencesProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
