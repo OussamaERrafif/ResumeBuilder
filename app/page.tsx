@@ -285,6 +285,19 @@ export default function LandingPage() {
                 </p>
               </div>
 
+              {/* Product Hunt Badge */}
+              <div className="flex items-center justify-start">
+                <a href="https://www.producthunt.com/products/apexresume?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-apexresume" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                  <img 
+                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1010727&theme=light&t=1756832115863" 
+                    alt="apexresume - AI ATS freindly Resume generator and cover letter generator | Product Hunt" 
+                    className="w-[250px] h-[54px]" 
+                    width="250" 
+                    height="54" 
+                  />
+                </a>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/dashboard">
                   <Button size="lg" className="text-lg px-8 py-6">
@@ -292,10 +305,10 @@ export default function LandingPage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-6 bg-transparent">
+                {/* <Button variant="outline" size="lg" className="text-lg px-8 py-6 bg-transparent">
                   <Play className="mr-2 h-5 w-5" />
                   Watch Demo
-                </Button>
+                </Button> */}
               </div>
 
               <div className="flex items-center space-x-8 pt-4">
@@ -706,11 +719,15 @@ export default function LandingPage() {
                     <Github className="h-4 w-4" />
                   </a>
                 </Button>
-                <Button variant="ghost" size="sm">
-                  <Twitter className="h-4 w-4" />
+                <Button variant="ghost" size="sm" asChild>
+                  <a href="https://www.producthunt.com/products/apexresume" target="_blank" rel="noopener noreferrer">
+                    <Twitter className="h-4 w-4" />
+                  </a>
                 </Button>
-                <Button variant="ghost" size="sm">
-                  <Linkedin className="h-4 w-4" />
+                <Button variant="ghost" size="sm" asChild>
+                  <a href="https://www.producthunt.com/products/apexresume" target="_blank" rel="noopener noreferrer">
+                    <Linkedin className="h-4 w-4" />
+                  </a>
                 </Button>
               </div>
             </div>

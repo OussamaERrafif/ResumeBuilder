@@ -67,7 +67,7 @@ export default function Maintenance() {
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
                   Follow us for updates: 
-                  <Link href="#" className="text-primary hover:underline ml-1">@ApexResume</Link>
+                  <a href="https://www.producthunt.com/products/apexresume" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline ml-1">@ApexResume</a>
                 </p>
               </div>
             </div>

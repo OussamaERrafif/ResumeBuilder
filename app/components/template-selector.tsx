@@ -50,7 +50,7 @@ export default function TemplateSelector({ selectedTemplate, onTemplateSelect, o
       summary: "Highly motivated software engineer with 5 years of experience in developing scalable web applications.",
       profileImage: "",
     },
-    links: [{ name: "LinkedIn", url: "#" }],
+    links: [{ name: "LinkedIn", url: "https://linkedin.com/in/johndoe" }],
     education: [{ school: "University of Tech", degree: "B.S. Computer Science", date: "2020" }],
     experience: [
       {
