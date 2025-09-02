@@ -70,6 +70,12 @@ export interface AICreditsUsage {
 }
 
 export class ProfileService {
+  /**
+   * Retrieves a user's profile information from the database.
+   * 
+   * @param userId - The unique identifier for the user
+   * @returns Promise<UserProfile | null> - The user's profile data or null if not found
+   */
   static async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
       const { data, error } = await supabase
@@ -90,6 +96,13 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Updates a user's profile with the provided information.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param updates - Partial user profile object containing fields to update
+   * @returns Promise<boolean> - True if update was successful, false otherwise
+   */
   static async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<boolean> {
     try {
       const { error } = await supabase
@@ -112,6 +125,12 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Retrieves notification settings for a user, creating defaults if none exist.
+   * 
+   * @param userId - The unique identifier for the user
+   * @returns Promise<NotificationSettings | null> - The user's notification preferences or null if error
+   */
   static async getNotificationSettings(userId: string): Promise<NotificationSettings | null> {
     try {
       const { data, error } = await supabase
@@ -136,6 +155,12 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Creates default notification settings for a new user.
+   * 
+   * @param userId - The unique identifier for the user
+   * @returns Promise<NotificationSettings | null> - The created notification settings or null if error
+   */
   static async createDefaultNotificationSettings(userId: string): Promise<NotificationSettings | null> {
     try {
       const defaultSettings = {
@@ -166,6 +191,13 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Updates a user's notification preferences.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param updates - Partial notification settings object containing fields to update
+   * @returns Promise<boolean> - True if update was successful, false otherwise
+   */
   static async updateNotificationSettings(
     userId: string,
     updates: Partial<NotificationSettings>
@@ -191,6 +223,13 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Retrieves the AI credits usage history for a user.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param limit - Maximum number of records to return (default: 20)
+   * @returns Promise<AICreditsUsage[]> - Array of AI credits usage records
+   */
   static async getAICreditsUsage(userId: string, limit = 20): Promise<AICreditsUsage[]> {
     try {
       const { data, error } = await supabase
@@ -212,6 +251,13 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Updates a user's AI credits balance.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param credits - The new credits balance to set
+   * @returns Promise<boolean> - True if update was successful, false otherwise
+   */
   static async updateAICredits(userId: string, credits: number): Promise<boolean> {
     try {
       const { error } = await supabase
@@ -234,6 +280,15 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Records AI feature usage and deducts credits from user's balance.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param feature - Name of the AI feature used (e.g., "resume_analysis", "cover_letter_generation")
+   * @param creditsUsed - Number of credits consumed by this usage
+   * @param description - Optional detailed description of the usage
+   * @returns Promise<boolean> - True if recording was successful, false otherwise
+   */
   static async recordCreditUsage(
     userId: string,
     feature: string,
@@ -270,6 +325,14 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Uploads and sets a new avatar image for a user.
+   * Validates file type and size, cleans up old files, and returns the public URL.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param file - The image file to upload (JPEG, PNG, GIF, WebP supported, max 5MB)
+   * @returns Promise<string | null> - The public URL of the uploaded avatar or null if failed
+   */
   static async uploadAvatar(userId: string, file: File): Promise<string | null> {
     try {
       // Validate file type
@@ -459,6 +522,12 @@ export class ProfileService {
   }
 
   // User Preferences Methods
+  /**
+   * Retrieves user preferences, creating defaults if none exist.
+   * 
+   * @param userId - The unique identifier for the user
+   * @returns Promise<UserPreferences | null> - The user's preferences or null if error
+   */
   static async getUserPreferences(userId: string): Promise<UserPreferences | null> {
     try {
       const { data, error } = await supabase
@@ -483,6 +552,12 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Creates default user preferences with system-detected settings.
+   * 
+   * @param userId - The unique identifier for the user
+   * @returns Promise<UserPreferences | null> - The created preferences or null if error
+   */
   static async createDefaultPreferences(userId: string): Promise<UserPreferences | null> {
     try {
       const defaultPreferences = {
@@ -514,6 +589,13 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Updates a user's preferences with the provided values.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param preferences - Partial preferences object containing fields to update
+   * @returns Promise<boolean> - True if update was successful, false otherwise
+   */
   static async updateUserPreferences(
     userId: string,
     preferences: Partial<Omit<UserPreferences, 'user_id' | 'created_at' | 'updated_at'>>
@@ -540,6 +622,12 @@ export class ProfileService {
   }
 
   // Security Settings Methods
+  /**
+   * Retrieves security settings for a user, creating defaults if none exist.
+   * 
+   * @param userId - The unique identifier for the user
+   * @returns Promise<SecuritySettings | null> - The user's security settings or null if error
+   */
   static async getSecuritySettings(userId: string): Promise<SecuritySettings | null> {
     try {
       const { data, error } = await supabase
@@ -564,6 +652,12 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Creates default security settings for a new user.
+   * 
+   * @param userId - The unique identifier for the user
+   * @returns Promise<SecuritySettings | null> - The created security settings or null if error
+   */
   static async createDefaultSecuritySettings(userId: string): Promise<SecuritySettings | null> {
     try {
       const defaultSettings = {
@@ -592,6 +686,13 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Updates a user's security settings.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param settings - Partial security settings object containing fields to update
+   * @returns Promise<boolean> - True if update was successful, false otherwise
+   */
   static async updateSecuritySettings(
     userId: string,
     settings: Partial<Omit<SecuritySettings, 'user_id' | 'created_at' | 'updated_at'>>
@@ -614,6 +715,68 @@ export class ProfileService {
     } catch (error) {
       console.error('Error updating security settings:', error)
       return false
+    }
+  }
+
+  /**
+   * Verifies a user's current password without making any changes.
+   * 
+   * Security Features:
+   * - Uses temporary client to avoid affecting current session
+   * - Validates user identity through session verification
+   * - No side effects - purely verification
+   * - Proper cleanup of temporary authentication
+   * 
+   * @param userId - The user's unique identifier
+   * @param password - The password to verify
+   * @returns Promise<{ valid: boolean; error?: string }> - Verification result
+   */
+  static async verifyCurrentPassword(userId: string, password: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+      // Validate input parameters
+      if (!userId || !password) {
+        return { valid: false, error: 'Missing required parameters' }
+      }
+
+      // First, get the user's current session to verify identity
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Error getting current user:', userError)
+        return { valid: false, error: 'Authentication required' }
+      }
+
+      // Verify the user ID matches
+      if (user.id !== userId) {
+        console.error('User ID mismatch during password verification')
+        return { valid: false, error: 'User verification failed' }
+      }
+
+      // Verify password using a temporary client to avoid affecting current session
+      const { createClient } = await import('@supabase/supabase-js')
+      const tempSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      // Attempt to sign in with the provided password
+      const { error: signInError } = await tempSupabase.auth.signInWithPassword({
+        email: user.email!,
+        password: password
+      })
+
+      if (signInError) {
+        console.log('Password verification failed for user:', userId)
+        return { valid: false, error: 'Password is incorrect' }
+      }
+
+      // Clean up the temporary session
+      await tempSupabase.auth.signOut()
+
+      return { valid: true }
+    } catch (error) {
+      console.error('Error during password verification:', error)
+      return { valid: false, error: 'Verification failed due to system error' }
     }
   }
 
@@ -644,37 +807,10 @@ export class ProfileService {
         return { success: false, error: passwordValidation.error }
       }
 
-      // First, get the user's current session to verify identity
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError || !user) {
-        console.error('Error getting current user:', userError)
-        return { success: false, error: 'Authentication required' }
-      }
-
-      // Verify the user ID matches
-      if (user.id !== userId) {
-        console.error('User ID mismatch during password change')
-        return { success: false, error: 'User verification failed' }
-      }
-
-      // For security, we need to verify the current password
-      // We'll create a temporary client to test the current password
-      const { createClient } = await import('@supabase/supabase-js')
-      const tempSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-
-      // Verify current password by attempting to sign in with it
-      const { error: signInError } = await tempSupabase.auth.signInWithPassword({
-        email: user.email!,
-        password: currentPassword
-      })
-
-      if (signInError) {
-        console.error('Current password verification failed:', signInError)
-        return { success: false, error: 'Current password is incorrect' }
+      // Verify current password using dedicated verification method
+      const passwordVerification = await this.verifyCurrentPassword(userId, currentPassword)
+      if (!passwordVerification.valid) {
+        return { success: false, error: passwordVerification.error || 'Current password is incorrect' }
       }
 
       // Current password verified, now update to new password
@@ -794,6 +930,13 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Toggles two-factor authentication on or off for a user.
+   * 
+   * @param userId - The unique identifier for the user
+   * @param enabled - True to enable 2FA, false to disable
+   * @returns Promise<boolean> - True if toggle was successful, false otherwise
+   */
   static async toggle2FA(userId: string, enabled: boolean): Promise<boolean> {
     try {
       return await this.updateSecuritySettings(userId, {
