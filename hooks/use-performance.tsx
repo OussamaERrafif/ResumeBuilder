@@ -85,7 +85,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
     ((...args: Parameters<T>) => {
       if (throttleRef.current) return
       
-      throttleRef.current = window.setTimeout(() => {
+      throttleRef.current = setTimeout(() => {
         throttleRef.current = null
       }, delay)
       
