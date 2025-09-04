@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
 import {
   FileText,
@@ -22,6 +22,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  ChevronDown,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -64,6 +65,9 @@ export default function CoverLettersPage() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
 
+  // Refs
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
   // State
   const [currentView, setCurrentView] = useState<"list" | "create" | "edit">("list")
   const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([])
@@ -73,6 +77,7 @@ export default function CoverLettersPage() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingCoverLetter, setEditingCoverLetter] = useState<CoverLetter | null>(null)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
   // Form data
   const [formData, setFormData] = useState<CoverLetterFormData>({
@@ -97,6 +102,23 @@ export default function CoverLettersPage() {
       console.error(err)
     }
   }, [signOut])
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false)
+      }
+    }
+
+    if (showProfileDropdown) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showProfileDropdown])
 
   // Load data
   useEffect(() => {
@@ -815,19 +837,48 @@ export default function CoverLettersPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-                <div className="flex items-center gap-3 text-sm text-foreground bg-muted/50 rounded-lg px-4 py-2">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  <span className="truncate max-w-32">{user?.user_metadata?.full_name || user?.email}</span>
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="flex items-center gap-3 text-sm text-foreground bg-muted/50 hover:bg-muted/70 rounded-lg px-4 py-2 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <span className="truncate max-w-32">{user?.user_metadata?.full_name || user?.email}</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg z-50 sm:w-56">
+                      <div className="py-1">
+                        <Link href="/profile" className="block">
+                          <button 
+                            className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2"
+                            onClick={() => setShowProfileDropdown(false)}
+                          >
+                            <User className="h-4 w-4" />
+                            Profile & Settings
+                          </button>
+                        </Link>
+                        <div className="border-t border-border my-1"></div>
+                        <button 
+                          onClick={() => {
+                            setShowProfileDropdown(false)
+                            handleSignOut()
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors flex items-center gap-2"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <Button onClick={handleSignOut} size="sm" variant="outline">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </Button>
-
                   <div className="bg-muted rounded-lg p-1">
                     <ThemeToggle />
                   </div>
