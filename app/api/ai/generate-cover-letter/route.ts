@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { ResumeData, CoverLetterRequest, CoverLetterResponse } from '@/types/resume'
 
 export async function POST(request: NextRequest) {
-  let resumeData: any = null
+  let resumeData: ResumeData | null = null
   
   try {
     // Check if Gemini API key is available
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Initialize Gemini AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 
-    const requestData = await request.json()
+    const requestData: CoverLetterRequest = await request.json()
     const { jobDescription, jobTitle, companyName, specialInstructions } = requestData
     resumeData = requestData.resumeData
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     console.error('Cover letter generation error:', error)
     
     // Return fallback content if AI fails
-    const fallbackCoverLetter = createFallbackCoverLetter(resumeData)
+    const fallbackCoverLetter = createFallbackCoverLetter(resumeData ?? undefined)
     const fallbackSuggestions = [
       "Review the job description and align your skills accordingly",
       "Add specific achievements and measurable results",
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function formatResumeForAI(resumeData: any): string {
+function formatResumeForAI(resumeData: ResumeData): string {
   const { personalInfo, experience, education, skills, projects } = resumeData
 
   return `
@@ -100,14 +101,14 @@ Location: ${personalInfo.location}
 Summary: ${personalInfo.summary}
 
 Experience:
-${experience?.map((exp: any, index: number) => `
+${experience?.map((exp, index: number) => `
 ${index + 1}. ${exp.jobTitle} at ${exp.company}
    Duration: ${exp.date}
    Responsibilities: ${exp.responsibilities}
 `).join('') || 'No experience listed'}
 
 Education:
-${education?.map((edu: any, index: number) => `
+${education?.map((edu, index: number) => `
 ${index + 1}. ${edu.degree} - ${edu.school} (${edu.date})
 `).join('') || 'No education listed'}
 
@@ -116,7 +117,7 @@ Technical: ${skills?.languages || ''} ${skills?.frameworks || ''} ${skills?.tool
 Other: ${skills?.other || ''}
 
 Projects:
-${projects?.map((proj: any, index: number) => `
+${projects?.map((proj, index: number) => `
 ${index + 1}. ${proj.name}
    Description: ${proj.description}
    Technologies: ${proj.technologies || ''}
@@ -194,7 +195,7 @@ Make each suggestion specific and actionable.
   `.trim()
 }
 
-function createFallbackCoverLetter(resumeData?: any): string {
+function createFallbackCoverLetter(resumeData?: ResumeData): string {
   // Extract the candidate's name from resume data
   const candidateName = resumeData?.personalInfo?.name || 'the applicant'
   

@@ -41,6 +41,8 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }
 
   const applyTheme = (theme: 'light' | 'dark' | 'system') => {
+    if (typeof window === 'undefined') return
+    
     const root = document.documentElement
     
     if (theme === 'system') {
@@ -88,6 +90,8 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
 
   // Listen for system theme changes
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     if (preferences?.theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
       const handleChange = () => {
