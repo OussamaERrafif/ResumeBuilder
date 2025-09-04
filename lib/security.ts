@@ -23,7 +23,7 @@ export function sanitizeHtml(html: string): string {
   html = html.replace(/\sdata\s*:/gi, '') // Remove data: protocols
   
   // Allow only basic formatting tags
-  const allowedTags = /<\/?(?:p|br|strong|em|u|ul|ol|li|h[1-6]|span)(?:\s[^>]*)?>/gi
+  const allowedTags = /<\/?(?:p|br|strong|em|u|ul|ol|li|h[1-6]|span)(?:\s[^>]*)?>/i
   const cleanHtml = html.replace(/<[^>]+>/g, (match) => {
     return allowedTags.test(match) ? match : ''
   })
