@@ -336,5 +336,295 @@ export const SECURITY_HEADERS = {
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'X-DNS-Prefetch-Control': 'off',
+  'X-Download-Options': 'noopen',
+  'X-Permitted-Cross-Domain-Policies': 'none'
+}
+
+/**
+ * CSRF Token management
+ */
+export class CSRFProtection {
+  private static tokens = new Map<string, { token: string; expires: number }>()
+  
+  static generateToken(sessionId: string): string {
+    const token = generateSecureToken(32)
+    const expires = Date.now() + (60 * 60 * 1000) // 1 hour
+    
+    this.tokens.set(sessionId, { token, expires })
+    return token
+  }
+  
+  static validateToken(sessionId: string, token: string): boolean {
+    const stored = this.tokens.get(sessionId)
+    if (!stored || stored.expires < Date.now()) {
+      this.tokens.delete(sessionId)
+      return false
+    }
+    
+    return stored.token === token
+  }
+  
+  static cleanupExpired(): void {
+    const now = Date.now()
+    const entries = Array.from(this.tokens.entries())
+    for (const [sessionId, data] of entries) {
+      if (data.expires < now) {
+        this.tokens.delete(sessionId)
+      }
+    }
+  }
+}
+
+/**
+ * Session security utilities
+ */
+export class SessionSecurity {
+  private static activeSessions = new Map<string, {
+    ip: string
+    userAgent: string
+    lastActivity: number
+    isActive: boolean
+  }>()
+  
+  static createSession(sessionId: string, ip: string, userAgent: string): void {
+    this.activeSessions.set(sessionId, {
+      ip,
+      userAgent,
+      lastActivity: Date.now(),
+      isActive: true
+    })
+  }
+  
+  static validateSession(sessionId: string, ip: string, userAgent: string): boolean {
+    const session = this.activeSessions.get(sessionId)
+    if (!session || !session.isActive) {
+      return false
+    }
+    
+    // Check for session hijacking
+    if (session.ip !== ip || session.userAgent !== userAgent) {
+      this.invalidateSession(sessionId)
+      return false
+    }
+    
+    // Update last activity
+    session.lastActivity = Date.now()
+    return true
+  }
+  
+  static invalidateSession(sessionId: string): void {
+    const session = this.activeSessions.get(sessionId)
+    if (session) {
+      session.isActive = false
+    }
+  }
+  
+  static cleanupInactiveSessions(maxInactiveMs: number = 24 * 60 * 60 * 1000): void {
+    const now = Date.now()
+    const entries = Array.from(this.activeSessions.entries())
+    for (const [sessionId, session] of entries) {
+      if (now - session.lastActivity > maxInactiveMs) {
+        this.activeSessions.delete(sessionId)
+      }
+    }
+  }
+}
+
+/**
+ * IP-based security checks
+ */
+export class IPSecurity {
+  private static blockedIPs = new Set<string>()
+  private static suspiciousActivity = new Map<string, {
+    count: number
+    lastAttempt: number
+    violations: string[]
+  }>()
+  
+  static blockIP(ip: string, reason: string): void {
+    this.blockedIPs.add(ip)
+    console.warn(`[SECURITY] IP ${ip} blocked: ${reason}`)
+  }
+  
+  static unblockIP(ip: string): void {
+    this.blockedIPs.delete(ip)
+  }
+  
+  static isBlocked(ip: string): boolean {
+    return this.blockedIPs.has(ip)
+  }
+  
+  static reportSuspiciousActivity(ip: string, violation: string): void {
+    const activity = this.suspiciousActivity.get(ip) || {
+      count: 0,
+      lastAttempt: 0,
+      violations: []
+    }
+    
+    activity.count++
+    activity.lastAttempt = Date.now()
+    activity.violations.push(`${new Date().toISOString()}: ${violation}`)
+    
+    // Keep only last 10 violations
+    if (activity.violations.length > 10) {
+      activity.violations = activity.violations.slice(-10)
+    }
+    
+    this.suspiciousActivity.set(ip, activity)
+    
+    // Auto-block after 5 violations within 1 hour
+    if (activity.count >= 5 && Date.now() - activity.lastAttempt < 60 * 60 * 1000) {
+      this.blockIP(ip, `Multiple violations: ${violation}`)
+    }
+  }
+  
+  static getSuspiciousActivity(ip: string) {
+    return this.suspiciousActivity.get(ip)
+  }
+}
+
+/**
+ * Input validation with security focus
+ */
+export class SecureValidator {
+  static validateJSON(jsonString: string, maxSize: number = 1024 * 1024): any {
+    if (jsonString.length > maxSize) {
+      throw new Error('JSON payload too large')
+    }
+    
+    try {
+      const parsed = JSON.parse(jsonString)
+      return this.sanitizeObject(parsed)
+    } catch (error) {
+      throw new Error('Invalid JSON format')
+    }
+  }
+  
+  static sanitizeObject(obj: any, depth: number = 0): any {
+    if (depth > 10) {
+      throw new Error('Object depth too deep')
+    }
+    
+    if (obj === null || typeof obj !== 'object') {
+      return obj
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.sanitizeObject(item, depth + 1))
+    }
+    
+    const sanitized: any = {}
+    for (const [key, value] of Object.entries(obj)) {
+      // Sanitize key
+      const cleanKey = sanitizeText(key)
+      if (cleanKey && cleanKey.length > 0) {
+        sanitized[cleanKey] = this.sanitizeObject(value, depth + 1)
+      }
+    }
+    
+    return sanitized
+  }
+  
+  static validateFileUpload(file: File): { isValid: boolean; errors: string[] } {
+    const errors: string[] = []
+    
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      errors.push('File size exceeds 10MB limit')
+    }
+    
+    // Check file name for dangerous patterns
+    const dangerousPatterns = [
+      /\.\./,           // Directory traversal
+      /[<>:"|?*]/,      // Invalid filename characters
+      /\.php$/i,        // Executable files
+      /\.exe$/i,
+      /\.bat$/i,
+      /\.cmd$/i,
+      /\.sh$/i
+    ]
+    
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(file.name)) {
+        errors.push(`Filename contains dangerous patterns: ${file.name}`)
+        break
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+}
+
+/**
+ * Audit logging for security events
+ */
+export class SecurityAudit {
+  private static logs: Array<{
+    timestamp: string
+    event: string
+    ip: string
+    userId?: string
+    details: string
+    severity: 'low' | 'medium' | 'high' | 'critical'
+  }> = []
+  
+  static log(
+    event: string,
+    ip: string,
+    severity: 'low' | 'medium' | 'high' | 'critical',
+    details: string,
+    userId?: string
+  ): void {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      event,
+      ip,
+      userId,
+      details,
+      severity
+    }
+    
+    this.logs.push(logEntry)
+    
+    // Keep only last 1000 logs in memory
+    if (this.logs.length > 1000) {
+      this.logs = this.logs.slice(-1000)
+    }
+    
+    // Log to console based on severity
+    const message = `[${severity.toUpperCase()}] ${event} from ${ip}${userId ? ` (user: ${userId})` : ''} - ${details}`
+    
+    switch (severity) {
+      case 'critical':
+        console.error(message)
+        break
+      case 'high':
+        console.warn(message)
+        break
+      case 'medium':
+        console.info(message)
+        break
+      case 'low':
+        console.debug(message)
+        break
+    }
+  }
+  
+  static getLogs(limit: number = 100) {
+    return this.logs.slice(-limit)
+  }
+  
+  static getLogsByIP(ip: string, limit: number = 50) {
+    return this.logs.filter(log => log.ip === ip).slice(-limit)
+  }
+  
+  static getLogsBySeverity(severity: 'low' | 'medium' | 'high' | 'critical', limit: number = 100) {
+    return this.logs.filter(log => log.severity === severity).slice(-limit)
+  }
 }

@@ -22,6 +22,25 @@ export const APP_CONFIG = {
     allowedFileTypes: ['.pdf', '.doc', '.docx', '.txt'],
     rateLimitWindow: 15 * 60 * 1000, // 15 minutes
     maxAttempts: 5,
+    sessionTimeout: 24 * 60 * 60 * 1000, // 24 hours
+    maxLoginAttempts: 5,
+    lockoutDuration: 15 * 60 * 1000, // 15 minutes
+    passwordMinLength: 8,
+    passwordRequireUppercase: true,
+    passwordRequireLowercase: true,
+    passwordRequireNumbers: true,
+    passwordRequireSymbols: true,
+    csrfTokenExpiry: 60 * 60 * 1000, // 1 hour
+    maxRequestSize: 5 * 1024 * 1024, // 5MB
+    allowedOrigins: [
+      'http://localhost:3000',
+      'https://localhost:3000',
+      // Add production domains here
+    ],
+    enableCSRF: true,
+    enableRateLimit: true,
+    enableIPBlocking: true,
+    enableSessionValidation: true,
   },
 
   // Validation settings
@@ -103,6 +122,12 @@ export const ERROR_MESSAGES = {
   validationError: 'Please check your input and try again.',
   unauthorized: 'You are not authorized to perform this action.',
   rateLimitExceeded: 'Too many requests. Please try again later.',
+  invalidCredentials: 'Invalid email or password.',
+  accountLocked: 'Account temporarily locked due to multiple failed login attempts.',
+  sessionExpired: 'Your session has expired. Please log in again.',
+  csrfTokenInvalid: 'Security token is invalid. Please refresh the page.',
+  suspiciousActivity: 'Suspicious activity detected. Access temporarily restricted.',
+  fileUploadError: 'File upload failed. Please check file format and size.',
 } as const
 
 // Success messages
