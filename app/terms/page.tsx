@@ -2,6 +2,40 @@ import Link from "next/link"
 import { ArrowLeft, FileText, Scale, Shield, CreditCard, AlertTriangle, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: 'Terms of Service - ApexResume Legal Information',
+  description: 'Read the Terms of Service for ApexResume resume builder. Understand your rights, our policies, payment terms, and legal obligations when using our platform.',
+  keywords: [
+    'ApexResume terms of service',
+    'resume builder terms',
+    'legal terms',
+    'user agreement',
+    'service conditions',
+    'privacy policy',
+    'billing terms',
+    'subscription terms'
+  ],
+  openGraph: {
+    title: 'Terms of Service - ApexResume',
+    description: 'Terms of Service and legal information for ApexResume resume builder platform.',
+    url: 'https://apexresume.com/terms',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Terms of Service - ApexResume',
+    description: 'Terms of Service and legal information for ApexResume resume builder.',
+  },
+  alternates: {
+    canonical: 'https://apexresume.com/terms',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
 
 export default function TermsOfService() {
   return (

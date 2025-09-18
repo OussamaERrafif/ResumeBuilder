@@ -1,16 +1,53 @@
 {
-  "name": "ApexResume - Professional Resume Builder",
+  "name": "ApexResume - Professional AI-Powered Resume Builder",
   "short_name": "ApexResume",
-  "description": "Build professional, ATS-optimized resumes with AI assistance",
+  "description": "Build professional, ATS-optimized resumes with AI assistance. Choose from 7 beautiful templates and land your dream job faster.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#8B5CF6",
   "orientation": "portrait-primary",
+  "scope": "/",
   "icons": [
+    {
+      "src": "/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-96.png", 
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-128.png",
+      "sizes": "128x128", 
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png", 
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384", 
       "type": "image/png",
       "purpose": "maskable"
     },
@@ -18,10 +55,41 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "maskable any"
     }
   ],
-  "categories": ["productivity", "business", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Create New Resume",
+      "short_name": "New Resume",
+      "description": "Start building a new resume",
+      "url": "/dashboard?action=new",
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "View Templates",
+      "short_name": "Templates", 
+      "description": "Browse resume templates",
+      "url": "/dashboard?tab=templates",
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "categories": ["productivity", "business", "utilities", "career", "education"],
   "lang": "en-US",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile-1.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop-1.png", 
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
 }
