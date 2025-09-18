@@ -5,6 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, Home, ArrowLeft, Search } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: 'Page Not Found (404) - ApexResume',
+  description: 'The page you are looking for does not exist. Return to ApexResume dashboard to continue building your professional resume.',
+  robots: {
+    index: false,
+    follow: true,
+  },
+  openGraph: {
+    title: 'Page Not Found - ApexResume',
+    description: 'The page you are looking for does not exist on ApexResume.',
+    type: 'website',
+  },
+}
 
 export default function NotFound() {
   return (

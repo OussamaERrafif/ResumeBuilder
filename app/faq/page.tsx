@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { StructuredData } from "@/components/seo/structured-data"
+import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { generateFAQPageSchema } from "@/lib/structured-data"
 
 const FAQ_CATEGORIES = [
@@ -181,6 +182,12 @@ export default function FAQ() {
       </header>
 
       <div className="container mx-auto px-6 py-12 max-w-6xl">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb 
+          items={[{ name: 'FAQ', href: '/faq' }]} 
+          className="mb-8"
+        />
+        
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">

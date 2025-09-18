@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowLeft, Shield, Eye, Lock, Users, FileText, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Breadcrumb } from "@/components/seo/breadcrumb"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -62,6 +63,12 @@ export default function PrivacyPolicy() {
       </header>
 
       <div className="container mx-auto px-6 py-12 max-w-4xl">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb 
+          items={[{ name: 'Privacy Policy', href: '/privacy' }]} 
+          className="mb-8"
+        />
+        
         <div className="space-y-8">
           {/* Introduction */}
           <Card>

@@ -33,6 +33,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { StructuredData } from "@/components/seo/structured-data"
+import { generateOrganizationSchema, generateWebApplicationSchema } from "@/lib/structured-data"
 import { RESUME_TEMPLATES } from "./types/templates"
 
 const FEATURES = [
@@ -173,6 +175,14 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Structured Data for Landing Page */}
+      <StructuredData 
+        data={[
+          generateOrganizationSchema(),
+          generateWebApplicationSchema()
+        ]} 
+      />
+      
       {/* Navigation */}
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
