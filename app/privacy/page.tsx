@@ -2,6 +2,42 @@ import Link from "next/link"
 import { ArrowLeft, Shield, Eye, Lock, Users, FileText, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Breadcrumb } from "@/components/seo/breadcrumb"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy - ApexResume Data Protection & Security',
+  description: 'Learn how ApexResume protects your personal data and privacy. Read our comprehensive privacy policy covering data collection, usage, storage, and your rights.',
+  keywords: [
+    'ApexResume privacy policy',
+    'data protection',
+    'privacy rights',
+    'data security',
+    'GDPR compliance',
+    'personal data',
+    'cookie policy',
+    'data collection',
+    'resume builder privacy'
+  ],
+  openGraph: {
+    title: 'Privacy Policy - ApexResume',
+    description: 'Privacy policy and data protection information for ApexResume resume builder.',
+    url: 'https://apexresume.com/privacy',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Privacy Policy - ApexResume',
+    description: 'Privacy policy and data protection for ApexResume resume builder.',
+  },
+  alternates: {
+    canonical: 'https://apexresume.com/privacy',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
 
 export default function PrivacyPolicy() {
   return (
@@ -27,6 +63,12 @@ export default function PrivacyPolicy() {
       </header>
 
       <div className="container mx-auto px-6 py-12 max-w-4xl">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb 
+          items={[{ name: 'Privacy Policy', href: '/privacy' }]} 
+          className="mb-8"
+        />
+        
         <div className="space-y-8">
           {/* Introduction */}
           <Card>

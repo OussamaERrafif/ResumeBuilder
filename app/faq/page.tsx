@@ -19,6 +19,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { StructuredData } from "@/components/seo/structured-data"
+import { Breadcrumb } from "@/components/seo/breadcrumb"
+import { generateFAQPageSchema } from "@/lib/structured-data"
 
 const FAQ_CATEGORIES = [
   { id: "general", name: "General", icon: HelpCircle },
@@ -156,6 +159,8 @@ export default function FAQ() {
 
   return (
     <div className="min-h-screen bg-background">
+      <StructuredData data={generateFAQPageSchema(FAQ_DATA.map(faq => ({ question: faq.question, answer: faq.answer })))} />
+      
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
@@ -177,6 +182,12 @@ export default function FAQ() {
       </header>
 
       <div className="container mx-auto px-6 py-12 max-w-6xl">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb 
+          items={[{ name: 'FAQ', href: '/faq' }]} 
+          className="mb-8"
+        />
+        
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
