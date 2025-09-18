@@ -297,7 +297,7 @@ export const CSP_DIRECTIVES = {
   styleSrc: ["'self'", "'unsafe-inline'"],
   imgSrc: ["'self'", "data:", "https:"],
   fontSrc: ["'self'", "data:", "https:"],
-  connectSrc: ["'self'"],
+  connectSrc: ["'self'", "https://*.supabase.co", "https://api.openai.com", "https://generativelanguage.googleapis.com"],
   frameSrc: ["'none'"],
   objectSrc: ["'none'"],
   mediaSrc: ["'self'"],
