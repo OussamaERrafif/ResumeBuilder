@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -333,6 +334,30 @@ export default function AuthForm() {
                     "Create Account"
                   )}
                 </Button>
+
+                {/* Terms of Service and Privacy Policy Links */}
+                <div className="text-center text-sm text-muted-foreground space-y-2">
+                  <p>By creating an account, you agree to our</p>
+                  <div className="flex justify-center items-center gap-2">
+                    <Link 
+                      href="/terms" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/90 underline hover:underline"
+                    >
+                      Terms of Service
+                    </Link>
+                    <span>and</span>
+                    <Link 
+                      href="/privacy" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/90 underline hover:underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </div>
+                </div>
               </form>
             </TabsContent>
           </Tabs>
