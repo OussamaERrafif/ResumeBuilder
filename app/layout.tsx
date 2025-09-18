@@ -1,18 +1,25 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+// import { Inter } from "next/font/google" // Temporarily disabled due to network issues
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
 import { PreferencesProvider } from "@/hooks/use-preferences"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
+// Temporary fallback for Inter font
+// const inter = Inter({
+//   subsets: ["latin"],
+//   weight: ["300", "400", "500", "600", "700", "800"],
+//   display: "swap",
+//   variable: "--font-inter",
+// })
+
+// Fallback font configuration
+const fontFallback = {
   variable: "--font-inter",
-})
+  className: "font-sans"
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -82,12 +89,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" suppressHydrationWarning className={fontFallback.variable}>
       <head>
         <link rel="icon" href="/icon.ico" />
         <link rel="shortcut icon" href="/icon.ico" />
       </head>
-      <body className={`${inter.className} font-sans`} suppressHydrationWarning>
+      <body className={`${fontFallback.className} font-sans`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
