@@ -40,6 +40,7 @@ import { TemplatePreview } from "../components/template-previews"
 import { RESUME_TEMPLATES } from "../types/templates"
 
 import { useAuth } from "@/hooks/use-auth"
+import { useScrollHide } from "@/hooks/use-scroll-hide"
 import { ResumeService } from "@/lib/resume-service"
 
 // TYPES
@@ -225,6 +226,7 @@ LoadingSkeleton.displayName = "LoadingSkeleton"
 export default function Dashboard() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
+  const { isVisible } = useScrollHide({ threshold: 50 })
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
@@ -403,7 +405,17 @@ export default function Dashboard() {
       <TooltipProvider>
         <div className="min-h-screen bg-background">
           {/* HEADER */}
-          <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+          <motion.header 
+            className="border-b border-border bg-card/50 backdrop-blur-sm fixed top-0 left-0 right-0 z-50"
+            initial={{ y: 0 }}
+            animate={{ 
+              y: isVisible ? 0 : -100,
+              transition: { 
+                duration: 0.3, 
+                ease: "easeInOut" 
+              }
+            }}
+          >
             <div className="container mx-auto px-6 py-4">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-6">
@@ -482,9 +494,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </header>
+          </motion.header>
 
-          <main className="container mx-auto px-6 py-12">
+          <main className="container mx-auto px-6 py-12 pt-24">
             {/* HERO SECTION */}
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">

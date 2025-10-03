@@ -48,6 +48,7 @@ import { ChangePasswordModal } from "@/components/ui/change-password-modal"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { usePreferences } from "@/hooks/use-preferences"
+import { useScrollHide } from "@/hooks/use-scroll-hide"
 import { ProfileService, UserProfile, NotificationSettings, AICreditsUsage, UserPreferences, SecuritySettings } from "@/lib/profile-service"
 import { formatDate, formatCurrency, formatTime } from "@/lib/format-utils"
 import ProtectedRoute from "@/components/auth/protected-route"
@@ -65,6 +66,7 @@ export default function ProfileSettingsPage() {
   const { user, signOut } = useAuth()
   const { preferences, updatePreference } = usePreferences()
   const { toast } = useToast()
+  const { isVisible } = useScrollHide({ threshold: 50 })
   const [activeSection, setActiveSection] = useState('profile')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [notifications, setNotifications] = useState<NotificationSettings | null>(null)
@@ -1173,7 +1175,17 @@ export default function ProfileSettingsPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <motion.header 
+          className="border-b border-border bg-card/50 backdrop-blur-sm fixed top-0 left-0 right-0 z-50"
+          initial={{ y: 0 }}
+          animate={{ 
+            y: isVisible ? 0 : -100,
+            transition: { 
+              duration: 0.3, 
+              ease: "easeInOut" 
+            }
+          }}
+        >
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
@@ -1195,9 +1207,9 @@ export default function ProfileSettingsPage() {
               </div>
             </div>
           </div>
-        </header>
+        </motion.header>
 
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-6 py-8 pt-24">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar */}
             <div className="lg:w-64 w-full">

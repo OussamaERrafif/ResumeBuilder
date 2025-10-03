@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { motion } from "framer-motion"
 import {
   ArrowLeft,
   Search,
@@ -22,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { StructuredData } from "@/components/seo/structured-data"
 import { Breadcrumb } from "@/components/seo/breadcrumb"
 import { generateFAQPageSchema } from "@/lib/structured-data"
+import { useScrollHide } from "@/hooks/use-scroll-hide"
 
 const FAQ_CATEGORIES = [
   { id: "general", name: "General", icon: HelpCircle },
@@ -141,6 +143,7 @@ const FAQ_DATA = [
 ]
 
 export default function FAQ() {
+  const { isVisible } = useScrollHide({ threshold: 50 })
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [expandedItems, setExpandedItems] = useState<number[]>([])
@@ -162,7 +165,17 @@ export default function FAQ() {
       <StructuredData data={generateFAQPageSchema(FAQ_DATA.map(faq => ({ question: faq.question, answer: faq.answer })))} />
       
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <motion.header 
+        className="border-b border-border bg-card/50 backdrop-blur-sm fixed top-0 left-0 right-0 z-50"
+        initial={{ y: 0 }}
+        animate={{ 
+          y: isVisible ? 0 : -100,
+          transition: { 
+            duration: 0.3, 
+            ease: "easeInOut" 
+          }
+        }}
+      >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -179,9 +192,9 @@ export default function FAQ() {
             </div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
-      <div className="container mx-auto px-6 py-12 max-w-6xl">
+      <div className="container mx-auto px-6 py-12 pt-24 max-w-6xl">
         {/* Breadcrumb Navigation */}
         <Breadcrumb 
           items={[{ name: 'FAQ', href: '/faq' }]} 
