@@ -17,7 +17,8 @@ interface UseScrollHideOptions {
 
 export function useScrollHide(options: UseScrollHideOptions = {}) {
   const { threshold = 50, initiallyHidden = false } = options
-  const [isVisible, setIsVisible] = useState(true) // Always visible now
+  // State representing whether the navbar is visible; initial value is true
+  const [isVisible, setIsVisible] = useState(true)
   const [prevScrollY, setPrevScrollY] = useState(0)
 
   const handleScroll = useCallback(() => {
