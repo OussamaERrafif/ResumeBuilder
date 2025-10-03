@@ -16,6 +16,68 @@ const parsePDF = async (buffer: Buffer): Promise<string> => {
   }
 }
 
+// Function to clean and normalize extracted text
+const cleanAndNormalizeText = (text: string): string => {
+  return text
+    // Remove excessive whitespace and normalize line breaks
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    // Fix common PDF extraction issues where words get concatenated
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    // Fix missing spaces after periods, commas, and other punctuation
+    .replace(/([.!?])([A-Z])/g, '$1 $2')
+    .replace(/([,;:])([A-Za-z])/g, '$1 $2')
+    // Remove excessive spaces but preserve single spaces
+    .replace(/[ \t]+/g, ' ')
+    // Remove excessive line breaks but preserve paragraph structure
+    .replace(/\n{3,}/g, '\n\n')
+    // Trim whitespace from each line
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n')
+    .trim()
+}
+
+// Function to normalize spacing in parsed data
+const normalizeSpacingInParsedData = (data: ParsedResumeData): ParsedResumeData => {
+  const normalizeString = (str: string): string => {
+    if (!str) return str
+    return str
+      // Fix missing spaces after punctuation
+      .replace(/([.!?])([A-Z])/g, '$1 $2')
+      .replace(/([,;:])([A-Za-z])/g, '$1 $2')
+      // Fix spacing around common separators
+      .replace(/;([A-Za-z])/g, '; $1')
+      .replace(/,([A-Za-z])/g, ', $1')
+      // Remove excessive spaces
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  return {
+    ...data,
+    personalInfo: {
+      ...data.personalInfo,
+      summary: normalizeString(data.personalInfo.summary)
+    },
+    experience: data.experience.map(exp => ({
+      ...exp,
+      responsibilities: normalizeString(exp.responsibilities)
+    })),
+    skills: {
+      languages: normalizeString(data.skills.languages),
+      frameworks: normalizeString(data.skills.frameworks),
+      tools: normalizeString(data.skills.tools)
+    },
+    projects: data.projects.map(proj => ({
+      ...proj,
+      description: normalizeString(proj.description),
+      technologies: normalizeString(proj.technologies)
+    }))
+  }
+}
+
 interface ParsedResumeData {
   personalInfo: {
     name: string
@@ -69,6 +131,7 @@ interface ParsedResumeData {
 const getParsingPrompt = (resumeText: string) => {
   return `
 Extract structured information from this resume text and return it as valid JSON.
+Pay special attention to preserving proper spacing and formatting in the extracted text.
 
 Resume Text:
 ${resumeText}
@@ -103,19 +166,19 @@ Return ONLY the JSON object in this exact format:
       "jobTitle": "Job Title",
       "company": "Company Name", 
       "date": "Employment Period",
-      "responsibilities": "Key responsibilities and achievements"
+      "responsibilities": "Key responsibilities and achievements. Use proper spacing between sentences. Separate multiple responsibilities with '; ' (semicolon and space)."
     }
   ],
   "skills": {
-    "languages": "Programming languages",
-    "frameworks": "Frameworks and libraries",
-    "tools": "Tools and technologies"
+    "languages": "Programming languages, separated by commas with spaces",
+    "frameworks": "Frameworks and libraries, separated by commas with spaces",
+    "tools": "Tools and technologies, separated by commas with spaces"
   },
   "projects": [
     {
       "name": "Project Name",
-      "description": "Project description",
-      "technologies": "Technologies used",
+      "description": "Project description with proper spacing between words and sentences",
+      "technologies": "Technologies used, separated by commas with spaces",
       "link": "Project URL if available"
     }
   ],
@@ -139,8 +202,10 @@ Return ONLY the JSON object in this exact format:
 
 Rules:
 - If field not found, use empty string "" for strings or empty array [] for arrays
-- Extract information exactly as it appears
-- Combine multiple bullet points with semicolons
+- Extract information exactly as it appears, preserving proper spacing and formatting
+- For multiple bullet points or responsibilities, combine them with "; " (semicolon followed by space)
+- Ensure proper spacing between words and sentences
+- Remove excessive line breaks but preserve paragraph structure
 - Return ONLY valid JSON, no markdown or additional text
 `
 }
@@ -187,7 +252,8 @@ export async function POST(request: NextRequest) {
       try {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
-        extractedText = await parsePDF(buffer)
+        const rawText = await parsePDF(buffer)
+        extractedText = cleanAndNormalizeText(rawText)
       } catch (pdfError) {
         console.error('PDF parsing error:', pdfError)
         return NextResponse.json(
@@ -235,6 +301,9 @@ export async function POST(request: NextRequest) {
         if (!parsedData.personalInfo) {
           throw new Error('Missing personalInfo in parsed data')
         }
+        
+        // Post-process to ensure proper spacing in all text fields
+        parsedData = normalizeSpacingInParsedData(parsedData)
         
       } catch (parseError) {
         throw new Error('Failed to parse AI response into structured data')

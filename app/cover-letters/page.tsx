@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast"
 import ProtectedRoute from "@/components/auth/protected-route"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
+import { useScrollHide } from "@/hooks/use-scroll-hide"
 import { CoverLetterService, type CoverLetter } from "@/lib/cover-letter-service"
 import { ResumeService } from "@/lib/resume-service"
 
@@ -64,6 +65,7 @@ interface CoverLetterFormData {
 export default function CoverLettersPage() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
+  const { isVisible } = useScrollHide({ threshold: 50 })
 
   // Refs
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -807,7 +809,17 @@ export default function CoverLettersPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <motion.header 
+          className="border-b border-border bg-card/50 backdrop-blur-sm fixed top-0 left-0 right-0 z-50"
+          initial={{ y: 0 }}
+          animate={{ 
+            y: isVisible ? 0 : -100,
+            transition: { 
+              duration: 0.3, 
+              ease: "easeInOut" 
+            }
+          }}
+        >
           <div className="container mx-auto px-6 py-4">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-center gap-6">
@@ -886,9 +898,9 @@ export default function CoverLettersPage() {
               </div>
             </div>
           </div>
-        </header>
+        </motion.header>
 
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-6 py-8 pt-24">
           {error && (
             <Alert variant="destructive" className="mb-6">
               <AlertDescription>{error}</AlertDescription>

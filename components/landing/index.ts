@@ -1,0 +1,11 @@
+// Landing page section components
+export { Navigation } from "./navigation"
+export { HeroSection } from "./hero-section"
+export { ValuePropsSection } from "./value-props-section"
+export { FeaturesSection } from "./features-section"
+export { TemplatesSection } from "./templates-section"
+export { CommunitySection } from "./community-section"
+export { PricingSection } from "./pricing-section"
+export { CTASection } from "./cta-section"
+export { Footer } from "./footer"
+export { TemplatePreview } from "./template-preview"
