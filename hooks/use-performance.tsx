@@ -79,7 +79,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): T {
-  const throttleRef = useRef<number | null>(null)
+  const throttleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   
   return useCallback(
     ((...args: Parameters<T>) => {

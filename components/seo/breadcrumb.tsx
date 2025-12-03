@@ -19,7 +19,7 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
   const fullItems = [
-    { name: 'Home', href: 'https://apexresume.com' },
+    { name: 'Home', url: 'https://apexresume.com' },
     ...items.map(item => ({ name: item.name, url: `https://apexresume.com${item.href}` }))
   ]
 

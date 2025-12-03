@@ -305,7 +305,7 @@ export async function POST(request: NextRequest) {
         // Post-process to ensure proper spacing in all text fields
         parsedData = normalizeSpacingInParsedData(parsedData)
         
-      } catch (parseError) {
+      } catch (_parseError) {
         throw new Error('Failed to parse AI response into structured data')
       }
 
@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
         extractedText: extractedText.substring(0, 1000)
       })
 
-    } catch (aiError) {
+    } catch (_aiError) {
       return NextResponse.json(
         { 
           error: 'Failed to parse resume with AI. Please ensure the resume is clearly formatted.', 
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { 
         error: 'An unexpected error occurred while processing your resume.', 

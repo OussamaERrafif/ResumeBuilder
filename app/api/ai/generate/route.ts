@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
-
 // Validation function
 const validateAIRequest = (type: string, query: string) => {
   const validTypes = ['summary', 'experience', 'project']
@@ -148,8 +145,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         content: fallbackContent,
         success: true,
-        fallback: true,
-        debug: 'No API key configured in environment'
+        fallback: true
       })
     }
 
@@ -167,26 +163,23 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ 
         content: cleanedText,
-        success: true,
-        debug: 'AI generation successful with gemini-2.0-flash-exp'
+        success: true
       })
-    } catch (aiError) {
+    } catch (_aiError) {
       const fallbackContent = getFallbackContent(type, query)
       const cleanedFallback = cleanMarkdownFormatting(fallbackContent)
       return NextResponse.json({
         content: cleanedFallback,
         success: true,
-        fallback: true,
-        debug: `Gemini API error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}`
+        fallback: true
       })
     }
 
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({
       content: "Professional content will be generated based on your input.",
       success: true,
-      fallback: true,
-      debug: `API error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      fallback: true
     })
   }
 }

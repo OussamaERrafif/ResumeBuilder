@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { ResumeData, CoverLetterRequest, CoverLetterResponse } from '@/types/resume'
+import { ResumeData, CoverLetterRequest } from '@/types/resume'
 
 export async function POST(request: NextRequest) {
   let resumeData: ResumeData | null = null
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     
     try {
       optimizationSuggestions = JSON.parse(optimizationResult.response.text())
-    } catch (parseError) {
+    } catch (_parseError) {
       // If JSON parsing fails, provide default suggestions
       optimizationSuggestions = [
         "Consider adding more keywords from the job description to your resume",

@@ -166,13 +166,22 @@ export function escapeSqlChars(input: string): string {
  * @returns Random token string
  */
 export function generateSecureToken(length: number = 32): string {
+  // Use crypto.getRandomValues for cryptographically secure random generation
   if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
     const array = new Uint8Array(length)
     window.crypto.getRandomValues(array)
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
   }
   
-  // Fallback for server-side
+  // Use Web Crypto API (available in modern Node.js and browsers)
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.getRandomValues) {
+    const array = new Uint8Array(length)
+    globalThis.crypto.getRandomValues(array)
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+  }
+
+  // Last resort fallback (not cryptographically secure - log warning)
+  console.warn('[SECURITY] Using non-cryptographic random fallback - this should not happen in production')
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
   for (let i = 0; i < length; i++) {

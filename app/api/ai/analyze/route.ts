@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
-
 interface PersonalInfo {
   name: string
   title: string
@@ -309,9 +306,9 @@ export async function POST(request: NextRequest) {
     let body
     try {
       body = JSON.parse(bodyText)
-    } catch (parseError) {
+    } catch (_parseError) {
       return NextResponse.json(
-        { error: 'Invalid JSON in request body', debug: `Parse error: ${parseError}` },
+        { error: 'Invalid JSON in request body' },
         { status: 400 }
       )
     }
@@ -320,7 +317,7 @@ export async function POST(request: NextRequest) {
     
     if (!resumeData) {
       return NextResponse.json(
-        { error: 'No resumeData provided in request body', debug: 'resumeData field is missing' },
+        { error: 'No resumeData provided in request body' },
         { status: 400 }
       )
     }
@@ -329,7 +326,7 @@ export async function POST(request: NextRequest) {
     // Validate resume data
     if (!resumeData || !resumeData.personalInfo) {
       return NextResponse.json(
-        { error: 'Invalid resume data provided - missing personalInfo', debug: 'personalInfo field is required' },
+        { error: 'Invalid resume data provided - missing personalInfo' },
         { status: 400 }
       )
     }
@@ -342,8 +339,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         analysis: fallbackAnalysis,
         success: true,
-        fallback: true,
-        debug: 'No API key configured, using template analysis'
+        fallback: true
       })
     }
 
@@ -366,33 +362,30 @@ export async function POST(request: NextRequest) {
         const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
         
         analysisResult = JSON.parse(cleanText)
-      } catch (parseError) {
+      } catch (_parseError) {
         throw new Error('Failed to parse AI analysis response - Invalid JSON format')
       }
 
       return NextResponse.json({ 
         analysis: analysisResult,
         success: true,
-        fallback: false,
-        debug: 'AI analysis successful with Gemini'
+        fallback: false
       })
       
-    } catch (aiError) {
+    } catch (_aiError) {
       const fallbackAnalysis = getFallbackAnalysis(resumeData)
       
       return NextResponse.json({
         analysis: fallbackAnalysis,
         success: true,
-        fallback: true,
-        debug: `AI error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'} - Used fallback analysis`
+        fallback: true
       })
     }
 
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({
       error: 'Failed to analyze resume',
-      success: false,
-      debug: `API error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      success: false
     }, { status: 500 })
   }
 }

@@ -4,10 +4,10 @@
  */
 
 export const APP_CONFIG = {
-  name: 'ResumeBuilder Pro',
+  name: 'ApexResume',
   version: '2.0.0',
   description: 'Professional resume builder with AI-powered content suggestions',
-  author: 'ResumeBuilder Team',
+  author: 'ApexResume Team',
   
   // Performance thresholds
   performance: {
