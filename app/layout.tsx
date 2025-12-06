@@ -132,7 +132,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ApexResume" />
       </head>
-      <body className={`${montserrat.className} font-sans`} suppressHydrationWarning>
+      <body className={`${montserrat.className} font-sans antialiased`} suppressHydrationWarning>
         <StructuredData 
           data={[
             generateOrganizationSchema(),
@@ -148,7 +148,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <PreferencesProvider>
-              {children}
+              <div className="animate-fade-in">
+                {children}
+              </div>
               <Toaster />
             </PreferencesProvider>
           </AuthProvider>

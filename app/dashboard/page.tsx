@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, memo, useRef } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import {
   FileText,
@@ -16,7 +17,6 @@ import {
   X,
   Star,
   Mail,
-  Settings,
   ChevronDown,
   Home,
 } from "lucide-react"
@@ -24,7 +24,6 @@ import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -33,15 +32,36 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useToast } from "@/hooks/use-toast"
 
 import ProtectedRoute from "@/components/auth/protected-route"
-import ResumeUploadModal from "@/components/resume-upload-modal"
-import DuplicateResumeModal from "@/components/duplicate-resume-modal"
-import ResumeBuilder from "../components/resume-builder"
-import { TemplatePreview } from "../components/template-previews"
 import { RESUME_TEMPLATES } from "../types/templates"
 
 import { useAuth } from "@/hooks/use-auth"
 import { useScrollHide } from "@/hooks/use-scroll-hide"
 import { ResumeService } from "@/lib/resume-service"
+
+// Lazy load heavy components - only loaded when needed
+const ResumeUploadModal = dynamic(() => import("@/components/resume-upload-modal"), {
+  ssr: false,
+  loading: () => null
+})
+const DuplicateResumeModal = dynamic(() => import("@/components/duplicate-resume-modal"), {
+  ssr: false,
+  loading: () => null
+})
+const ResumeBuilder = dynamic(() => import("../components/resume-builder"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-foreground text-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p>Loading Resume Builder...</p>
+      </div>
+    </div>
+  )
+})
+const TemplatePreview = dynamic(
+  () => import("../components/template-previews").then(mod => ({ default: mod.TemplatePreview })),
+  { ssr: false, loading: () => <div className="w-full h-32 bg-muted animate-pulse rounded-xl" /> }
+)
 
 // TYPES
 interface SavedResume {
@@ -77,13 +97,13 @@ const AddResumeCard = memo(({ onClick }: { onClick: () => void }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
-    whileHover={{ y: -2 }}
+    whileHover={{ y: -4, scale: 1.01 }}
     className="group cursor-pointer"
     onClick={onClick}
   >
-    <Card className="border-2 border-dashed border-muted-foreground/30 bg-muted/20 hover:border-primary/50 hover:bg-muted/40 transition-all duration-200 h-full min-h-[400px] flex items-center justify-center">
+    <Card className="border-2 border-dashed border-muted-foreground/20 bg-muted/10 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 h-full min-h-[400px] flex items-center justify-center rounded-2xl">
       <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
           <Plus className="h-8 w-8 text-primary" />
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">Create New Resume</h3>
@@ -125,56 +145,55 @@ const ResumeCard = memo(
           duration: 0.3,
           delay: index * 0.05,
         }}
-        whileHover={{ y: -2 }}
+        whileHover={{ y: -4 }}
         className="group"
       >
-        <Card className="border border-border bg-card hover:shadow-lg transition-all duration-200">
-          <CardHeader className="pb-4">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                <FileText className="h-5 w-5 text-primary-foreground" />
+        <Card className="border border-border bg-card hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 rounded-2xl overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <FileText className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-foreground truncate text-base">{resume.name}</CardTitle>
+                <CardTitle className="text-foreground truncate text-base font-semibold">{resume.name}</CardTitle>
+                <p className="text-sm text-muted-foreground truncate mt-0.5">
+                  {resume.data?.personalInfo?.title || "No title"}
+                </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-xs rounded-md">
                     {template?.name ?? "Classic"}
                   </Badge>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs rounded-md text-emerald-600 border-emerald-200 dark:border-emerald-800">
                     <Star className="h-3 w-3 mr-1" />
                     Active
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground truncate mt-1">
-                  {resume.data?.personalInfo?.title || "No title"}
-                </p>
               </div>
             </div>
           </CardHeader>
 
           <CardContent className="space-y-4 pt-0">
-            {/* TEMPLATE PREVIEW */}
-            {template && (
-              <div className="w-full h-32 border border-border rounded-lg overflow-hidden bg-white">
-                <div className="transform scale-[0.25] origin-top-left w-[400%] h-[400%]">
-                  <TemplatePreview template={template} data={resume.data} />
-                </div>
+            {/* TEMPLATE PREVIEW - Simplified: show template name/icon instead of full render */}
+            <div className="w-full h-32 border border-border rounded-xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group-hover:border-primary/30 transition-colors flex flex-col items-center justify-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-primary" />
               </div>
-            )}
+              <span className="text-xs text-muted-foreground">{template?.name || "Classic"} Template</span>
+            </div>
 
             {/* ACTION BUTTONS */}
             <div className="grid grid-cols-2 gap-2">
-              <Button size="sm" onClick={handleEdit} className="w-full">
+              <Button size="sm" onClick={handleEdit} className="w-full rounded-lg">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
 
-              <Button size="sm" variant="outline" onClick={handleDuplicate} className="w-full bg-transparent">
+              <Button size="sm" variant="outline" onClick={handleDuplicate} className="w-full bg-transparent rounded-lg">
                 <Copy className="h-4 w-4 mr-2" />
                 Copy
               </Button>
 
-              <Button size="sm" variant="outline" className="w-full bg-transparent">
+              <Button size="sm" variant="outline" className="w-full bg-transparent rounded-lg">
                 <Sparkles className="h-4 w-4 mr-2" />
                 Review
               </Button>
@@ -183,7 +202,7 @@ const ResumeCard = memo(
                 size="sm"
                 variant="outline"
                 onClick={handleDelete}
-                className="w-full text-destructive bg-transparent"
+                className="w-full text-destructive hover:bg-destructive/10 bg-transparent rounded-lg"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -245,10 +264,28 @@ export default function Dashboard() {
   // Debounced search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
-  // DATA
+  // Define loadSavedResumes before using it in useEffect
+  const loadSavedResumes = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+    try {
+      const { data, error: fetchError } = await ResumeService.getUserResumes(user.id)
+      if (fetchError) {
+        setError("Failed to load resumes")
+      } else {
+        setSavedResumes(data || [])
+      }
+    } catch (_err) {
+      setError("An unexpected error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
+
+  // DATA - load resumes when user changes
   useEffect(() => {
     if (user) loadSavedResumes()
-  }, [user])
+  }, [user, loadSavedResumes])
 
   // Handle click outside dropdown
   useEffect(() => {
@@ -264,34 +301,17 @@ export default function Dashboard() {
     }
   }, [])
 
-  const loadSavedResumes = useCallback(async () => {
-    if (!user) return
-    setLoading(true)
-    try {
-      const { data, error } = await ResumeService.getUserResumes(user.id)
-      if (error) {
-        setError("Failed to load resumes")
-      } else {
-        setSavedResumes(data || [])
-      }
-    } catch (err) {
-      setError("An unexpected error occurred")
-    } finally {
-      setLoading(false)
-    }
-  }, [user])
-
   const deleteResume = useCallback(
     async (id: string) => {
       if (!user) return
       try {
-        const { error } = await ResumeService.deleteResume(id, user.id)
-        if (error) {
+        const { error: deleteError } = await ResumeService.deleteResume(id, user.id)
+        if (deleteError) {
           setError("Failed to delete resume")
         } else {
           setSavedResumes((prev) => prev.filter((r) => r.id !== id))
         }
-      } catch (err) {
+      } catch (_err) {
         setError("Failed to delete resume")
       }
     },
@@ -305,19 +325,19 @@ export default function Dashboard() {
         const original = savedResumes.find((r) => r.id === originalId)
         if (!original) return
 
-        const { error } = await ResumeService.createResume({
+        const { error: createError } = await ResumeService.createResume({
           user_id: user.id,
           name: newName,
           template_id: templateId,
           data: original.data,
         })
 
-        if (error) {
+        if (createError) {
           setError("Failed to duplicate resume")
         } else {
           loadSavedResumes()
         }
-      } catch (err) {
+      } catch (_err) {
         setError("Failed to duplicate resume")
       }
     },
@@ -344,9 +364,9 @@ export default function Dashboard() {
   // SIGN-OUT
   const handleSignOut = useCallback(async () => {
     try {
-      const { error } = await signOut()
-      if (error) setError("Failed to sign out")
-    } catch (err) {
+      const { error: signOutError } = await signOut()
+      if (signOutError) setError("Failed to sign out")
+    } catch (_err) {
       setError("Failed to sign out")
     }
   }, [signOut])
@@ -406,7 +426,7 @@ export default function Dashboard() {
         <div className="min-h-screen bg-background">
           {/* HEADER */}
           <motion.header 
-            className="border-b border-border bg-card/50 backdrop-blur-sm fixed top-0 left-0 right-0 z-50"
+            className="border-b border-border bg-background/80 backdrop-blur-xl fixed top-0 left-0 right-0 z-50"
             initial={{ y: 0 }}
             animate={{ 
               y: isVisible ? 0 : -100,
@@ -416,27 +436,26 @@ export default function Dashboard() {
               }
             }}
           >
-            <div className="container mx-auto px-6 py-4">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-primary-foreground" />
+            <div className="container mx-auto px-4 sm:px-6 py-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 lg:gap-6">
+                  <Link href="/" className="flex items-center gap-3 group">
+                    <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                      <FileText className="h-5 w-5 text-primary-foreground" />
                     </div>
-                    <div>
-                      <h1 className="text-2xl font-bold text-foreground">ApexResume</h1>
-                      <p className="text-muted-foreground text-sm">Professional Resume Builder</p>
+                    <div className="hidden sm:block">
+                      <h1 className="text-lg font-bold text-foreground">ApexResume</h1>
                     </div>
-                  </div>
+                  </Link>
                   
                   {/* Navigation */}
                   <nav className="hidden md:flex items-center gap-1">
-                    <Button variant="ghost" className="bg-primary/10 text-primary">
+                    <Button variant="ghost" size="sm" className="bg-primary/10 text-primary rounded-lg">
                       <Home className="h-4 w-4 mr-2" />
                       Dashboard
                     </Button>
                     <Link href="/cover-letters">
-                      <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground rounded-lg">
                         <Mail className="h-4 w-4 mr-2" />
                         Cover Letters
                       </Button>
@@ -444,61 +463,72 @@ export default function Dashboard() {
                   </nav>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="flex items-center gap-3 text-sm text-foreground bg-muted/50 hover:bg-muted/70 rounded-lg px-4 py-2 transition-colors"
+                      className="flex items-center gap-2 sm:gap-3 text-sm text-foreground bg-muted hover:bg-muted/80 rounded-xl px-3 py-2 transition-all duration-200"
                     >
-                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary-foreground" />
+                      <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
+                        <User className="h-3.5 w-3.5 text-primary-foreground" />
                       </div>
-                      <span className="truncate max-w-32">{user?.user_metadata?.full_name || user?.email}</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                      <span className="hidden sm:inline truncate max-w-28 text-sm">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showProfileDropdown ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Dropdown Menu */}
-                    {showProfileDropdown && (
-                      <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg z-50 sm:w-56">
-                        <div className="py-1">
-                          <Link href="/profile" className="block">
+                    <AnimatePresence>
+                      {showProfileDropdown && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden"
+                        >
+                          <div className="py-1">
+                            <Link href="/profile" className="block">
+                              <button 
+                                className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors flex items-center gap-3"
+                                onClick={() => setShowProfileDropdown(false)}
+                              >
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                Profile & Settings
+                              </button>
+                            </Link>
+                            <div className="border-t border-border my-1"></div>
                             <button 
-                              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2"
-                              onClick={() => setShowProfileDropdown(false)}
+                              onClick={() => {
+                                setShowProfileDropdown(false)
+                                handleSignOut()
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-3"
                             >
-                              <User className="h-4 w-4" />
-                              Profile & Settings
+                              <LogOut className="h-4 w-4" />
+                              Sign Out
                             </button>
-                          </Link>
-                          <div className="border-t border-border my-1"></div>
-                          <button 
-                            onClick={() => {
-                              setShowProfileDropdown(false)
-                              handleSignOut()
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors flex items-center gap-2"
-                          >
-                            <LogOut className="h-4 w-4" />
-                            Sign Out
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="bg-muted rounded-lg p-1">
-                      <ThemeToggle />
-                    </div>
+                  <div className="bg-muted rounded-xl p-0.5">
+                    <ThemeToggle />
                   </div>
                 </div>
               </div>
             </div>
           </motion.header>
 
-          <main className="container mx-auto px-6 py-12 pt-24">
+          <main className="container mx-auto px-4 sm:px-6 py-8 pt-20">
             {/* HERO SECTION */}
-            <div className="text-center mb-16">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-12 lg:mb-16"
+            >
               <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
                 Create Professional
                 <br />
@@ -509,7 +539,7 @@ export default function Dashboard() {
               </p>
 
               <div className="flex flex-wrap justify-center gap-4">
-                <Button onClick={createNewResume} size="lg" className="px-8 py-3">
+                <Button onClick={createNewResume} size="lg" className="px-8 py-3 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30">
                   <Plus className="h-5 w-5 mr-2" />
                   Create New Resume
                 </Button>
@@ -518,7 +548,7 @@ export default function Dashboard() {
                   Upload & Analyze
                 </Button>
               </div>
-            </div>
+            </motion.div>
 
             {/* ERROR ALERT */}
             <AnimatePresence>
@@ -537,7 +567,12 @@ export default function Dashboard() {
             </AnimatePresence>
 
             {/* STATS & SEARCH */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-12">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10"
+            >
               <div className="lg:col-span-3">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -545,13 +580,13 @@ export default function Dashboard() {
                     placeholder="Search your resumes..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 pr-12 h-12 text-base"
+                    className="pl-12 pr-12 h-12 text-base rounded-xl"
                   />
                   {searchTerm && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 rounded-lg"
                       onClick={() => setSearchTerm("")}
                     >
                       <X className="h-4 w-4" />
@@ -560,18 +595,18 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <Card className="h-12 flex items-center">
-                <CardContent className="p-4 flex items-center gap-4 w-full">
-                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-primary-foreground" />
+              <Card className="flex items-center rounded-xl">
+                <CardContent className="p-4 flex items-center gap-3 w-full">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-foreground">{savedResumes.length}</p>
-                    <p className="text-sm text-muted-foreground">Resumes</p>
+                    <p className="text-2xl font-bold text-foreground">{savedResumes.length}</p>
+                    <p className="text-xs text-muted-foreground">Total Resumes</p>
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
 
             {/* RESUME GRID */}
             {loading ? (
@@ -621,23 +656,24 @@ export default function Dashboard() {
             <ResumeUploadModal
               isOpen={showUploadModal}
               onClose={() => setShowUploadModal(false)}
-              onAnalysisComplete={async (data: { resumeData: any }) => {
+              onAnalysisComplete={async (data: { resumeData: Record<string, unknown> }) => {
                 
                 if (user) {
                   try {
                     // Create a new resume with the parsed data
-                    const resumeName = data.resumeData.personalInfo?.name 
-                      ? `${data.resumeData.personalInfo.name}'s Resume`
+                    const personalInfo = data.resumeData.personalInfo as { name?: string } | undefined
+                    const resumeName = personalInfo?.name 
+                      ? `${personalInfo.name}'s Resume`
                       : `Uploaded Resume ${new Date().toLocaleDateString()}`
                     
-                    const { error } = await ResumeService.createResume({
+                    const { error: createError } = await ResumeService.createResume({
                       user_id: user.id,
                       name: resumeName,
                       template_id: 'modern', // Default template
                       data: data.resumeData,
                     })
 
-                    if (error) {
+                    if (createError) {
                       setError("Failed to create resume from uploaded file")
                       toast({
                         title: "Error",
@@ -651,7 +687,7 @@ export default function Dashboard() {
                       })
                       loadSavedResumes()
                     }
-                  } catch (err) {
+                  } catch (_err) {
                     setError("An unexpected error occurred while creating the resume")
                     toast({
                       title: "Error",

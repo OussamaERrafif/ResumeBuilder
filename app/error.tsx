@@ -19,23 +19,25 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md animate-fade-in">
         {/* Header with Logo and Theme Toggle */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <FileText className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold text-foreground">ApexResume</span>
+            <span className="text-xl font-bold text-foreground">ApexResume</span>
           </div>
-          <ThemeToggle />
+          <div className="bg-muted rounded-xl p-0.5">
+            <ThemeToggle />
+          </div>
         </div>
 
-        <Card className="border-border/50 shadow-xl">
+        <Card className="border-border/50 shadow-2xl shadow-primary/5 rounded-2xl overflow-hidden">
           <CardHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
+            <div className="mx-auto w-20 h-20 bg-destructive/10 rounded-2xl flex items-center justify-center">
+              <AlertTriangle className="h-10 w-10 text-destructive" />
             </div>
             <div>
               <CardTitle className="text-2xl font-bold text-foreground">Something went wrong!</CardTitle>
@@ -46,7 +48,7 @@ export default function Error({
           </CardHeader>
           
           <CardContent className="space-y-4">
-            <div className="bg-muted/50 rounded-lg p-4">
+            <div className="bg-muted/50 rounded-xl p-4">
               <p className="text-sm text-muted-foreground font-mono">
                 Error: {error.message || "An unexpected error occurred"}
               </p>
@@ -58,7 +60,7 @@ export default function Error({
             </div>
             
             <div className="flex flex-col gap-3">
-              <Button onClick={reset} className="w-full" size="lg">
+              <Button onClick={reset} className="w-full shadow-lg shadow-primary/20" size="lg">
                 <RefreshCcw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
@@ -73,11 +75,17 @@ export default function Error({
             
             <div className="text-center pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground">
-                Still having issues? <Link href="/faq" className="text-primary hover:underline">Contact Support</Link>
+                Still having issues? <Link href="/faq" className="text-primary hover:underline transition-colors">Contact Support</Link>
               </p>
             </div>
           </CardContent>
         </Card>
+        
+        {/* Decorative background elements */}
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 -left-32 w-96 h-96 bg-destructive/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        </div>
       </div>
     </div>
   )

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// Gemini (commented out - using OpenAI instead)
+// import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
+import { aiCache, getAICacheKey } from '@/lib/cache'
+import { aiRequestQueue, aiCircuitBreaker, requestDeduplicator } from '@/lib/request-queue'
+import { aiLimiter, getClientIP, createRateLimitResponse, addRateLimitHeaders } from '@/lib/rate-limiter'
+import { metrics, logger, requestTracker, generateRequestId } from '@/lib/monitoring'
 
 // Validation function
 const validateAIRequest = (type: string, query: string) => {
@@ -126,22 +132,53 @@ function getFallbackContent(type: string, query: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = generateRequestId()
+  requestTracker.start(requestId, '/api/ai/generate', 'POST')
+  
   try {
+    // Rate limiting check
+    const clientIP = getClientIP(request)
+    const rateLimit = aiLimiter.check(`ai:${clientIP}`)
+    
+    if (!rateLimit.allowed) {
+      requestTracker.end(requestId, 429)
+      return createRateLimitResponse(rateLimit.retryAfter || 60, 0)
+    }
+
     const body = await request.json()
     const { type, query } = body
 
     // Validate the request
     const validation = validateAIRequest(type, query)
     if (!validation.valid) {
+      requestTracker.end(requestId, 400)
       return NextResponse.json(
         { error: validation.error },
         { status: 400 }
       )
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
+    // Check cache first
+    const cacheKey = getAICacheKey(type, query)
+    const cached = aiCache.get(cacheKey)
+    if (cached) {
+      logger.debug('AI cache hit', { type, cacheKey })
+      requestTracker.recordCacheHit(requestId, true)
+      const response = NextResponse.json({
+        content: cached as string,
+        success: true,
+        cached: true
+      })
+      requestTracker.end(requestId, 200)
+      return addRateLimitHeaders(response, rateLimit.remaining, rateLimit.resetTime, 10)
+    }
+    requestTracker.recordCacheHit(requestId, false)
+
+    const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       const fallbackContent = getFallbackContent(type, query)
+      aiCache.set(cacheKey, fallbackContent, 60 * 60 * 1000) // Cache fallback for 1 hour
+      requestTracker.end(requestId, 200)
       return NextResponse.json({
         content: fallbackContent,
         success: true,
@@ -150,32 +187,80 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
-      const prompt = AI_PROMPTS[type as keyof typeof AI_PROMPTS](query)
-      
-      const result = await model.generateContent(prompt)
-      const response = await result.response
-      const text = response.text()
+      // Use request deduplication and queue for AI requests
+      const content = await requestDeduplicator.execute(cacheKey, async () => {
+        return await aiRequestQueue.enqueue(async () => {
+          return await aiCircuitBreaker.execute(async () => {
+            const timingId = metrics.startTiming('openai_request')
+            
+            try {
+              const openai = new OpenAI({ apiKey })
+              const prompt = AI_PROMPTS[type as keyof typeof AI_PROMPTS](query)
+              
+              const completion = await openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a professional resume writer. Generate clear, concise, and ATS-friendly content. Do not use markdown formatting.'
+                  },
+                  {
+                    role: 'user',
+                    content: prompt
+                  }
+                ],
+                max_tokens: 500,
+                temperature: 0.7,
+              })
+              
+              metrics.endTiming(timingId, { status: 'success', type })
+              return completion.choices[0]?.message?.content || ''
+            } catch (error) {
+              metrics.endTiming(timingId, { status: 'error', type })
+              throw error
+            }
+          })
+        }, { priority: 5, timeout: 25000 })
+      }) as string
       
       // Clean any markdown formatting
-      const cleanedText = cleanMarkdownFormatting(text)
+      const cleanedText = cleanMarkdownFormatting(content)
+      
+      // Cache the successful response
+      aiCache.set(cacheKey, cleanedText, 30 * 60 * 1000) // Cache for 30 minutes
 
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         content: cleanedText,
         success: true
       })
-    } catch (_aiError) {
+      requestTracker.end(requestId, 200)
+      return addRateLimitHeaders(response, rateLimit.remaining, rateLimit.resetTime, 10)
+      
+    } catch (aiError) {
+      logger.warn('AI request failed, using fallback', { 
+        error: aiError instanceof Error ? aiError.message : String(aiError),
+        type 
+      })
+      
       const fallbackContent = getFallbackContent(type, query)
       const cleanedFallback = cleanMarkdownFormatting(fallbackContent)
-      return NextResponse.json({
+      aiCache.set(cacheKey, cleanedFallback, 60 * 60 * 1000) // Cache fallback for 1 hour
+      
+      const response = NextResponse.json({
         content: cleanedFallback,
         success: true,
         fallback: true
       })
+      requestTracker.end(requestId, 200)
+      return addRateLimitHeaders(response, rateLimit.remaining, rateLimit.resetTime, 10)
     }
 
-  } catch (_error) {
+  } catch (error) {
+    logger.error('AI generate endpoint error', { 
+      error: error instanceof Error ? error.message : String(error) 
+    })
+    requestTracker.end(requestId, 500, error instanceof Error ? error.message : 'Unknown error')
+    
     return NextResponse.json({
       content: "Professional content will be generated based on your input.",
       success: true,

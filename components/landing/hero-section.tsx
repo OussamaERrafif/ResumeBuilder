@@ -21,69 +21,68 @@ export function HeroSection() {
       return () => clearInterval(interval)
     }
   }, [isHovered, tags.length])
+
   return (
-    <section className="py-20 lg:py-32 relative overflow-hidden min-h-[90vh] flex items-center">
-      {/* Simple Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-muted/30 to-transparent" />
+    <section className="pt-32 pb-20 lg:pt-40 lg:pb-32 relative overflow-hidden min-h-[90vh] flex items-center">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-accent/30 via-background to-background" />
       
-      <div className="container mx-auto px-6 relative">
-        <div className="text-center space-y-12 max-w-5xl mx-auto">
-          {/* Simple Badge */}
+      {/* Decorative blobs */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-blob" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-blob animation-delay-2000" />
+      
+      <div className="container mx-auto px-4 sm:px-6 relative">
+        <div className="text-center space-y-8 max-w-4xl mx-auto">
+          {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             className="flex justify-center"
           >
-            <Badge variant="secondary" className="text-base px-6 py-2">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Open Source Resume Builder
+            <Badge variant="secondary" className="text-sm px-4 py-1.5 bg-accent border-border">
+              <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" />
+              <span className="text-foreground">Open Source Resume Builder</span>
             </Badge>
           </motion.div>
 
-          {/* Clean Title */}
+          {/* Main heading */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="space-y-6"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="space-y-4"
           >
-            <motion.h1 
-              className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight text-foreground"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-foreground">
               Build Professional
               <br />
               <span className="text-primary">Resumes</span>
               <br />
-              That Get You Hired
-            </motion.h1>
+              <span className="text-muted-foreground">That Get You Hired</span>
+            </h1>
             
             <motion.p 
-              className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+              className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
             >
               Create ATS-friendly resumes with AI assistance. Open-source, free to start, 
               and designed to help you land your dream job.
             </motion.p>
           </motion.div>
 
-          {/* Interactive Call to Action Button */}
+          {/* CTA Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="flex justify-center"
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="flex justify-center pt-4"
           >
             <Link href="/dashboard">
               <Button 
                 size="lg" 
-                className="text-lg px-8 py-4 hover:scale-105 transition-all duration-300 relative overflow-hidden min-w-[220px] h-[56px]"
+                className="text-base sm:text-lg px-8 py-6 h-auto relative overflow-hidden min-w-[240px] rounded-xl shadow-lg shadow-primary/25"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => {
                   setIsHovered(false)
@@ -97,7 +96,7 @@ export function HeroSection() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.25 }}
                       className="flex items-center justify-center"
                     >
                       {tags[currentTagIndex]}
@@ -108,7 +107,7 @@ export function HeroSection() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.25 }}
                       className="flex items-center"
                     >
                       Start Building Now
@@ -120,36 +119,33 @@ export function HeroSection() {
             </Link>
           </motion.div>
 
-          {/* Product Hunt and GitHub Tags */}
+          {/* Social proof badges */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8"
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8"
           >
             {/* Product Hunt Badge */}
             <motion.a 
               href="https://www.producthunt.com/products/apexresume" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hover:scale-105 transition-transform duration-300"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="group"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center space-x-3 bg-muted/50 border rounded-full px-6 py-3 hover:bg-muted transition-all duration-300">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center space-x-3 bg-card border border-border rounded-xl px-5 py-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200">
+                <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
                   <ExternalLink className="h-4 w-4 text-white" />
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-semibold text-foreground">Featured on</div>
-                  <div className="text-lg font-bold text-orange-500">
+                  <div className="text-xs font-medium text-muted-foreground">Featured on</div>
+                  <div className="text-base font-bold text-orange-500">
                     Product Hunt
                   </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                  <span className="text-sm font-medium text-muted-foreground">#</span>
-                </div>
+                <Star className="h-4 w-4 text-yellow-500 fill-current" />
               </div>
             </motion.a>
 
@@ -158,29 +154,24 @@ export function HeroSection() {
               href="https://github.com/OussamaERrafif/ResumeBuilder" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hover:scale-105 transition-transform duration-300"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="group"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center space-x-3 bg-muted/50 border rounded-full px-6 py-3 hover:bg-muted transition-all duration-300">
-                <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                  <Github className="h-4 w-4 text-white" />
+              <div className="flex items-center space-x-3 bg-card border border-border rounded-xl px-5 py-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200">
+                <div className="w-9 h-9 bg-foreground rounded-lg flex items-center justify-center">
+                  <Github className="h-4 w-4 text-background" />
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-semibold text-foreground">Open Source on</div>
-                  <div className="text-lg font-bold text-foreground">
+                  <div className="text-xs font-medium text-muted-foreground">Open Source on</div>
+                  <div className="text-base font-bold text-foreground">
                     GitHub
                   </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                  <span className="text-sm font-medium text-muted-foreground"></span>
-                </div>
+                <Star className="h-4 w-4 text-yellow-500 fill-current" />
               </div>
             </motion.a>
           </motion.div>
-
-
         </div>
       </div>
     </section>

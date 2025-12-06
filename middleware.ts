@@ -1,26 +1,46 @@
 /**
  * @fileoverview Next.js middleware for security features
  * Implements request-level security checks, rate limiting, and security headers
+ * Optimized for high-load scenarios with efficient rate limiting
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { generateCSP, SECURITY_HEADERS } from './lib/security'
 
-// Rate limiting map (in production, use Redis or database)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+// ============================================================================
+// Optimized Sliding Window Rate Limiter (inline for edge runtime)
+// ============================================================================
 
-// Security configuration
+interface RateLimitEntry {
+  count: number
+  windowStart: number
+}
+
+// Use Map for O(1) lookups
+const rateLimitMap = new Map<string, RateLimitEntry>()
+
+// Cleanup tracking
+let lastCleanup = Date.now()
+const CLEANUP_INTERVAL = 60 * 1000 // 1 minute
+
+// Security configuration with optimized limits
 const SECURITY_CONFIG = {
-  rateLimitWindow: 15 * 60 * 1000, // 15 minutes
-  maxRequestsPerWindow: 100,
-  maxRequestsPerWindowAPI: 50,
+  rateLimitWindow: 60 * 1000, // 1 minute window (more granular)
+  maxRequestsPerWindow: 120, // General requests per minute
+  maxRequestsPerWindowAPI: 60, // API requests per minute  
+  maxRequestsPerWindowAI: 15, // AI requests per minute (stricter)
+  burstLimit: 20, // Max requests in 5 seconds (burst protection)
+  burstWindow: 5 * 1000,
   blockedIPs: new Set<string>(),
   trustedIPs: new Set<string>([
     '127.0.0.1',
     '::1',
-    '10.0.0.0/8',
-    '172.16.0.0/12',
-    '192.168.0.0/16'
+  ]),
+  // Rate limit by path patterns
+  pathLimits: new Map<string, number>([
+    ['/api/ai/', 15],
+    ['/api/auth/', 20],
+    ['/api/', 60],
   ])
 }
 
@@ -72,38 +92,119 @@ function isIPInRange(ip: string, range: string): boolean {
  * Check if IP is trusted
  */
 function isTrustedIP(ip: string): boolean {
-  const trustedIPs = Array.from(SECURITY_CONFIG.trustedIPs)
-  for (const trusted of trustedIPs) {
-    if (isIPInRange(ip, trusted)) {
+  for (const trusted of SECURITY_CONFIG.trustedIPs) {
+    if (ip === trusted) {
       return true
     }
+  }
+  // Check for localhost variations
+  if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+    return true
   }
   return false
 }
 
 /**
- * Rate limiting check
+ * Get rate limit for path
  */
-function checkRateLimit(ip: string, isAPI: boolean): { allowed: boolean; remaining: number } {
+function getRateLimitForPath(pathname: string): number {
+  for (const [pattern, limit] of SECURITY_CONFIG.pathLimits) {
+    if (pathname.startsWith(pattern)) {
+      return limit
+    }
+  }
+  return SECURITY_CONFIG.maxRequestsPerWindow
+}
+
+/**
+ * Cleanup old entries periodically
+ */
+function cleanupRateLimitMap(): void {
   const now = Date.now()
-  const maxRequests = isAPI ? SECURITY_CONFIG.maxRequestsPerWindowAPI : SECURITY_CONFIG.maxRequestsPerWindow
-  const key = `${ip}-${isAPI ? 'api' : 'web'}`
+  if (now - lastCleanup < CLEANUP_INTERVAL) return
+  
+  lastCleanup = now
+  const windowStart = now - SECURITY_CONFIG.rateLimitWindow
+  
+  for (const [key, entry] of rateLimitMap) {
+    if (entry.windowStart < windowStart) {
+      rateLimitMap.delete(key)
+    }
+  }
+  
+  // Prevent memory bloat - keep max 10000 entries
+  if (rateLimitMap.size > 10000) {
+    const entries = Array.from(rateLimitMap.entries())
+    entries.sort((a, b) => a[1].windowStart - b[1].windowStart)
+    const toRemove = entries.slice(0, rateLimitMap.size - 5000)
+    for (const [key] of toRemove) {
+      rateLimitMap.delete(key)
+    }
+  }
+}
+
+/**
+ * Rate limiting check with sliding window
+ */
+function checkRateLimit(ip: string, pathname: string): { 
+  allowed: boolean
+  remaining: number
+  resetTime: number
+} {
+  cleanupRateLimitMap()
+  
+  const now = Date.now()
+  const maxRequests = getRateLimitForPath(pathname)
+  const key = `${ip}:${pathname.split('/').slice(0, 3).join('/')}`
   
   const current = rateLimitMap.get(key)
+  const windowStart = now - SECURITY_CONFIG.rateLimitWindow
   
-  if (!current || now > current.resetTime) {
+  if (!current || current.windowStart < windowStart) {
     // Reset or create new entry
-    rateLimitMap.set(key, { count: 1, resetTime: now + SECURITY_CONFIG.rateLimitWindow })
-    return { allowed: true, remaining: maxRequests - 1 }
+    rateLimitMap.set(key, { count: 1, windowStart: now })
+    return { 
+      allowed: true, 
+      remaining: maxRequests - 1,
+      resetTime: now + SECURITY_CONFIG.rateLimitWindow
+    }
   }
   
   if (current.count >= maxRequests) {
-    return { allowed: false, remaining: 0 }
+    return { 
+      allowed: false, 
+      remaining: 0,
+      resetTime: current.windowStart + SECURITY_CONFIG.rateLimitWindow
+    }
   }
   
   current.count++
-  rateLimitMap.set(key, current)
-  return { allowed: true, remaining: maxRequests - current.count }
+  return { 
+    allowed: true, 
+    remaining: maxRequests - current.count,
+    resetTime: current.windowStart + SECURITY_CONFIG.rateLimitWindow
+  }
+}
+
+/**
+ * Check for burst (too many requests in short time)
+ */
+function checkBurst(ip: string): boolean {
+  const burstKey = `burst:${ip}`
+  const now = Date.now()
+  const current = rateLimitMap.get(burstKey)
+  
+  if (!current || now - current.windowStart > SECURITY_CONFIG.burstWindow) {
+    rateLimitMap.set(burstKey, { count: 1, windowStart: now })
+    return true
+  }
+  
+  if (current.count >= SECURITY_CONFIG.burstLimit) {
+    return false
+  }
+  
+  current.count++
+  return true
 }
 
 /**
@@ -183,16 +284,29 @@ export function middleware(request: NextRequest) {
     return new NextResponse('Bad Request', { status: 400 })
   }
   
-  // Rate limiting
-  const rateLimit = checkRateLimit(ip, isAPI)
-  if (!rateLimit.allowed) {
-    logSecurityEvent('RATE_LIMIT_EXCEEDED', ip, `${isAPI ? 'API' : 'Web'} requests`)
+  // Burst protection (too many requests in short time)
+  if (!checkBurst(ip)) {
+    logSecurityEvent('BURST_LIMIT', ip, 'Too many requests in short time')
     return new NextResponse('Too Many Requests', { 
       status: 429,
       headers: {
-        'X-RateLimit-Limit': isAPI ? SECURITY_CONFIG.maxRequestsPerWindowAPI.toString() : SECURITY_CONFIG.maxRequestsPerWindow.toString(),
+        'Retry-After': '5',
+        'X-RateLimit-Remaining': '0'
+      }
+    })
+  }
+  
+  // Rate limiting with path-specific limits
+  const rateLimit = checkRateLimit(ip, pathname)
+  if (!rateLimit.allowed) {
+    logSecurityEvent('RATE_LIMIT_EXCEEDED', ip, `Path: ${pathname}`)
+    return new NextResponse('Too Many Requests', { 
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': getRateLimitForPath(pathname).toString(),
         'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': Math.ceil((Date.now() + SECURITY_CONFIG.rateLimitWindow) / 1000).toString()
+        'X-RateLimit-Reset': Math.ceil(rateLimit.resetTime / 1000).toString(),
+        'Retry-After': Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString()
       }
     })
   }
@@ -209,9 +323,9 @@ export function middleware(request: NextRequest) {
   response.headers.set('Content-Security-Policy', generateCSP())
   
   // Add rate limit headers
-  response.headers.set('X-RateLimit-Limit', isAPI ? SECURITY_CONFIG.maxRequestsPerWindowAPI.toString() : SECURITY_CONFIG.maxRequestsPerWindow.toString())
+  response.headers.set('X-RateLimit-Limit', getRateLimitForPath(pathname).toString())
   response.headers.set('X-RateLimit-Remaining', rateLimit.remaining.toString())
-  response.headers.set('X-RateLimit-Reset', Math.ceil((Date.now() + SECURITY_CONFIG.rateLimitWindow) / 1000).toString())
+  response.headers.set('X-RateLimit-Reset', Math.ceil(rateLimit.resetTime / 1000).toString())
   
   return response
 }

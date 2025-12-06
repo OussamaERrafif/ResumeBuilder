@@ -3,20 +3,26 @@
  */
 
 export const AI_CONFIG = {
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  isConfigured: () => Boolean(process.env.GEMINI_API_KEY),
-  getProvider: () => 'Google Gemini',
+  // Gemini (commented out - using OpenAI instead)
+  // GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  
+  // OpenAI Configuration
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_MODEL: 'gpt-4o-mini', // or 'gpt-4o' for better quality
+  
+  isConfigured: () => Boolean(process.env.OPENAI_API_KEY),
+  getProvider: () => 'OpenAI',
   getStatus: () => {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.OPENAI_API_KEY) {
       return {
         configured: false,
-        message: 'No API key configured. Add GEMINI_API_KEY to .env.local for AI features.'
+        message: 'No API key configured. Add OPENAI_API_KEY to .env.local for AI features.'
       }
     }
     
     return {
       configured: true,
-      message: 'AI features enabled with Google Gemini'
+      message: 'AI features enabled with OpenAI'
     }
   }
 }

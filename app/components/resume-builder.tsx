@@ -1,19 +1,16 @@
 "use client"
 
-import React from "react"
-import { useState, useEffect, useMemo, useCallback } from "react"
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   FileText,
   Download,
-  Moon,
-  Sun,
   Plus,
   Trash2,
   User,
@@ -29,6 +26,9 @@ import {
   Palette,
   GripVertical,
   Target,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -52,11 +52,35 @@ import { CSS } from "@dnd-kit/utilities"
 import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 
-// Import removed - now using dynamic import for exact HTML generator
-import AIModal from "./ai-modal"
-import ResumeAnalysis from "./resume-analysis"
-import TemplateSelector from "./template-selector"
+// Lazy load heavy modal components - only loaded when needed
+const AIModal = dynamic(() => import("./ai-modal"), { 
+  ssr: false,
+  loading: () => null 
+})
+const ResumeAnalysis = dynamic(() => import("./resume-analysis"), { 
+  ssr: false,
+  loading: () => null 
+})
+const TemplateSelector = dynamic(() => import("./template-selector"), { 
+  ssr: false,
+  loading: () => null 
+})
+const ATSTemplateSelector = dynamic(() => import("./ats-template-selector"), { 
+  ssr: false,
+  loading: () => null 
+})
+
 import { RESUME_TEMPLATES } from "../types/templates"
+
+// Lazy load PDF export (heavy jspdf library) - only imported when downloading
+const exportResumePDF = async (...args: Parameters<typeof import("@/lib/ats-resume-exporter").exportResumePDF>) => {
+  const { exportResumePDF: exportFn } = await import("@/lib/ats-resume-exporter")
+  return exportFn(...args)
+}
+
+import { 
+  type ATSTemplateId 
+} from "@/lib/ats-resume-exporter"
 import {
   ClassicTemplate,
   ModernTemplate,
@@ -229,6 +253,8 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const [showAnalysis, setShowAnalysis] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState("classic")
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
+  const [showATSExporter, setShowATSExporter] = useState(false)
+  const [atsTemplateId, setATSTemplateId] = useState<ATSTemplateId>("ats-professional")
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   // Form fields
@@ -422,7 +448,17 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     references.values,
   ])
 
-  // Auto-save functionality
+  // Track if data has actually changed for smarter auto-save
+  const lastSavedDataRef = useRef<string>("")
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const resumeDataRef = useRef(resumeData)
+  
+  // Keep ref in sync without triggering re-renders
+  useEffect(() => {
+    resumeDataRef.current = resumeData
+  }, [resumeData])
+  
+  // Optimized auto-save - uses refs to avoid dependency array issues
   useEffect(() => {
     if (!user) return
     
@@ -432,14 +468,34 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     // Don't auto-save immediately after loading or if no content
     if (!lastSaved && !name.value && !summary.value) return
 
-    const autoSaveTimer = setTimeout(async () => {
+    // Clear existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+
+    // Create a hash of current data to detect actual changes
+    const currentDataHash = JSON.stringify(resumeData)
+    
+    // Skip if no actual changes
+    if (currentDataHash === lastSavedDataRef.current) return
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      // Double-check we still have changes before saving
+      const latestHash = JSON.stringify(resumeDataRef.current)
+      if (latestHash === lastSavedDataRef.current) return
+      
       setIsAutoSaving(true)
       await saveResume()
+      lastSavedDataRef.current = latestHash
       setLastSaved(new Date())
       setIsAutoSaving(false)
-    }, 2000) // Auto-save after 2 seconds of inactivity
+    }, 8000) // Increased to 8 seconds for better batching
 
-    return () => clearTimeout(autoSaveTimer)
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
   }, [
     resumeData,
     selectedTemplate,
@@ -456,21 +512,17 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     saveResume()
 
     try {
-      // Find the selected template object
-      const templateObj = RESUME_TEMPLATES.find(t => t.id === selectedTemplate)
+      // Use new ATS-friendly PDF generator
+      const result = await exportResumePDF(atsTemplateId, resumeData)
       
-      if (!templateObj) {
-        throw new Error('Template not found')
+      if (result.success) {
+        toast({
+          title: "Success! 🎉",
+          description: `Your ATS-friendly resume has been downloaded (${result.pages} page${result.pages > 1 ? 's' : ''})`,
+        })
+      } else {
+        throw new Error(result.error || 'Failed to generate PDF')
       }
-
-      // Use our EXACT HTML-to-PDF generation system
-      const { downloadExactResumePDF } = await import('../../lib/exact-html-generator')
-      await downloadExactResumePDF(templateObj, resumeData)
-      
-      toast({
-        title: "Success! 🎉",
-        description: `Your ${templateObj.name} resume has been downloaded.`,
-      })
     } catch (error) {
       toast({
         title: "Download Error",
@@ -478,7 +530,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         variant: "destructive",
       })
     }
-  }, [resumeData, selectedTemplate, saveResume])
+  }, [resumeData, atsTemplateId, saveResume])
 
   const handleAIGenerate = async (type: "summary" | "experience" | "project", query: string, index?: number) => {
     try {
@@ -709,7 +761,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
               <Button onClick={() => setShowTemplateSelector(true)} variant="outline" size="sm">
                 <Palette className="h-4 w-4 mr-2" />
-                Template
+                Preview Template
               </Button>
 
               <Button onClick={saveResume} variant="outline" size="sm" disabled={isAutoSaving}>
@@ -717,9 +769,9 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 {isAutoSaving ? 'Saving...' : 'Save Now'}
               </Button>
 
-              <Button onClick={handleDownload} variant="outline" size="sm">
+              <Button onClick={() => setShowATSExporter(true)} size="sm" className="bg-primary hover:bg-primary/90">
                 <Download className="h-4 w-4 mr-2" />
-                Download
+                Export ATS PDF
               </Button>
 
               <div className="bg-muted rounded-lg p-1">
@@ -865,28 +917,107 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
             </CardContent>
           </Card>
 
-          {/* Preview Section */}
-          <Card className="border border-border sticky top-8">
-            <CardHeader className="border-b border-border">
-              <CardTitle className="flex items-center justify-between text-foreground">
-                <div className="flex items-center space-x-3">
-                  <Eye className="h-5 w-5" />
-                  <span>Live Preview</span>
+          {/* Preview Section - Enhanced */}
+          <div className="xl:sticky xl:top-8 xl:self-start">
+            <Card className="border border-border rounded-2xl overflow-hidden shadow-lg">
+              <CardHeader className="border-b border-border bg-muted/30 py-3">
+                <CardTitle className="flex items-center justify-between text-foreground">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-base">Live Preview</span>
+                      <p className="text-xs text-muted-foreground font-normal">Real-time updates</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-medium">Live</span>
+                    </div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {/* Preview Controls */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-background/50">
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
+                      onClick={() => {
+                        const container = document.getElementById('resume-preview-container');
+                        if (container) {
+                          const currentScale = parseFloat(container.style.transform?.replace('scale(', '').replace(')', '') || '1');
+                          container.style.transform = `scale(${Math.max(0.5, currentScale - 0.1)})`;
+                          container.style.transformOrigin = 'top center';
+                        }
+                      }}
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
+                      onClick={() => {
+                        const container = document.getElementById('resume-preview-container');
+                        if (container) {
+                          const currentScale = parseFloat(container.style.transform?.replace('scale(', '').replace(')', '') || '1');
+                          container.style.transform = `scale(${Math.min(1.5, currentScale + 0.1)})`;
+                          container.style.transformOrigin = 'top center';
+                        }
+                      }}
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
+                      onClick={() => {
+                        const container = document.getElementById('resume-preview-container');
+                        if (container) {
+                          container.style.transform = 'scale(1)';
+                        }
+                      }}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Template:</span>
+                    <span className="text-xs font-medium text-foreground bg-muted px-2 py-0.5 rounded-md">
+                      {RESUME_TEMPLATES.find(t => t.id === selectedTemplate)?.name || 'Classic'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-muted-foreground">Live</span>
+                
+                {/* Resume Preview Container */}
+                <div className="relative bg-gradient-to-b from-muted/50 to-muted/30 max-h-[calc(100vh-200px)] overflow-auto">
+                  {/* Paper container */}
+                  <div className="relative p-6">
+                    {/* Decorative paper shadow effect */}
+                    <div className="absolute inset-6 pointer-events-none">
+                      <div className="absolute inset-0 bg-black/5 dark:bg-black/20 rounded-lg blur-xl transform translate-y-2"></div>
+                    </div>
+                    
+                    <div 
+                      id="resume-preview-container"
+                      className="relative bg-white rounded-lg shadow-2xl shadow-black/10 dark:shadow-black/30 transition-transform duration-200 ring-1 ring-black/5"
+                      style={{ transformOrigin: 'top center' }}
+                    >
+                      <div className="p-6">
+                        <ResumePreview data={resumeData} templateId={selectedTemplate} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="bg-white min-h-[700px] max-h-[700px] overflow-auto">
-                <div className="p-6">
-                  <ResumePreview data={resumeData} templateId={selectedTemplate} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
       </div>
@@ -911,6 +1042,16 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           onClose={() => setShowTemplateSelector(false)}
         />
       )}
+
+      {/* ATS Resume Exporter Modal */}
+      <ATSTemplateSelector
+        isOpen={showATSExporter}
+        onClose={() => setShowATSExporter(false)}
+        selectedTemplate={atsTemplateId}
+        onTemplateSelect={setATSTemplateId}
+        resumeData={resumeData}
+        onExport={() => saveResume()}
+      />
 
       {/* Drag Overlay for DND-KIT */}
       {createPortal(

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// Gemini (commented out - using OpenAI instead)
+// import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 
 interface PersonalInfo {
   name: string
@@ -331,7 +333,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.OPENAI_API_KEY
     
     if (!apiKey) {
       const fallbackAnalysis = getFallbackAnalysis(resumeData)
@@ -344,16 +346,34 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+      // Gemini (commented out - using OpenAI instead)
+      // const genAI = new GoogleGenerativeAI(apiKey)
+      // const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+      // const result = await model.generateContent(prompt)
+      // const response = await result.response
+      // const text = response.text()
       
+      // OpenAI Implementation
+      const openai = new OpenAI({ apiKey })
       const prompt = getAnalysisPrompt(resumeData)
       
-      const result = await model.generateContent(prompt)
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert resume analyst. Analyze resumes and provide detailed, constructive feedback in valid JSON format only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7,
+      })
       
-      const response = await result.response
-      
-      const text = response.text()
+      const text = completion.choices[0]?.message?.content || ''
       
       // Parse JSON response
       let analysisResult: AnalysisResult

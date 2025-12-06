@@ -84,6 +84,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     await loadPreferences()
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadPreferences()
   }, [user])

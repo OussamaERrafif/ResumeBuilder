@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// Gemini (commented out - using OpenAI instead)
+// import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+// Gemini (commented out - using OpenAI instead)
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 // Function to safely import pdf-parse
 const parsePDF = async (buffer: Buffer): Promise<string> => {
@@ -276,7 +279,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse with AI
-    const apiKey = process.env.GEMINI_API_KEY
+    // Gemini (commented out - using OpenAI instead)
+    // const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.OPENAI_API_KEY
     
     if (!apiKey) {
       return NextResponse.json(
@@ -286,11 +291,34 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+      // Gemini (commented out - using OpenAI instead)
+      // const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+      // const prompt = getParsingPrompt(extractedText)
+      // const result = await model.generateContent(prompt)
+      // const response = await result.response
+      // const text = response.text()
+
+      // OpenAI Implementation
+      const openai = new OpenAI({ apiKey })
       const prompt = getParsingPrompt(extractedText)
-      const result = await model.generateContent(prompt)
-      const response = await result.response
-      const text = response.text()
+      
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a resume parsing expert. Extract structured information from resumes and return valid JSON only. Preserve proper spacing and formatting in extracted text.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3, // Lower temperature for more consistent parsing
+      })
+      
+      const text = completion.choices[0]?.message?.content || ''
 
       // Parse JSON response
       let parsedData: ParsedResumeData

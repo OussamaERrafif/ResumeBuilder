@@ -1,22 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// Gemini (commented out - using OpenAI instead)
+// import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import { ResumeData, CoverLetterRequest } from '@/types/resume'
 
 export async function POST(request: NextRequest) {
   let resumeData: ResumeData | null = null
   
   try {
-    // Check if Gemini API key is available
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-    if (!GEMINI_API_KEY) {
+    // Gemini (commented out - using OpenAI instead)
+    // const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+    // if (!GEMINI_API_KEY) {
+    //   return NextResponse.json(
+    //     { error: 'Gemini API key is not configured. Please set GEMINI_API_KEY in your environment.' },
+    //     { status: 500 }
+    //   )
+    // }
+    // const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
+
+    // OpenAI Configuration
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+    if (!OPENAI_API_KEY) {
       return NextResponse.json(
-        { error: 'Gemini API key is not configured. Please set GEMINI_API_KEY in your environment.' },
+        { error: 'OpenAI API key is not configured. Please set OPENAI_API_KEY in your environment.' },
         { status: 500 }
       )
     }
-
-    // Initialize Gemini AI
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
+    const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
 
     const requestData: CoverLetterRequest = await request.json()
     const { jobDescription, jobTitle, companyName, specialInstructions } = requestData
@@ -43,18 +53,63 @@ export async function POST(request: NextRequest) {
     // Create the AI prompt
     const prompt = createCoverLetterPrompt(jobDescription, resumeSummary, jobTitle, companyName, specialInstructions)
 
-    // Generate cover letter using Gemini AI
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
-    const result = await model.generateContent(prompt)
-    const coverLetterContent = result.response.text()
+    // Gemini (commented out - using OpenAI instead)
+    // const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+    // const result = await model.generateContent(prompt)
+    // const coverLetterContent = result.response.text()
+
+    // OpenAI Implementation - Generate cover letter
+    const coverLetterCompletion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert cover letter writer. Write professional, compelling cover letters that are ATS-friendly. Never use placeholders like [Your Name] - always use the actual name provided.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.7,
+    })
+    const coverLetterContent = coverLetterCompletion.choices[0]?.message?.content || ''
 
     // Also generate resume optimization suggestions
     const optimizationPrompt = createResumeOptimizationPrompt(jobDescription, resumeSummary)
-    const optimizationResult = await model.generateContent(optimizationPrompt)
-    let optimizationSuggestions = []
     
+    // Gemini (commented out - using OpenAI instead)
+    // const optimizationResult = await model.generateContent(optimizationPrompt)
+    // let optimizationSuggestions = []
+    // try {
+    //   optimizationSuggestions = JSON.parse(optimizationResult.response.text())
+    // } catch (_parseError) {
+    //   optimizationSuggestions = [...]
+    // }
+
+    // OpenAI Implementation - Generate optimization suggestions
+    const optimizationCompletion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a resume optimization expert. Provide actionable suggestions to improve resumes. Always respond with valid JSON array of strings.'
+        },
+        {
+          role: 'user',
+          content: optimizationPrompt
+        }
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
+    })
+    
+    let optimizationSuggestions = []
     try {
-      optimizationSuggestions = JSON.parse(optimizationResult.response.text())
+      const optimizationText = optimizationCompletion.choices[0]?.message?.content || '[]'
+      const cleanText = optimizationText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      optimizationSuggestions = JSON.parse(cleanText)
     } catch (_parseError) {
       // If JSON parsing fails, provide default suggestions
       optimizationSuggestions = [
