@@ -10,24 +10,24 @@ import { LandingPageContent } from "@/components/landing/landing-content"
 
 export default function LandingPage() {
   return (
-    <>
+    <div className="dark min-h-screen bg-background text-foreground">
       {/* Structured Data for SEO - Server rendered */}
-      <StructuredData 
+      <StructuredData
         data={[
           generateOrganizationSchema(),
           generateWebApplicationSchema()
-        ]} 
+        ]}
       />
-      
+
       {/* Navigation - Server rendered */}
       <Navigation />
-      
+
       {/* Client-side interactive content with lazy loading */}
       <LandingPageContent />
-      
+
       {/* Footer - Server rendered */}
       <Footer />
-    </>
+    </div>
   )
 }
 

@@ -1,22 +1,58 @@
+"use client"
+
 import Link from "next/link"
-import { motion } from "framer-motion"
 import { CheckCircle, Sparkles } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { PRICING_PLANS } from "@/constants/landing"
+import { useRef } from "react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+
+gsap.registerPlugin(ScrollTrigger)
 
 export function PricingSection() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const plansRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    // Header Animation
+    gsap.from(headerRef.current, {
+      scrollTrigger: {
+        trigger: headerRef.current,
+        start: "top 80%",
+        toggleActions: "play none none reverse"
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.8,
+      ease: "power3.out"
+    })
+
+    // Plans Stagger Animation
+    if (plansRef.current) {
+      gsap.from(plansRef.current.children, {
+        scrollTrigger: {
+          trigger: plansRef.current,
+          start: "top 75%",
+          toggleActions: "play none none reverse"
+        },
+        y: 40,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.2,
+        ease: "power3.out"
+      })
+    }
+  }, { scope: containerRef })
+
   return (
-    <section id="pricing" className="py-24 lg:py-32 bg-muted/30">
+    <section ref={containerRef} id="pricing" className="py-24 lg:py-32 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="text-center mb-12 lg:mb-16"
-        >
+        <div ref={headerRef} className="text-center mb-12 lg:mb-16">
           <Badge variant="secondary" className="mb-4 bg-accent border-border">
             <Sparkles className="h-3 w-3 mr-1.5 text-primary" />
             <span className="text-foreground">Simple Pricing</span>
@@ -27,23 +63,15 @@ export function PricingSection() {
           <p className="text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto">
             No hidden fees, no locked features behind paywalls. Start free, upgrade if you need more. Cancel anytime.
           </p>
-        </motion.div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+        <div ref={plansRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
           {PRICING_PLANS.map((plan, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <Card className={`h-full relative border-border transition-all duration-300 hover:shadow-lg ${
-                plan.popular 
-                  ? "ring-2 ring-primary shadow-xl shadow-primary/10 hover:shadow-primary/20" 
+            <div key={index} className="relative">
+              <Card className={`h-full relative border-border transition-all duration-300 hover:shadow-lg ${plan.popular
+                  ? "ring-2 ring-primary shadow-xl shadow-primary/10 hover:shadow-primary/20"
                   : "hover:border-primary/30"
-              }`}>
+                }`}>
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                     <Badge className="bg-primary text-primary-foreground px-4 py-1 shadow-lg">
@@ -70,11 +98,10 @@ export function PricingSection() {
                   </ul>
                   <Link href="/dashboard" className="block">
                     <Button
-                      className={`w-full ${
-                        plan.popular 
-                          ? "bg-primary hover:bg-primary/90 shadow-md" 
+                      className={`w-full ${plan.popular
+                          ? "bg-primary hover:bg-primary/90 shadow-md"
                           : ""
-                      }`}
+                        }`}
                       variant={plan.popular ? "default" : "outline"}
                       size="lg"
                     >
@@ -83,7 +110,7 @@ export function PricingSection() {
                   </Link>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

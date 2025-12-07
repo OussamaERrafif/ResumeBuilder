@@ -1,9 +1,15 @@
-import { motion } from "framer-motion"
+"use client"
+
+import { useRef, useState } from "react"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowRight, AlertCircle, CheckCircle } from "lucide-react"
-import { useState, useEffect } from "react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+
+gsap.registerPlugin(ScrollTrigger)
 
 // Analysis interface matching the actual app structure
 interface AnalysisResult {
@@ -100,83 +106,66 @@ interface AnimatedCounterProps {
   delay?: number
   prefix?: string
   suffix?: string
+  triggerId?: string
 }
 
-function AnimatedCounter({ from, to, duration, delay = 0, prefix = "", suffix = "" }: AnimatedCounterProps) {
+function AnimatedCounter({ from, to, duration, delay = 0, prefix = "", suffix = "", triggerId }: AnimatedCounterProps) {
   const [count, setCount] = useState(from)
-  const [hasAnimated, setHasAnimated] = useState(false)
+  const countRef = useRef({ value: from })
+  const spanRef = useRef<HTMLSpanElement>(null)
 
-  useEffect(() => {
-    if (hasAnimated) return
-
-    const timer = setTimeout(() => {
-      setHasAnimated(true)
-      const startTime = Date.now()
-      const difference = to - from
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / (duration * 1000), 1)
-        
-        // Easing function for smooth animation
-        const easeOutQuart = 1 - Math.pow(1 - progress, 4)
-        const currentCount = Math.round(from + difference * easeOutQuart)
-        
-        setCount(currentCount)
-
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        }
+  useGSAP(() => {
+    const trigger = triggerId ? `#${triggerId}` : spanRef.current
+    
+    gsap.to(countRef.current, {
+      value: to,
+      duration: duration,
+      delay: delay,
+      ease: "power2.out",
+      onUpdate: () => setCount(Math.round(countRef.current.value)),
+      scrollTrigger: {
+        trigger: trigger,
+        start: "top 85%",
+        toggleActions: "play none none reverse"
       }
+    })
+  }, [to, duration, delay, triggerId])
 
-      animate()
-    }, delay * 1000)
-
-    return () => clearTimeout(timer)
-  }, [from, to, duration, delay, hasAnimated])
-
-  return <span>{prefix}{count}{suffix}</span>
+  return <span ref={spanRef}>{prefix}{count}{suffix}</span>
 }
 
 // Animated Progress Bar Component
-function AnimatedProgress({ value, className, delay = 0 }: { value: number; className?: string; delay?: number }) {
+function AnimatedProgress({ value, className, delay = 0, triggerId }: { value: number; className?: string; delay?: number; triggerId?: string }) {
   const [currentValue, setCurrentValue] = useState(0)
-  const [hasAnimated, setHasAnimated] = useState(false)
+  const progressRef = useRef({ value: 0 })
+  const divRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (hasAnimated) return
+  useGSAP(() => {
+    const trigger = triggerId ? `#${triggerId}` : divRef.current
 
-    const timer = setTimeout(() => {
-      setHasAnimated(true)
-      const startTime = Date.now()
-      const duration = 1500 // 1.5 seconds
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        
-        // Easing function for smooth animation
-        const easeOutQuart = 1 - Math.pow(1 - progress, 4)
-        const current = value * easeOutQuart
-        
-        setCurrentValue(current)
-
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        }
+    gsap.to(progressRef.current, {
+      value: value,
+      duration: 1.5,
+      delay: delay,
+      ease: "power2.out",
+      onUpdate: () => setCurrentValue(progressRef.current.value),
+      scrollTrigger: {
+        trigger: trigger,
+        start: "top 85%",
+        toggleActions: "play none none reverse"
       }
+    })
+  }, [value, delay, triggerId])
 
-      animate()
-    }, delay * 1000)
-
-    return () => clearTimeout(timer)
-  }, [value, delay, hasAnimated])
-
-  return <Progress value={currentValue} className={className} />
+  return (
+    <div ref={divRef}>
+      <Progress value={currentValue} className={className} />
+    </div>
+  )
 }
 
 // Reusable score display component matching the actual app style
-function ScoreDisplay({ analysis, type }: { analysis: AnalysisResult; type: 'before' | 'after' }) {
+function ScoreDisplay({ analysis, type, idPrefix }: { analysis: AnalysisResult; type: 'before' | 'after'; idPrefix: string }) {
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600"
     if (score >= 60) return "text-yellow-600"
@@ -190,9 +179,10 @@ function ScoreDisplay({ analysis, type }: { analysis: AnalysisResult; type: 'bef
   }
 
   const isGood = type === 'after'
+  const cardId = `${idPrefix}-card`
 
   return (
-    <Card className="border border-border">
+    <Card id={cardId} className="border border-border h-full">
       <CardHeader className="text-center">
         <CardTitle className="flex items-center justify-center gap-2 text-foreground">
           {isGood ? "After AI Enhancement" : "Before AI Enhancement"}
@@ -204,10 +194,10 @@ function ScoreDisplay({ analysis, type }: { analysis: AnalysisResult; type: 'bef
           <div className="flex items-center justify-between">
             <span className="font-medium">Overall Score</span>
             <Badge variant={getScoreVariant(analysis.overallScore)} className="text-lg px-3 py-1">
-              <AnimatedCounter from={0} to={analysis.overallScore} duration={2} delay={0.5} />/100
+              <AnimatedCounter from={0} to={analysis.overallScore} duration={2} delay={0.5} triggerId={cardId} />/100
             </Badge>
           </div>
-          <AnimatedProgress value={analysis.overallScore} className="h-3" delay={0.8} />
+          <AnimatedProgress value={analysis.overallScore} className="h-3" delay={0.8} triggerId={cardId} />
           <p className="text-sm text-muted-foreground">
             {analysis.overallScore >= 80 && "Excellent! Ready for top employers"}
             {analysis.overallScore >= 60 && analysis.overallScore < 80 && "Good foundation with room for improvement"}
@@ -225,10 +215,10 @@ function ScoreDisplay({ analysis, type }: { analysis: AnalysisResult; type: 'bef
               <div className="flex items-center justify-between text-xs">
                 <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                 <span className={`font-semibold ${getScoreColor(section.score)}`}>
-                  <AnimatedCounter from={0} to={section.score} duration={1.5} delay={1 + index * 0.2} />/100
+                  <AnimatedCounter from={0} to={section.score} duration={1.5} delay={1 + index * 0.2} triggerId={cardId} />/100
                 </span>
               </div>
-              <AnimatedProgress value={section.score} className="h-1" delay={1.2 + index * 0.2} />
+              <AnimatedProgress value={section.score} className="h-1" delay={1.2 + index * 0.2} triggerId={cardId} />
             </div>
           ))}
         </div>
@@ -257,10 +247,10 @@ function ScoreDisplay({ analysis, type }: { analysis: AnalysisResult; type: 'bef
           <div className="flex items-center justify-between text-xs">
             <span>ATS Compatibility</span>
             <Badge variant={getScoreVariant(analysis.atsCompatibility.score)} className="text-xs">
-              <AnimatedCounter from={0} to={analysis.atsCompatibility.score} duration={1.8} delay={2.5} />/100
+              <AnimatedCounter from={0} to={analysis.atsCompatibility.score} duration={1.8} delay={2.5} triggerId={cardId} />/100
             </Badge>
           </div>
-          <AnimatedProgress value={analysis.atsCompatibility.score} className="h-1" delay={2.7} />
+          <AnimatedProgress value={analysis.atsCompatibility.score} className="h-1" delay={2.7} triggerId={cardId} />
         </div>
       </CardContent>
     </Card>
@@ -268,30 +258,120 @@ function ScoreDisplay({ analysis, type }: { analysis: AnalysisResult; type: 'bef
 }
 
 export function ValuePropsSection() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const beforeCardRef = useRef<HTMLDivElement>(null)
+  const afterCardRef = useRef<HTMLDivElement>(null)
+  const arrowRef = useRef<HTMLDivElement>(null)
+  const statsRef = useRef<HTMLDivElement>(null)
+  const summaryRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    // Header Animation
+    gsap.from(headerRef.current, {
+      scrollTrigger: {
+        trigger: headerRef.current,
+        start: "top 80%",
+        toggleActions: "play none none reverse"
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.8,
+      ease: "power3.out"
+    })
+
+    // Before Card Animation
+    gsap.from(beforeCardRef.current, {
+      scrollTrigger: {
+        trigger: beforeCardRef.current,
+        start: "top 80%",
+        toggleActions: "play none none reverse"
+      },
+      x: -50,
+      opacity: 0,
+      duration: 1,
+      ease: "power3.out"
+    })
+
+    // After Card Animation
+    gsap.from(afterCardRef.current, {
+      scrollTrigger: {
+        trigger: afterCardRef.current,
+        start: "top 80%",
+        toggleActions: "play none none reverse"
+      },
+      x: 50,
+      opacity: 0,
+      duration: 1,
+      delay: 0.2,
+      ease: "power3.out"
+    })
+
+    // Arrow and Stats Animation
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: arrowRef.current,
+        start: "top 75%",
+        toggleActions: "play none none reverse"
+      }
+    })
+
+    tl.from(arrowRef.current, {
+      scale: 0,
+      rotation: 0,
+      opacity: 0,
+      duration: 0.8,
+      ease: "back.out(1.7)"
+    })
+    .to(arrowRef.current, {
+      rotation: -180,
+      duration: 1,
+      ease: "power2.inOut"
+    }, "-=0.4")
+
+    // Stats stagger
+    if (statsRef.current) {
+      gsap.from(statsRef.current.children, {
+        scrollTrigger: {
+          trigger: statsRef.current,
+          start: "top 80%",
+          toggleActions: "play none none reverse"
+        },
+        y: 20,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.2,
+        ease: "power3.out"
+      })
+    }
+
+    // Summary Animation
+    gsap.from(summaryRef.current, {
+      scrollTrigger: {
+        trigger: summaryRef.current,
+        start: "top 90%",
+        toggleActions: "play none none reverse"
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.8,
+      delay: 0.5,
+      ease: "power3.out"
+    })
+
+  }, { scope: containerRef })
 
   return (
-    <section className="py-16 bg-muted/30">
+    <section ref={containerRef} className="py-16 bg-muted/30">
       <div className="container mx-auto px-6">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-3xl font-bold text-foreground mb-4"
-          >
+        <div ref={headerRef} className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-foreground mb-4">
             See the AI Difference
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            viewport={{ once: true }}
-            className="text-lg text-muted-foreground max-w-2xl mx-auto"
-          >
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Transform your resume from mediocre to exceptional with our AI-powered analysis and suggestions
-          </motion.p>
+          </p>
         </div>
 
         {/* Before/After Comparison with Modern Side-by-Side Layout */}
@@ -299,158 +379,96 @@ export function ValuePropsSection() {
           {/* Before/After Cards Container */}
           <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 lg:gap-16">
             {/* Before Section */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="relative max-w-md w-full lg:flex-shrink-0"
-            >
+            <div ref={beforeCardRef} className="relative max-w-md w-full lg:flex-shrink-0">
               {/* Simple "BEFORE" Label */}
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                viewport={{ once: true }}
-                className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10"
-              >
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                 <div className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-medium text-sm">
                   BEFORE
                 </div>
-              </motion.div>
+              </div>
 
-              <ScoreDisplay analysis={beforeResumeData} type="before" />
-            </motion.div>
+              <ScoreDisplay analysis={beforeResumeData} type="before" idPrefix="before" />
+            </div>
 
             {/* Arrow with Animated Impact Stats - Positioned Between Cards */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="relative flex flex-col lg:flex-col justify-center items-center space-y-6 lg:space-y-8 lg:mt-16"
-            >
+            <div ref={statsRef} className="relative flex flex-col lg:flex-col justify-center items-center space-y-6 lg:space-y-8 lg:mt-16">
               {/* Stats Above Arrow */}
               <div className="flex flex-col items-center gap-4 lg:gap-6">
                 {/* +163% Stat */}
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.6 }}
-                  viewport={{ once: true }}
-                  className="text-center"
-                >
+                <div className="text-center">
                   <div className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-                    <AnimatedCounter from={0} to={163} duration={2} prefix="+" suffix="%" />
+                    <AnimatedCounter from={0} to={163} duration={2} prefix="+" suffix="%" triggerId="before-card" />
                   </div>
                   <div className="text-xs text-muted-foreground font-medium">Score Improvement</div>
-                </motion.div>
+                </div>
 
                 {/* 95% Stat */}
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.8 }}
-                  viewport={{ once: true }}
-                  className="text-center"
-                >
+                <div className="text-center">
                   <div className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-                    <AnimatedCounter from={0} to={95} duration={2.2} suffix="%" />
+                    <AnimatedCounter from={0} to={95} duration={2.2} suffix="%" triggerId="before-card" />
                   </div>
                   <div className="text-xs text-muted-foreground font-medium">ATS Compatible</div>
-                </motion.div>
+                </div>
               </div>
 
               {/* Arrow Image */}
-              <motion.img
-                src="/arrow.png"
-                alt="Transformation Arrow"
-                width={100}
-                height={100}
-                className="filter dark:invert opacity-70 lg:rotate-90"
-                initial={{ opacity: 0, rotate: 0 }}
-                whileInView={{ opacity: 0.7, rotate: -180 }}
-                transition={{ duration: 1, delay: 0.6 }}
-                viewport={{ once: true }}
-              />
+              <div ref={arrowRef}>
+                <img
+                  src="/arrow.png"
+                  alt="Transformation Arrow"
+                  width={100}
+                  height={100}
+                  className="filter dark:invert opacity-70 lg:rotate-90"
+                />
+              </div>
 
               {/* Stats Below Arrow */}
               <div className="flex flex-col items-center gap-4 lg:gap-6">
                 {/* 3x Stat */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 1.0 }}
-                  viewport={{ once: true }}
-                  className="text-center"
-                >
+                <div className="text-center">
                   <div className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-                    <AnimatedCounter from={1} to={3} duration={1.8} suffix="x" />
+                    <AnimatedCounter from={1} to={3} duration={1.8} suffix="x" triggerId="before-card" />
                   </div>
                   <div className="text-xs text-muted-foreground font-medium">More Callbacks</div>
-                </motion.div>
+                </div>
 
                 {/* Score Range Display */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 1.2 }}
-                  viewport={{ once: true }}
-                  className="text-center"
-                >
+                <div className="text-center">
                   <div className="text-base lg:text-lg font-bold text-muted-foreground mb-1">
-                    <AnimatedCounter from={35} to={35} duration={0.5} />
+                    <AnimatedCounter from={35} to={35} duration={0.5} triggerId="before-card" />
                     <span className="mx-2">→</span>
                     <span className="text-foreground">
-                      <AnimatedCounter from={35} to={92} duration={2.5} delay={0.5} />
+                      <AnimatedCounter from={35} to={92} duration={2.5} delay={0.5} triggerId="before-card" />
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground font-medium">Score Range</div>
-                </motion.div>
+                </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* After Section - Slightly Offset Lower */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="relative max-w-md w-full lg:flex-shrink-0 lg:mt-8"
-            >
+            <div ref={afterCardRef} className="relative max-w-md w-full lg:flex-shrink-0 lg:mt-8">
               {/* Simple "AFTER" Label */}
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                viewport={{ once: true }}
-                className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10"
-              >
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                 <div className="bg-foreground text-background px-4 py-2 rounded-full font-medium text-sm">
                   AFTER
                 </div>
-              </motion.div>
+              </div>
 
-              <ScoreDisplay analysis={afterResumeData} type="after" />
-            </motion.div>
+              <ScoreDisplay analysis={afterResumeData} type="after" idPrefix="after" />
+            </div>
           </div>
         </div>
 
         {/* Summary Text */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
+        <div ref={summaryRef} className="text-center mt-12">
           <p className="text-lg font-medium text-foreground mb-2">
             Ready to transform your resume?
           </p>
           <p className="text-muted-foreground text-sm">
             Join thousands who've already boosted their career prospects with AI-powered optimization
           </p>
-        </motion.div>
+        </div>
       </div>
     </section>
   )

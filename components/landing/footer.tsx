@@ -1,12 +1,40 @@
+"use client"
+
 import Link from "next/link"
 import { FileText, Github, Twitter, Linkedin, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useRef } from "react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+
+gsap.registerPlugin(ScrollTrigger)
 
 export function Footer() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const columnsRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (columnsRef.current) {
+      gsap.from(columnsRef.current.children, {
+        scrollTrigger: {
+          trigger: columnsRef.current,
+          start: "top 90%",
+          toggleActions: "play none none reverse"
+        },
+        y: 20,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: "power3.out"
+      })
+    }
+  }, { scope: containerRef })
+
   return (
-    <footer className="border-t border-border bg-card">
+    <footer ref={containerRef} className="border-t border-border bg-card">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div ref={columnsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand Section */}
           <div className="space-y-4 sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center space-x-3 group">
@@ -16,7 +44,7 @@ export function Footer() {
               <span className="text-lg font-bold text-foreground">ApexResume</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Open-source resume builder helping job seekers create professional resumes. 
+              Open-source resume builder helping job seekers create professional resumes.
               Built with transparency and community in mind.
             </p>
             <div className="flex space-x-2">
@@ -58,10 +86,10 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a 
-                  href="https://github.com/OussamaERrafif/ResumeBuilder" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href="https://github.com/OussamaERrafif/ResumeBuilder"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
                 >
                   Open Source
@@ -75,30 +103,30 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-4">Community</h3>
             <ul className="space-y-3">
               <li>
-                <a 
-                  href="https://github.com/OussamaERrafif/ResumeBuilder" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href="https://github.com/OussamaERrafif/ResumeBuilder"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
                 >
                   GitHub
                 </a>
               </li>
               <li>
-                <a 
-                  href="https://github.com/OussamaERrafif/ResumeBuilder/issues" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href="https://github.com/OussamaERrafif/ResumeBuilder/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
                 >
                   Report Issues
                 </a>
               </li>
               <li>
-                <a 
-                  href="https://github.com/OussamaERrafif/ResumeBuilder/blob/main/CONTRIBUTING.md" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href="https://github.com/OussamaERrafif/ResumeBuilder/blob/main/CONTRIBUTING.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
                 >
                   Contribute

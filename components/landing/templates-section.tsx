@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { motion } from "framer-motion"
 import { Palette, Award, ChevronRight, ChevronLeft, Eye } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +9,12 @@ import { RESUME_TEMPLATES } from "@/app/types/templates"
 import { TemplatePreview } from "./template-preview"
 import "keen-slider/keen-slider.min.css"
 import { useKeenSlider } from "keen-slider/react"
-import { useState } from "react"
+import { useState, useRef } from "react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+
+gsap.registerPlugin(ScrollTrigger)
 
 export function TemplatesSection() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -37,17 +41,45 @@ export function TemplatesSection() {
     },
   })
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const sliderContainerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    // Header Animation
+    gsap.from(headerRef.current, {
+      scrollTrigger: {
+        trigger: headerRef.current,
+        start: "top 80%",
+        toggleActions: "play none none reverse"
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.8,
+      ease: "power3.out"
+    })
+
+    // Slider Entrance Animation
+    gsap.from(sliderContainerRef.current, {
+      scrollTrigger: {
+        trigger: sliderContainerRef.current,
+        start: "top 85%",
+        toggleActions: "play none none reverse"
+      },
+      y: 50,
+      opacity: 0,
+      duration: 1,
+      delay: 0.2,
+      ease: "power3.out"
+    })
+
+  }, { scope: containerRef })
+
   return (
-    <section id="templates" className="py-24 lg:py-32 bg-muted/30 relative">
+    <section ref={containerRef} id="templates" className="py-24 lg:py-32 bg-muted/30 relative">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="text-center mb-12 lg:mb-16"
-        >
+        <div ref={headerRef} className="text-center mb-12 lg:mb-16">
           <Badge variant="secondary" className="mb-4 bg-accent border-border">
             <Palette className="h-3 w-3 mr-1.5 text-primary" />
             <span className="text-foreground">Professional Templates</span>
@@ -56,21 +88,17 @@ export function TemplatesSection() {
             Choose Your Perfect Template
           </h2>
           <p className="text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Select from our collection of professionally designed, ATS-optimized templates. 
+            Select from our collection of professionally designed, ATS-optimized templates.
             Each template is crafted to help you stand out.
           </p>
-        </motion.div>
+        </div>
 
         {/* Carousel */}
-        <div className="relative px-4 sm:px-12">
+        <div ref={sliderContainerRef} className="relative px-4 sm:px-12">
           <div ref={sliderRef} className="keen-slider">
-            {RESUME_TEMPLATES.map((template, index) => (
-              <motion.div
+            {RESUME_TEMPLATES.map((template) => (
+              <div
                 key={template.id}
-                initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.08 }}
-                viewport={{ once: true }}
                 className="keen-slider__slide flex justify-center"
               >
                 <Card className="group hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 overflow-hidden max-w-sm w-full border-border hover:border-primary/30 rounded-2xl">
@@ -78,12 +106,12 @@ export function TemplatesSection() {
                   <div className="aspect-[3/4] bg-gradient-to-b from-muted/50 to-muted/30 p-4 sm:p-5 relative overflow-hidden">
                     {/* Paper Shadow */}
                     <div className="absolute inset-4 sm:inset-5 bg-black/5 dark:bg-black/20 rounded-lg blur-lg transform translate-y-2 pointer-events-none"></div>
-                    
+
                     {/* Paper Container */}
                     <div className="relative h-full w-full rounded-lg overflow-hidden bg-white shadow-lg ring-1 ring-black/5 dark:ring-white/10">
                       <TemplatePreview template={template} />
                     </div>
-                    
+
                     {/* Hover Overlay */}
                     <div className="absolute inset-4 sm:inset-5 bg-gradient-to-t from-black/60 via-black/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-6">
                       <Link href="/dashboard">
@@ -94,7 +122,7 @@ export function TemplatesSection() {
                       </Link>
                     </div>
                   </div>
-                  
+
                   <CardContent className="p-4 sm:p-5 bg-card">
                     <div className="flex items-start justify-between mb-2">
                       <div>
@@ -135,7 +163,7 @@ export function TemplatesSection() {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -166,11 +194,10 @@ export function TemplatesSection() {
                 <button
                   key={i}
                   onClick={() => instanceRef.current?.moveToIdx(i)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
-                    currentSlide === i 
-                      ? "bg-primary w-6" 
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${currentSlide === i
+                      ? "bg-primary w-6"
                       : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                  }`}
+                    }`}
                   aria-label={`Go to template ${i + 1}`}
                 />
               ))}
