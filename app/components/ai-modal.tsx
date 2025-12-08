@@ -12,7 +12,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Sparkles, Loader2 } from "lucide-react"
+import { Sparkles, Loader2, AlertCircle } from "lucide-react"
+import { useCredits } from "@/hooks/use-credits"
+import { CreditCostBadge, CreditPurchaseModal } from "@/components/credits"
+import { AIFeature, AI_FEATURE_COSTS } from "@/lib/credits-service"
+
+// Map modal types to AI features
+const TYPE_TO_FEATURE: Record<string, AIFeature> = {
+  summary: 'resume_summary',
+  experience: 'resume_experience',
+  project: 'resume_project',
+}
 
 interface AIModalProps {
   isOpen: boolean
@@ -25,9 +35,21 @@ interface AIModalProps {
 export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AIModalProps) {
   const [query, setQuery] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
+  const { balance, hasEnoughCredits } = useCredits()
+
+  const feature = type ? TYPE_TO_FEATURE[type] : null
+  const cost = feature ? AI_FEATURE_COSTS[feature] : 0
+  const canGenerate = feature ? hasEnoughCredits(feature) : false
 
   const handleGenerate = async () => {
     if (!query.trim() || !type) return
+
+    // Check credits before generating
+    if (!canGenerate) {
+      setShowPurchaseModal(true)
+      return
+    }
 
     setIsGenerating(true)
 
@@ -100,12 +122,16 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
   const content = getModalContent()
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border rounded-xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2 text-foreground">
-            <Sparkles className="h-5 w-5 text-accent" />
-            <span>{content.title}</span>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[500px] bg-card border-border rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between text-foreground">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="h-5 w-5 text-accent" />
+                <span>{content.title}</span>
+              </div>
+              <CreditCostBadge cost={cost} current={balance?.current} />
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">{content.description}</DialogDescription>
         </DialogHeader>
@@ -145,6 +171,12 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
         </div>
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
+          {!canGenerate && (
+            <div className="flex items-center gap-2 text-sm text-destructive mb-2 sm:mb-0 sm:mr-auto">
+              <AlertCircle className="h-4 w-4" />
+              <span>Insufficient credits</span>
+            </div>
+          )}
           <Button
             variant="outline"
             onClick={handleClose}
@@ -163,15 +195,27 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating...
               </>
+            ) : !canGenerate ? (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Get Credits
+              </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate with AI
+                Generate ({cost} credit{cost !== 1 ? 's' : ''})
               </>
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    
+    {/* Purchase Modal */}
+    <CreditPurchaseModal 
+      isOpen={showPurchaseModal}
+      onClose={() => setShowPurchaseModal(false)}
+    />
+    </>
   )
 }

@@ -1,24 +1,19 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense, memo, useRef } from "react"
+import React, { useState, useEffect, useMemo, useCallback, Suspense, memo } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import {
   FileText,
   Plus,
   Trash2,
-  User,
   Search,
   Edit,
-  LogOut,
   Upload,
   Copy,
   Sparkles,
   X,
   Star,
-  Mail,
-  ChevronDown,
-  Home,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -28,14 +23,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { DashboardNav } from "@/components/dashboard-nav"
 import { useToast } from "@/hooks/use-toast"
 
 import ProtectedRoute from "@/components/auth/protected-route"
 import { RESUME_TEMPLATES } from "../types/templates"
 
 import { useAuth } from "@/hooks/use-auth"
-import { useScrollHide } from "@/hooks/use-scroll-hide"
+import { useCredits } from "@/hooks/use-credits"
 import { ResumeService } from "@/lib/resume-service"
 
 // Lazy load heavy components - only loaded when needed
@@ -244,9 +239,8 @@ LoadingSkeleton.displayName = "LoadingSkeleton"
 // DASHBOARD COMPONENT
 export default function Dashboard() {
   const { user, signOut } = useAuth()
+  const { balance } = useCredits()
   const { toast } = useToast()
-  const { isVisible } = useScrollHide({ threshold: 50 })
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -259,7 +253,6 @@ export default function Dashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [duplicatingResume, setDuplicatingResume] = useState<SavedResume | null>(null)
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
   // Debounced search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -286,20 +279,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) loadSavedResumes()
   }, [user, loadSavedResumes])
-
-  // Handle click outside dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowProfileDropdown(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
 
   const deleteResume = useCallback(
     async (id: string) => {
@@ -424,102 +403,7 @@ export default function Dashboard() {
     <ProtectedRoute>
       <TooltipProvider>
         <div className="min-h-screen bg-background">
-          {/* HEADER */}
-          <motion.header 
-            className="border-b border-border bg-background/80 backdrop-blur-xl fixed top-0 left-0 right-0 z-50"
-            initial={{ y: 0 }}
-            animate={{ 
-              y: isVisible ? 0 : -100,
-              transition: { 
-                duration: 0.3, 
-                ease: "easeInOut" 
-              }
-            }}
-          >
-            <div className="container mx-auto px-4 sm:px-6 py-3">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 lg:gap-6">
-                  <Link href="/" className="flex items-center gap-3 group">
-                    <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-                      <FileText className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <div className="hidden sm:block">
-                      <h1 className="text-lg font-bold text-foreground">ApexResume</h1>
-                    </div>
-                  </Link>
-                  
-                  {/* Navigation */}
-                  <nav className="hidden md:flex items-center gap-1">
-                    <Button variant="ghost" size="sm" className="bg-primary/10 text-primary rounded-lg">
-                      <Home className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </Button>
-                    <Link href="/cover-letters">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground rounded-lg">
-                        <Mail className="h-4 w-4 mr-2" />
-                        Cover Letters
-                      </Button>
-                    </Link>
-                  </nav>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="relative" ref={dropdownRef}>
-                    <button
-                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="flex items-center gap-2 sm:gap-3 text-sm text-foreground bg-muted hover:bg-muted/80 rounded-xl px-3 py-2 transition-all duration-200"
-                    >
-                      <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-                        <User className="h-3.5 w-3.5 text-primary-foreground" />
-                      </div>
-                      <span className="hidden sm:inline truncate max-w-28 text-sm">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showProfileDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    <AnimatePresence>
-                      {showProfileDropdown && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden"
-                        >
-                          <div className="py-1">
-                            <Link href="/profile" className="block">
-                              <button 
-                                className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors flex items-center gap-3"
-                                onClick={() => setShowProfileDropdown(false)}
-                              >
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                Profile & Settings
-                              </button>
-                            </Link>
-                            <div className="border-t border-border my-1"></div>
-                            <button 
-                              onClick={() => {
-                                setShowProfileDropdown(false)
-                                handleSignOut()
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-3"
-                            >
-                              <LogOut className="h-4 w-4" />
-                              Sign Out
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  <div className="bg-muted rounded-xl p-0.5">
-                    <ThemeToggle />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.header>
+          <DashboardNav />
 
           <main className="container mx-auto px-4 sm:px-6 py-8 pt-20">
             {/* HERO SECTION */}
@@ -548,6 +432,31 @@ export default function Dashboard() {
                   Upload & Analyze
                 </Button>
               </div>
+
+              {/* Credits Quick Info */}
+              {balance && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-8"
+                >
+                  <Link href="/profile">
+                    <div className="inline-flex items-center gap-4 px-6 py-3 bg-muted/50 hover:bg-muted rounded-xl border border-border transition-colors cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className={`h-5 w-5 ${balance.current <= 5 ? 'text-destructive' : 'text-yellow-500'}`} />
+                        <span className="text-lg font-semibold">{balance.current}</span>
+                        <span className="text-muted-foreground">AI Credits</span>
+                      </div>
+                      <div className="h-4 w-px bg-border" />
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">1 credit</span> = summary/experience • 
+                        <span className="font-medium text-foreground ml-1">5 credits</span> = cover letter
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              )}
             </motion.div>
 
             {/* ERROR ALERT */}

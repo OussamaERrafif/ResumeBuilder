@@ -10,7 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         '/dashboard/',
         '/admin/',
         '/profile/',
-        '/settings/',
         '/_next/',
         '/setup/',
         '/unauthorized/'

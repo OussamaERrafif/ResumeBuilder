@@ -3,33 +3,43 @@
 import Link from "next/link"
 import { FileText, Github, Twitter, Linkedin, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useRef } from "react"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
-import { ScrollTrigger } from "gsap/ScrollTrigger"
-
-gsap.registerPlugin(ScrollTrigger)
+import { useRef, useEffect } from "react"
 
 export function Footer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const columnsRef = useRef<HTMLDivElement>(null)
 
-  useGSAP(() => {
-    if (columnsRef.current) {
-      gsap.from(columnsRef.current.children, {
-        scrollTrigger: {
-          trigger: columnsRef.current,
-          start: "top 90%",
-          toggleActions: "play none none reverse"
-        },
-        y: 20,
-        opacity: 0,
-        duration: 0.6,
-        stagger: 0.1,
-        ease: "power3.out"
-      })
+  useEffect(() => {
+    const initAnimation = async () => {
+      try {
+        const gsapModule = await import("gsap")
+        const scrollTriggerModule = await import("gsap/ScrollTrigger")
+        const gsap = gsapModule.default
+        const ScrollTrigger = scrollTriggerModule.ScrollTrigger
+        
+        gsap.registerPlugin(ScrollTrigger)
+        
+        if (columnsRef.current) {
+          gsap.from(columnsRef.current.children, {
+            scrollTrigger: {
+              trigger: columnsRef.current,
+              start: "top 90%",
+              toggleActions: "play none none reverse"
+            },
+            y: 20,
+            opacity: 0,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: "power3.out"
+          })
+        }
+      } catch (error) {
+        console.warn("Footer animation failed:", error)
+      }
     }
-  }, { scope: containerRef })
+    
+    initAnimation()
+  }, [])
 
   return (
     <footer ref={containerRef} className="border-t border-border bg-card">

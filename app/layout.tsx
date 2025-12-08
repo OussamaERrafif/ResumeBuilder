@@ -4,6 +4,7 @@ import { Montserrat } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
 import { PreferencesProvider } from "@/hooks/use-preferences"
+import { CreditsProvider } from "@/hooks/use-credits"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import { StructuredData } from "@/components/seo/structured-data"
@@ -105,8 +106,26 @@ export const metadata: Metadata = {
     canonical: "https://apexresume.com",
   },
   category: "technology",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+      { url: "/icon.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/icon.png",
+        color: "#8B5CF6",
+      },
+    ],
+  },
   other: {
     "msapplication-TileColor": "#8B5CF6",
+    "msapplication-TileImage": "/icon.png",
     "theme-color": "#8B5CF6"
   }
 }
@@ -119,8 +138,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={montserrat.variable}>
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
+        <link rel="icon" href="/icon.png" type="image/png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/icon.png" sizes="180x180" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="msapplication-TileColor" content="#8B5CF6" />
+        <meta name="msapplication-TileImage" content="/icon.png" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//api.producthunt.com" />
@@ -148,10 +171,12 @@ export default function RootLayout({
         >
           <AuthProvider>
             <PreferencesProvider>
-              <div className="animate-fade-in">
-                {children}
-              </div>
-              <Toaster />
+              <CreditsProvider>
+                <div className="animate-fade-in">
+                  {children}
+                </div>
+                <Toaster />
+              </CreditsProvider>
             </PreferencesProvider>
           </AuthProvider>
         </ThemeProvider>

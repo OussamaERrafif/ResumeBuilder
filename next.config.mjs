@@ -50,8 +50,6 @@ const nextConfig = {
   },
   // Production optimizations
   productionBrowserSourceMaps: false,
-  // Output configuration for better caching
-  output: 'standalone',
   // Optimize chunk splitting
   modularizeImports: {
     'lucide-react': {

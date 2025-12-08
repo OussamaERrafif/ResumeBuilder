@@ -5,12 +5,11 @@ import Link from "next/link"
 import { ArrowRight, Sparkles, Github, Star, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
 
 export function HeroSection() {
   const [isHovered, setIsHovered] = useState(false)
   const [currentTagIndex, setCurrentTagIndex] = useState(0)
+  const [isAnimated, setIsAnimated] = useState(false)
   
   const containerRef = useRef<HTMLDivElement>(null)
   const badgeRef = useRef<HTMLDivElement>(null)
@@ -33,87 +32,108 @@ export function HeroSection() {
     }
   }, [isHovered, tags.length])
 
-  useGSAP(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
-
-    // Initial animations
-    tl.from(badgeRef.current, {
-      y: 20,
-      opacity: 0,
-      duration: 0.8
-    })
-    .from(titleRef.current, {
-      y: 50,
-      opacity: 0,
-      duration: 1,
-      stagger: 0.1
-    }, "-=0.4")
-    .from(descRef.current, {
-      y: 30,
-      opacity: 0,
-      duration: 0.8
-    }, "-=0.6")
-    .from(ctaRef.current, {
-      y: 20,
-      opacity: 0,
-      duration: 0.8
-    }, "-=0.6")
-    .from(socialRef.current, {
-      y: 20,
-      opacity: 0,
-      duration: 0.8
-    }, "-=0.6")
-
-    // Blob animations (floating)
-    gsap.to(blob1Ref.current, {
-      x: "random(-50, 50)",
-      y: "random(-50, 50)",
-      duration: 5,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    })
+  // GSAP animations - wrapped in try-catch for graceful degradation
+  useEffect(() => {
+    let cleanup: (() => void) | undefined
     
-    gsap.to(blob2Ref.current, {
-      x: "random(-50, 50)",
-      y: "random(-50, 50)",
-      duration: 7,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    })
+    const initAnimations = async () => {
+      try {
+        const gsapModule = await import("gsap")
+        const gsap = gsapModule.default
+        
+        const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
 
-    // Mouse movement parallax effect
-    const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e
-      const x = (clientX / window.innerWidth - 0.5) * 20
-      const y = (clientY / window.innerHeight - 0.5) * 20
+        // Initial animations
+        tl.from(badgeRef.current, {
+          y: 20,
+          opacity: 0,
+          duration: 0.8
+        })
+        .from(titleRef.current, {
+          y: 50,
+          opacity: 0,
+          duration: 1,
+          stagger: 0.1
+        }, "-=0.4")
+        .from(descRef.current, {
+          y: 30,
+          opacity: 0,
+          duration: 0.8
+        }, "-=0.6")
+        .from(ctaRef.current, {
+          y: 20,
+          opacity: 0,
+          duration: 0.8
+        }, "-=0.6")
+        .from(socialRef.current, {
+          y: 20,
+          opacity: 0,
+          duration: 0.8
+        }, "-=0.6")
 
-      gsap.to(titleRef.current, {
-        x: x,
-        y: y,
-        duration: 1,
-        ease: "power2.out"
-      })
-      
-      gsap.to(blob1Ref.current, {
-        x: -x * 2,
-        y: -y * 2,
-        duration: 2,
-        ease: "power2.out"
-      })
-      
-      gsap.to(blob2Ref.current, {
-        x: x * 2,
-        y: y * 2,
-        duration: 2,
-        ease: "power2.out"
-      })
+        // Blob animations (floating)
+        gsap.to(blob1Ref.current, {
+          x: "random(-50, 50)",
+          y: "random(-50, 50)",
+          duration: 5,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut"
+        })
+        
+        gsap.to(blob2Ref.current, {
+          x: "random(-50, 50)",
+          y: "random(-50, 50)",
+          duration: 7,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut"
+        })
+
+        // Mouse movement parallax effect
+        const handleMouseMove = (e: MouseEvent) => {
+          const { clientX, clientY } = e
+          const x = (clientX / window.innerWidth - 0.5) * 20
+          const y = (clientY / window.innerHeight - 0.5) * 20
+
+          gsap.to(titleRef.current, {
+            x: x,
+            y: y,
+            duration: 1,
+            ease: "power2.out"
+          })
+          
+          gsap.to(blob1Ref.current, {
+            x: -x * 2,
+            y: -y * 2,
+            duration: 2,
+            ease: "power2.out"
+          })
+          
+          gsap.to(blob2Ref.current, {
+            x: x * 2,
+            y: y * 2,
+            duration: 2,
+            ease: "power2.out"
+          })
+        }
+
+        window.addEventListener("mousemove", handleMouseMove)
+        cleanup = () => window.removeEventListener("mousemove", handleMouseMove)
+        
+        setIsAnimated(true)
+      } catch (error) {
+        console.warn("GSAP animation failed, showing content without animation:", error)
+        setIsAnimated(true)
+      }
     }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, { scope: containerRef })
+    
+    initAnimations()
+    
+    return () => {
+      cleanup?.()
+    }
+  }, [])
 
   return (
     <section ref={containerRef} className="pt-32 pb-20 lg:pt-40 lg:pb-32 relative overflow-hidden min-h-[90vh] flex items-center">

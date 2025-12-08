@@ -2,11 +2,10 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { FileText, Menu, X } from "lucide-react"
+import Image from "next/image"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useScrollHide } from "@/hooks/use-scroll-hide"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -16,34 +15,69 @@ export function Navigation() {
   const menuIconRef = useRef<HTMLDivElement>(null)
   const closeIconRef = useRef<HTMLDivElement>(null)
 
-  // Sticky Header Animation
-  useGSAP(() => {
-    gsap.to(navRef.current, {
-      y: isVisible ? 0 : -100,
-      duration: 0.3,
-      ease: "power2.inOut"
-    })
+  // Sticky Header Animation - using CSS transitions as fallback, GSAP as enhancement
+  useEffect(() => {
+    const loadGsap = async () => {
+      try {
+        const gsapModule = await import("gsap")
+        const gsap = gsapModule.default
+        gsap.to(navRef.current, {
+          y: isVisible ? 0 : -100,
+          duration: 0.3,
+          ease: "power2.inOut"
+        })
+      } catch {
+        // Fallback: use CSS
+        if (navRef.current) {
+          navRef.current.style.transform = isVisible ? 'translateY(0)' : 'translateY(-100px)'
+        }
+      }
+    }
+    loadGsap()
   }, [isVisible])
 
   // Mobile Menu Animation
-  useGSAP(() => {
-    if (isMenuOpen) {
-      gsap.fromTo(mobileMenuRef.current,
-        { height: 0, opacity: 0 },
-        { height: "auto", opacity: 1, duration: 0.3, ease: "power2.out" }
-      )
+  useEffect(() => {
+    if (!isMenuOpen) return
+    
+    const loadGsap = async () => {
+      try {
+        const gsapModule = await import("gsap")
+        const gsap = gsapModule.default
+        gsap.fromTo(mobileMenuRef.current,
+          { height: 0, opacity: 0 },
+          { height: "auto", opacity: 1, duration: 0.3, ease: "power2.out" }
+        )
+      } catch {
+        // Fallback: show without animation
+        if (mobileMenuRef.current) {
+          mobileMenuRef.current.style.height = 'auto'
+          mobileMenuRef.current.style.opacity = '1'
+        }
+      }
     }
+    loadGsap()
   }, [isMenuOpen])
 
   // Icon Animation
   useEffect(() => {
-    if (isMenuOpen) {
-      if (menuIconRef.current) gsap.to(menuIconRef.current, { rotate: 90, opacity: 0, duration: 0.15 })
-      if (closeIconRef.current) gsap.fromTo(closeIconRef.current, { rotate: -90, opacity: 0 }, { rotate: 0, opacity: 1, duration: 0.15 })
-    } else {
-      if (menuIconRef.current) gsap.fromTo(menuIconRef.current, { rotate: 90, opacity: 0 }, { rotate: 0, opacity: 1, duration: 0.15 })
-      if (closeIconRef.current) gsap.to(closeIconRef.current, { rotate: -90, opacity: 0, duration: 0.15 })
+    const animateIcons = async () => {
+      try {
+        const gsapModule = await import("gsap")
+        const gsap = gsapModule.default
+        
+        if (isMenuOpen) {
+          if (menuIconRef.current) gsap.to(menuIconRef.current, { rotate: 90, opacity: 0, duration: 0.15 })
+          if (closeIconRef.current) gsap.fromTo(closeIconRef.current, { rotate: -90, opacity: 0 }, { rotate: 0, opacity: 1, duration: 0.15 })
+        } else {
+          if (menuIconRef.current) gsap.fromTo(menuIconRef.current, { rotate: 90, opacity: 0 }, { rotate: 0, opacity: 1, duration: 0.15 })
+          if (closeIconRef.current) gsap.to(closeIconRef.current, { rotate: -90, opacity: 0, duration: 0.15 })
+        }
+      } catch {
+        // No animation fallback
+      }
     }
+    animateIcons()
   }, [isMenuOpen])
 
   return (
@@ -54,8 +88,15 @@ export function Navigation() {
       <nav className="container mx-auto bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl px-4 sm:px-6 lg:px-8 py-4 shadow-lg shadow-black/5 dark:shadow-black/20">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-              <FileText className="h-5 w-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105 overflow-hidden">
+              <Image 
+                src="/icon.png" 
+                alt="ApexResume Logo" 
+                width={40} 
+                height={40} 
+                className="object-contain"
+                priority
+              />
             </div>
             <span className="text-xl font-bold text-foreground">ApexResume</span>
           </Link>

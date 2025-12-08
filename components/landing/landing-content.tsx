@@ -1,7 +1,6 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { Suspense } from "react"
 
 // Skeleton for hero section
 function HeroSkeleton() {
@@ -39,10 +38,22 @@ function SectionSkeleton() {
   )
 }
 
+// Full page loading skeleton
+function PageSkeleton() {
+  return (
+    <div className="min-h-screen">
+      <HeroSkeleton />
+      <SectionSkeleton />
+      <SectionSkeleton />
+      <SectionSkeleton />
+    </div>
+  )
+}
+
 // Dynamic imports for interactive/animated sections (client-side only)
 const EtherealShadow = dynamic(
   () => import("@/components/ui/ethereal-shadow").then(mod => mod.EtherealShadow),
-  { ssr: false }
+  { ssr: false, loading: () => <div className="min-h-screen" /> }
 )
 const HeroSection = dynamic(
   () => import("@/components/landing/hero-section").then(mod => mod.HeroSection),
@@ -79,21 +90,19 @@ const CTASection = dynamic(
  */
 export function LandingPageContent() {
   return (
-    <Suspense fallback={<HeroSkeleton />}>
-      <EtherealShadow
-        color="rgba(100, 50, 200, 0.6)"
-        animation={{ scale: 50, speed: 30 }}
-        noise={{ opacity: 0.3, scale: 2 }}
-        className="min-h-screen"
-      >
-        <HeroSection />
-        <ValuePropsSection />
-        <FeaturesSection />
-        <TemplatesSection />
-        <CommunitySection />
-        <PricingSection />
-        <CTASection />
-      </EtherealShadow>
-    </Suspense>
+    <EtherealShadow
+      color="rgba(100, 50, 200, 0.6)"
+      animation={{ scale: 50, speed: 30 }}
+      noise={{ opacity: 0.3, scale: 2 }}
+      className="min-h-screen"
+    >
+      <HeroSection />
+      <ValuePropsSection />
+      <FeaturesSection />
+      <TemplatesSection />
+      <CommunitySection />
+      <PricingSection />
+      <CTASection />
+    </EtherealShadow>
   )
 }

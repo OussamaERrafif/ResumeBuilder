@@ -2,10 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 // Gemini (commented out - using OpenAI instead)
 // import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 import { aiCache, getAICacheKey } from '@/lib/cache'
 import { aiRequestQueue, aiCircuitBreaker, requestDeduplicator } from '@/lib/request-queue'
 import { aiLimiter, getClientIP, createRateLimitResponse, addRateLimitHeaders } from '@/lib/rate-limiter'
 import { metrics, logger, requestTracker, generateRequestId } from '@/lib/monitoring'
+import { CreditsService, AIFeature } from '@/lib/credits-service'
+
+// Supabase client for auth verification
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+// Map generation types to AI features for credit deduction
+const TYPE_TO_FEATURE: Record<string, AIFeature> = {
+  summary: 'resume_summary',
+  experience: 'resume_experience',
+  project: 'resume_project',
+}
 
 // Validation function
 const validateAIRequest = (type: string, query: string) => {
@@ -146,7 +159,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { type, query } = body
+    const { type, query, userId } = body
 
     // Validate the request
     const validation = validateAIRequest(type, query)
@@ -156,6 +169,44 @@ export async function POST(request: NextRequest) {
         { error: validation.error },
         { status: 400 }
       )
+    }
+
+    // Check and deduct credits if userId is provided
+    let creditResult: { success: boolean; newBalance: number; error?: string } | null = null
+    if (userId) {
+      const feature = TYPE_TO_FEATURE[type]
+      if (feature) {
+        // Check if user has enough credits
+        const creditCheck = await CreditsService.checkCredits(userId, feature)
+        
+        if (!creditCheck.allowed) {
+          requestTracker.end(requestId, 402)
+          return NextResponse.json(
+            { 
+              error: 'Insufficient credits',
+              creditsRequired: creditCheck.required,
+              creditsAvailable: creditCheck.currentBalance,
+              message: `You need ${creditCheck.required} credits but only have ${creditCheck.currentBalance}. Please purchase more credits.`
+            },
+            { status: 402 } // Payment Required
+          )
+        }
+
+        // Deduct credits before making the AI call
+        creditResult = await CreditsService.consumeCredits(
+          userId, 
+          feature, 
+          `Generated ${type} content`
+        )
+
+        if (!creditResult.success) {
+          requestTracker.end(requestId, 500)
+          return NextResponse.json(
+            { error: 'Failed to process credits. Please try again.' },
+            { status: 500 }
+          )
+        }
+      }
     }
 
     // Check cache first
@@ -231,7 +282,8 @@ export async function POST(request: NextRequest) {
 
       const response = NextResponse.json({ 
         content: cleanedText,
-        success: true
+        success: true,
+        ...(creditResult && { creditsRemaining: creditResult.newBalance }),
       })
       requestTracker.end(requestId, 200)
       return addRateLimitHeaders(response, rateLimit.remaining, rateLimit.resetTime, 10)

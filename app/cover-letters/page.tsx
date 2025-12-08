@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
 import {
   FileText,
@@ -18,11 +18,6 @@ import {
   Loader2,
   Copy,
   Mail,
-  User,
-  LogOut,
-  Moon,
-  Sun,
-  ChevronDown,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -37,9 +32,9 @@ import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 
 import ProtectedRoute from "@/components/auth/protected-route"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { DashboardNav } from "@/components/dashboard-nav"
 import { useAuth } from "@/hooks/use-auth"
-import { useScrollHide } from "@/hooks/use-scroll-hide"
+import { useCredits } from "@/hooks/use-credits"
 import { CoverLetterService, type CoverLetter } from "@/lib/cover-letter-service"
 import { ResumeService } from "@/lib/resume-service"
 
@@ -65,10 +60,7 @@ interface CoverLetterFormData {
 export default function CoverLettersPage() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
-  const { isVisible } = useScrollHide({ threshold: 50 })
-
-  // Refs
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const { balance, refreshBalance, featureCosts } = useCredits()
 
   // State
   const [currentView, setCurrentView] = useState<"list" | "create" | "edit">("list")
@@ -79,7 +71,6 @@ export default function CoverLettersPage() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingCoverLetter, setEditingCoverLetter] = useState<CoverLetter | null>(null)
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
   // Form data
   const [formData, setFormData] = useState<CoverLetterFormData>({
@@ -104,23 +95,6 @@ export default function CoverLettersPage() {
       console.error(err)
     }
   }, [signOut])
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowProfileDropdown(false)
-      }
-    }
-
-    if (showProfileDropdown) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [showProfileDropdown])
 
   // Load data
   useEffect(() => {
@@ -186,6 +160,18 @@ export default function CoverLettersPage() {
 
     setGenerating(true)
     try {
+      // Check if user has enough credits before making the request
+      const coverLetterCost = featureCosts?.cover_letter_generation || 5
+      if (balance && balance.current < coverLetterCost) {
+        toast({
+          title: "Insufficient Credits",
+          description: `You need ${coverLetterCost} credits to generate a cover letter. You have ${balance.current} credits remaining.`,
+          variant: "destructive",
+        })
+        setGenerating(false)
+        return
+      }
+
       const response = await fetch("/api/ai/generate-cover-letter", {
         method: "POST",
         headers: {
@@ -197,14 +183,27 @@ export default function CoverLettersPage() {
           jobTitle: formData.jobTitle,
           companyName: formData.companyName,
           specialInstructions: formData.specialInstructions,
+          userId: user?.id,
         }),
       })
 
       if (!response.ok) {
-        throw new Error("Failed to generate cover letter")
+        const errorData = await response.json().catch(() => null)
+        if (response.status === 402) {
+          toast({
+            title: "Insufficient Credits",
+            description: errorData?.message || "You don't have enough credits. Please purchase more.",
+            variant: "destructive",
+          })
+          return
+        }
+        throw new Error(errorData?.error || "Failed to generate cover letter")
       }
 
       const data = await response.json()
+
+      // Refresh credits balance after successful generation
+      refreshBalance()
 
       setFormData((prev) => ({
         ...prev,
@@ -220,7 +219,9 @@ export default function CoverLettersPage() {
         title: "Cover Letter Generated!",
         description: data.fallback 
           ? "Generated using fallback template. Please review and customize."
-          : "Your cover letter has been generated successfully.",
+          : data.creditsUsed 
+            ? `Cover letter generated! ${data.creditsUsed} credits used. ${data.creditsRemaining} credits remaining.`
+            : "Your cover letter has been generated successfully.",
         variant: data.fallback ? "destructive" : "default",
       })
     } catch (err) {
@@ -418,10 +419,22 @@ export default function CoverLettersPage() {
           <h1 className="text-3xl font-bold text-foreground">Cover Letters</h1>
           <p className="text-muted-foreground">Create and manage your professional cover letters</p>
         </div>
-        <Button onClick={startCreateNew} size="lg">
-          <Plus className="mr-2 h-5 w-5" />
-          Create Cover Letter
-        </Button>
+        <div className="flex items-center gap-4">
+          {/* Credits Badge */}
+          {balance && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+              <Sparkles className="h-4 w-4 text-yellow-500" />
+              <span className="text-sm font-medium">{balance.current} credits</span>
+              <Badge variant="secondary" className="text-xs">
+                5/letter
+              </Badge>
+            </div>
+          )}
+          <Button onClick={startCreateNew} size="lg">
+            <Plus className="mr-2 h-5 w-5" />
+            Create Cover Letter
+          </Button>
+        </div>
       </div>
 
       {/* Search and Stats */}
@@ -694,9 +707,24 @@ export default function CoverLettersPage() {
                 />
               </div>
 
+              {/* Credit Cost Info */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm text-muted-foreground">AI Generation Cost:</span>
+                  <span className="text-sm font-semibold text-foreground">5 credits</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Your balance:</span>
+                  <span className={`text-sm font-semibold ${balance && balance.current < 5 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
+                    {balance?.current ?? 0} credits
+                  </span>
+                </div>
+              </div>
+
               <Button
                 onClick={generateCoverLetter}
-                disabled={!formData.jobDescription || !formData.resumeId || generating}
+                disabled={!formData.jobDescription || !formData.resumeId || generating || !!(balance && balance.current < 5)}
                 className="w-full"
                 size="lg"
               >
@@ -705,13 +733,30 @@ export default function CoverLettersPage() {
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Generating Cover Letter...
                   </>
+                ) : balance && balance.current < 5 ? (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Insufficient Credits (Need 5)
+                  </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-5 w-5" />
-                    Generate Cover Letter with AI
+                    Generate Cover Letter (5 credits)
                   </>
                 )}
               </Button>
+
+              {balance && balance.current < 5 && (
+                <Alert className="border-destructive/50 bg-destructive/10">
+                  <Sparkles className="h-4 w-4 text-destructive" />
+                  <AlertDescription className="text-destructive">
+                    You need at least 5 credits to generate a cover letter. 
+                    <Link href="/profile" className="underline font-medium ml-1">
+                      Get more credits →
+                    </Link>
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
 
@@ -808,99 +853,9 @@ export default function CoverLettersPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <motion.header 
-          className="border-b border-border bg-card/50 backdrop-blur-sm fixed top-0 left-0 right-0 z-50"
-          initial={{ y: 0 }}
-          animate={{ 
-            y: isVisible ? 0 : -100,
-            transition: { 
-              duration: 0.3, 
-              ease: "easeInOut" 
-            }
-          }}
-        >
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                    <Mail className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-foreground">ApexResume</h1>
-                    <p className="text-muted-foreground text-sm">Professional Resume Builder</p>
-                  </div>
-                </div>
-                
-                {/* Navigation */}
-                <nav className="hidden md:flex items-center gap-1">
-                  <Link href="/dashboard">
-                    <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Resumes
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" className="bg-primary/10 text-primary">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Cover Letters
-                  </Button>
-                </nav>
-              </div>
+        <DashboardNav />
 
-              <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="flex items-center gap-3 text-sm text-foreground bg-muted/50 hover:bg-muted/70 rounded-lg px-4 py-2 transition-colors"
-                  >
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                    <span className="truncate max-w-32">{user?.user_metadata?.full_name || user?.email}</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg z-50 sm:w-56">
-                      <div className="py-1">
-                        <Link href="/profile" className="block">
-                          <button 
-                            className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2"
-                            onClick={() => setShowProfileDropdown(false)}
-                          >
-                            <User className="h-4 w-4" />
-                            Profile & Settings
-                          </button>
-                        </Link>
-                        <div className="border-t border-border my-1"></div>
-                        <button 
-                          onClick={() => {
-                            setShowProfileDropdown(false)
-                            handleSignOut()
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors flex items-center gap-2"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="bg-muted rounded-lg p-1">
-                    <ThemeToggle />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.header>
-
-        <div className="container mx-auto px-6 py-8 pt-24">
+        <div className="container mx-auto px-4 sm:px-6 py-8 pt-20">
           {error && (
             <Alert variant="destructive" className="mb-6">
               <AlertDescription>{error}</AlertDescription>

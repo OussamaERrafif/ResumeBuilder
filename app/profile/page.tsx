@@ -875,20 +875,38 @@ export default function ProfileSettingsPage() {
                   <span className="text-muted-foreground">credits remaining</span>
                 </div>
                 <Progress value={(profile.ai_credits / 100) * 100} className="h-2" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Resume Analysis:</span>
-                    <span>2 credits</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Content Generation:</span>
-                    <span>3 credits</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Cover Letter:</span>
-                    <span>5 credits</span>
+                
+                {/* AI Feature Costs Reference */}
+                <div className="pt-2">
+                  <h4 className="text-sm font-medium text-foreground mb-3">AI Feature Costs</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <span className="text-sm">Professional Summary</span>
+                      <Badge variant="secondary">1 credit</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <span className="text-sm">Experience Description</span>
+                      <Badge variant="secondary">1 credit</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <span className="text-sm">Project Description</span>
+                      <Badge variant="secondary">1 credit</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <span className="text-sm">ATS Score Check</span>
+                      <Badge variant="secondary">2 credits</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <span className="text-sm">Resume Analysis</span>
+                      <Badge variant="secondary">3 credits</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <span className="text-sm">Cover Letter</span>
+                      <Badge variant="secondary">5 credits</Badge>
+                    </div>
                   </div>
                 </div>
+                
                 <Button className="w-full" variant="outline">Buy More Credits</Button>
               </div>
             </div>

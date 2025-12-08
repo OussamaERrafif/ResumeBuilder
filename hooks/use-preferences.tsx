@@ -1,8 +1,11 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { ProfileService, UserPreferences } from '@/lib/profile-service'
+
+// Timeout for preferences initialization
+const PREFERENCES_INIT_TIMEOUT = 5000
 
 interface PreferencesContextType {
   preferences: UserPreferences | null
@@ -14,12 +17,20 @@ interface PreferencesContextType {
 const PreferencesContext = createContext<PreferencesContextType | undefined>(undefined)
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, isConfigured } = useAuth()
   const [preferences, setPreferences] = useState<UserPreferences | null>(null)
   const [loading, setLoading] = useState(true)
+  const initializingRef = useRef(false)
 
   const loadPreferences = async () => {
     if (!user) {
+      setPreferences(null)
+      setLoading(false)
+      return
+    }
+
+    // Skip if Supabase is not configured
+    if (!isConfigured) {
       setPreferences(null)
       setLoading(false)
       return
@@ -84,10 +95,33 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     await loadPreferences()
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Initialize preferences with timeout protection
   useEffect(() => {
+    // Prevent double initialization
+    if (initializingRef.current) return
+    initializingRef.current = true
+
+    // Set a timeout to prevent endless loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('[Preferences] Initialization timeout - setting loading to false')
+        setLoading(false)
+      }
+    }, PREFERENCES_INIT_TIMEOUT)
+
     loadPreferences()
-  }, [user])
+
+    return () => {
+      clearTimeout(timeoutId)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refresh when user changes (after initial load)
+  useEffect(() => {
+    if (initializingRef.current) {
+      loadPreferences()
+    }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for system theme changes
   useEffect(() => {

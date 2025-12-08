@@ -92,6 +92,7 @@ export interface CoverLetterRequest {
   jobTitle?: string
   companyName?: string
   specialInstructions?: string
+  userId?: string // Optional: for credit tracking
 }
 
 export interface CoverLetterResponse {

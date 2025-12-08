@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Gemini (commented out - using OpenAI instead)
 // import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
+import { CreditsService, AIFeature } from '@/lib/credits-service'
 
 interface PersonalInfo {
   name: string
@@ -315,7 +316,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const { resumeData } = body as { resumeData: ResumeData }
+    const { resumeData, userId } = body as { resumeData: ResumeData; userId?: string }
     
     if (!resumeData) {
       return NextResponse.json(
@@ -324,6 +325,40 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Check and deduct credits if userId is provided
+    let creditResult: { success: boolean; newBalance: number; error?: string } | null = null
+    if (userId) {
+      const feature: AIFeature = 'resume_analysis'
+      
+      // Check if user has enough credits
+      const creditCheck = await CreditsService.checkCredits(userId, feature)
+      
+      if (!creditCheck.allowed) {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient credits',
+            creditsRequired: creditCheck.required,
+            creditsAvailable: creditCheck.currentBalance,
+            message: `Resume analysis requires ${creditCheck.required} credits but you only have ${creditCheck.currentBalance}. Please purchase more credits.`
+          },
+          { status: 402 } // Payment Required
+        )
+      }
+
+      // Deduct credits before making the AI call
+      creditResult = await CreditsService.consumeCredits(
+        userId, 
+        feature, 
+        'Analyzed resume for improvements'
+      )
+
+      if (!creditResult.success) {
+        return NextResponse.json(
+          { error: 'Failed to process credits. Please try again.' },
+          { status: 500 }
+        )
+      }
+    }
     
     // Validate resume data
     if (!resumeData || !resumeData.personalInfo) {
@@ -389,7 +424,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         analysis: analysisResult,
         success: true,
-        fallback: false
+        fallback: false,
+        ...(creditResult && { creditsRemaining: creditResult.newBalance }),
       })
       
     } catch (_aiError) {
@@ -398,7 +434,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         analysis: fallbackAnalysis,
         success: true,
-        fallback: true
+        fallback: true,
+        ...(creditResult && { creditsRemaining: creditResult.newBalance }),
       })
     }
 

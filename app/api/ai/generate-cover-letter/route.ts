@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
 import { ResumeData, CoverLetterRequest } from '@/types/resume'
+import { CreditsService } from '@/lib/credits-service'
 
 export async function POST(request: NextRequest) {
   let resumeData: ResumeData | null = null
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
 
     const requestData: CoverLetterRequest = await request.json()
-    const { jobDescription, jobTitle, companyName, specialInstructions } = requestData
+    const { jobDescription, jobTitle, companyName, specialInstructions, userId } = requestData
     resumeData = requestData.resumeData
 
     // Validate required fields
@@ -45,6 +46,39 @@ export async function POST(request: NextRequest) {
         { error: 'Resume data is required' },
         { status: 400 }
       )
+    }
+
+    // Check and deduct credits if userId is provided
+    let creditResult: { success: boolean; newBalance: number; error?: string } | null = null
+    if (userId) {
+      // Check if user has enough credits for cover letter generation (5 credits)
+      const creditCheck = await CreditsService.checkCredits(userId, 'cover_letter_generation')
+      
+      if (!creditCheck.allowed) {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient credits',
+            creditsRequired: creditCheck.required,
+            creditsAvailable: creditCheck.currentBalance,
+            message: `You need ${creditCheck.required} credits but only have ${creditCheck.currentBalance}. Please purchase more credits.`
+          },
+          { status: 402 } // Payment Required
+        )
+      }
+
+      // Deduct credits before making the AI call
+      creditResult = await CreditsService.consumeCredits(
+        userId, 
+        'cover_letter_generation', 
+        `Generated cover letter for ${jobTitle || 'job application'}${companyName ? ` at ${companyName}` : ''}`
+      )
+
+      if (!creditResult.success) {
+        return NextResponse.json(
+          { error: 'Failed to process credits. Please try again.' },
+          { status: 500 }
+        )
+      }
     }
 
     // Prepare resume summary for AI
@@ -121,7 +155,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       coverLetter: coverLetterContent.trim(),
-      resumeOptimizationSuggestions: optimizationSuggestions
+      resumeOptimizationSuggestions: optimizationSuggestions,
+      ...(creditResult && { 
+        creditsUsed: 5,
+        creditsRemaining: creditResult.newBalance 
+      })
     })
 
   } catch (error) {
