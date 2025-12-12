@@ -14,6 +14,8 @@ export interface UserProfile {
   twitter?: string
   job_title?: string
   company?: string
+  is_onboarded?: boolean
+  referral_source?: string
   subscription_tier: 'free' | 'pro' | 'premium'
   subscription_expires?: string
   ai_credits: number

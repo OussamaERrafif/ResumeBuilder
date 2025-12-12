@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
 import { PreferencesProvider } from "@/hooks/use-preferences"
 import { CreditsProvider } from "@/hooks/use-credits"
+import { ProfileProvider } from "@/hooks/use-profile"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import { StructuredData } from "@/components/seo/structured-data"
@@ -172,10 +173,12 @@ export default function RootLayout({
           <AuthProvider>
             <PreferencesProvider>
               <CreditsProvider>
-                <div className="animate-fade-in">
-                  {children}
-                </div>
-                <Toaster />
+                <ProfileProvider>
+                  <div className="animate-fade-in">
+                    {children}
+                  </div>
+                  <Toaster />
+                </ProfileProvider>
               </CreditsProvider>
             </PreferencesProvider>
           </AuthProvider>
