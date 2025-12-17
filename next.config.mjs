@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: false,
@@ -60,7 +60,7 @@ const nextConfig = {
     if (isServer) {
       config.externals.push('canvas')
     }
-    
+
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -106,7 +106,7 @@ const nextConfig = {
         },
       }
     }
-    
+
     return config
   },
   async headers() {

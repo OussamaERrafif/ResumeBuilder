@@ -63,7 +63,7 @@ export default function ProfileSettingsPage() {
 
   const loadData = async () => {
     if (!user) return
-    
+
     try {
       const [profileData, notificationData, securityData, usage] = await Promise.all([
         ProfileService.getUserProfile(user.id),
@@ -198,7 +198,7 @@ export default function ProfileSettingsPage() {
     if (!user || !event.target.files?.[0]) return
 
     const file = event.target.files[0]
-    
+
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -219,13 +219,13 @@ export default function ProfileSettingsPage() {
     }
 
     setUploading(true)
-    
+
     try {
       const imageUrl = URL.createObjectURL(file)
       setProfile(prev => prev ? { ...prev, avatar_url: imageUrl } : null)
 
       const avatarUrl = await ProfileService.uploadAvatar(user.id, file)
-      
+
       if (avatarUrl) {
         const success = await ProfileService.updateUserProfile(user.id, {
           avatar_url: avatarUrl,
@@ -306,7 +306,7 @@ export default function ProfileSettingsPage() {
     setSaving(true)
     try {
       const result = await ProfileService.changePassword(user.id, currentPassword, newPassword)
-      
+
       if (result.success) {
         setPasswordModalOpen(false)
         toast({
@@ -375,9 +375,9 @@ export default function ProfileSettingsPage() {
 
     try {
       setSaving(true)
-      
+
       const passwordVerification = await ProfileService.changePassword(user.id, password, password)
-      
+
       if (!passwordVerification.success) {
         toast({
           title: "Error",
@@ -388,7 +388,7 @@ export default function ProfileSettingsPage() {
       }
 
       const success = await ProfileService.deleteAccount(user.id)
-      
+
       if (success) {
         toast({
           title: "Account Deleted",
@@ -430,7 +430,7 @@ export default function ProfileSettingsPage() {
 
     switch (activeSection) {
       case 'profile':
-        return (
+        return profile && preferences ? (
           <ProfileForm
             profile={profile}
             formData={formData}
@@ -442,7 +442,7 @@ export default function ProfileSettingsPage() {
             isAutoSaving={isAutoSaving}
             preferences={preferences}
           />
-        )
+        ) : null
       case 'notifications':
         return notifications ? (
           <NotificationSettingsComponent
@@ -451,15 +451,15 @@ export default function ProfileSettingsPage() {
           />
         ) : null
       case 'billing':
-        return (
+        return profile && preferences ? (
           <BillingSettings
             profile={profile}
             creditsUsage={creditsUsage}
             preferences={preferences}
           />
-        )
+        ) : null
       case 'security':
-        return security ? (
+        return security && preferences ? (
           <SecuritySettingsComponent
             security={security}
             onPasswordChange={() => setPasswordModalOpen(true)}
@@ -491,7 +491,7 @@ export default function ProfileSettingsPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background/50">
         {/* Header */}
-        <motion.header 
+        <motion.header
           className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-all duration-300"
           initial={{ y: -100 }}
           animate={{ y: isVisible ? 0 : -100 }}
@@ -523,23 +523,23 @@ export default function ProfileSettingsPage() {
             {/* Sidebar */}
             <aside className="lg:w-64 flex-shrink-0">
               <div className="sticky top-24 space-y-8">
-                <ProfileSidebar 
-                  activeSection={activeSection} 
-                  setActiveSection={setActiveSection} 
+                <ProfileSidebar
+                  activeSection={activeSection}
+                  setActiveSection={setActiveSection}
                 />
-                
+
                 {/* Status Card (Desktop only) */}
                 <div className="hidden lg:block p-4 rounded-xl bg-gradient-to-br from-primary/5 to-purple-500/5 border border-primary/10">
-                   <div className="flex items-center gap-2 mb-2">
-                     <CheckCircle2 className="w-4 h-4 text-green-500" />
-                     <span className="text-sm font-medium">Profile Status</span>
-                   </div>
-                   <div className="space-y-1">
-                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                       <div className="h-full bg-green-500 w-[85%] rounded-full" />
-                     </div>
-                     <p className="text-xs text-muted-foreground">85% completed</p>
-                   </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium">Profile Status</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 w-[85%] rounded-full" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">85% completed</p>
+                  </div>
                 </div>
               </div>
             </aside>
@@ -561,7 +561,7 @@ export default function ProfileSettingsPage() {
           </div>
         </main>
       </div>
-      
+
       <DeleteAccountModal
         isOpen={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
@@ -569,7 +569,7 @@ export default function ProfileSettingsPage() {
         userEmail={user?.email}
         isLoading={saving}
       />
-      
+
       <ChangePasswordModal
         isOpen={passwordModalOpen}
         onOpenChange={setPasswordModalOpen}

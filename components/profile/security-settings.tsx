@@ -76,9 +76,9 @@ export function SecuritySettings({ security, onPasswordChange, on2FAToggle, pref
             />
           </div>
           {security.two_factor_enabled && (
-             <div className="p-4 bg-primary/10 rounded-lg text-sm text-primary border border-primary/20">
-               Two-factor authentication is currently enabled. Your account is more secure.
-             </div>
+            <div className="p-4 bg-primary/10 rounded-lg text-sm text-primary border border-primary/20">
+              Two-factor authentication is currently enabled. Your account is more secure.
+            </div>
           )}
         </CardContent>
       </Card>
@@ -92,29 +92,29 @@ export function SecuritySettings({ security, onPasswordChange, on2FAToggle, pref
           <CardDescription>Manage devices where you're currently logged in.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-           <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-muted rounded-full">
-                  <Laptop className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm">This Browser</p>
-                    <Badge variant="secondary" className="text-[10px] h-5">Current</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {navigator.platform} • {navigator.userAgent.includes('Chrome') ? 'Chrome' : 
-                     navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Browser'}
-                  </p>
-                </div>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-muted rounded-full">
+                <Laptop className="w-5 h-5 text-muted-foreground" />
               </div>
-              <div className="text-xs text-muted-foreground">
-                Active now
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm">This Browser</p>
+                  <Badge variant="secondary" className="text-[10px] h-5">Current</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {navigator.platform} • {navigator.userAgent.includes('Chrome') ? 'Chrome' :
+                    navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Browser'}
+                </p>
               </div>
-           </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Active now
+            </div>
+          </div>
         </CardContent>
         <CardFooter>
-          <Button variant="destructive" variant="outline" className="w-full text-destructive hover:bg-destructive/10">
+          <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 border-destructive/50">
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out All Other Sessions
           </Button>

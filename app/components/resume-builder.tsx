@@ -41,6 +41,8 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  DragStartEvent,
+  DragEndEvent,
 } from "@dnd-kit/core"
 import {
   SortableContext,
@@ -695,34 +697,35 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   }, [activeId, experience.values, education.values, projects.values, certifications.values, references.values])
 
   // DND-KIT HANDLERS
-  const handleDragStart = useCallback((event: any) => {
-    setActiveId(event.active.id)
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(String(event.active.id))
   }, [])
 
   const handleDragEnd = useCallback(
-    (event: any) => {
+    (event: DragEndEvent) => {
       const { active, over } = event
-      if (active.id !== over.id) {
-        const [activeSection, activeIndexStr] = active.id.split("-")
-        const [overSection, overIndexStr] = over.id.split("-")
+      if (!over || active.id === over.id) return
 
-        if (activeSection === overSection) {
-          const activeIndex = Number.parseInt(activeIndexStr)
-          const overIndex = Number.parseInt(overIndexStr)
+      const [activeSection, activeIndexStr] = String(active.id).split("-")
+      const [overSection, overIndexStr] = String(over.id).split("-")
 
-          if (activeSection === "experience") {
-            experience.reorder(activeIndex, overIndex)
-          } else if (activeSection === "education") {
-            education.reorder(activeIndex, overIndex)
-          } else if (activeSection === "projects") {
-            projects.reorder(activeIndex, overIndex)
-          } else if (activeSection === "certifications") {
-            certifications.reorder(activeIndex, overIndex)
-          } else if (activeSection === "references") {
-            references.reorder(activeIndex, overIndex)
-          }
+      if (activeSection === overSection) {
+        const activeIndex = Number.parseInt(activeIndexStr)
+        const overIndex = Number.parseInt(overIndexStr)
+
+        if (activeSection === "experience") {
+          experience.reorder(activeIndex, overIndex)
+        } else if (activeSection === "education") {
+          education.reorder(activeIndex, overIndex)
+        } else if (activeSection === "projects") {
+          projects.reorder(activeIndex, overIndex)
+        } else if (activeSection === "certifications") {
+          certifications.reorder(activeIndex, overIndex)
+        } else if (activeSection === "references") {
+          references.reorder(activeIndex, overIndex)
         }
       }
+
       setActiveId(null)
     },
     [experience, education, projects, certifications, references],
@@ -1270,7 +1273,7 @@ function SortableItem({ id, children, className }: SortableItemProps) {
   )
 }
 
-const ArrayFormField = ({
+const ArrayFormField = <T,>({
   title,
   values,
   onChange,
@@ -1286,7 +1289,7 @@ const ArrayFormField = ({
   onDragEnd,
 }: {
   title: string
-  values: any[]
+  values: T[]
   onChange: (index: number, field: string, value: string) => void
   onAdd: () => void
   onRemove: (index: number) => void
@@ -1296,8 +1299,8 @@ const ArrayFormField = ({
   draggable?: boolean
   sectionId: string
   sensors?: ReturnType<typeof useSensors>
-  onDragStart?: (event: any) => void
-  onDragEnd?: (event: any) => void
+  onDragStart?: (event: DragStartEvent) => void
+  onDragEnd?: (event: DragEndEvent) => void
 }) => {
   const items = values.map((value, index) => (
     <SortableItem key={`${sectionId}-${index}`} id={`${sectionId}-${index}`}>
@@ -1306,7 +1309,7 @@ const ArrayFormField = ({
           <FormField
             key={field.name}
             label={field.label}
-            value={value[field.name] || ""}
+            value={(value as Record<string, string>)[field.name] || ""}
             onChange={(e) => onChange(index, field.name, e.target.value)}
             type={field.type || "text"}
             placeholder={field.placeholder}
@@ -1367,7 +1370,19 @@ const PersonalInfoStep = ({
   profileImage,
   onProfileImageChange,
   isPhotoRequired,
-}: any) => (
+}: {
+  name: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; error: string }
+  title: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; error: string }
+  email: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; error: string }
+  phone: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; error: string }
+  location: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; error: string }
+  summary: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; error: string }
+  links: { values: Link[]; onChange: (index: number, field: string, value: string) => void; add: () => void; remove: (index: number) => void }
+  onAIGenerate: (type: "summary") => void
+  profileImage: string | null
+  onProfileImageChange: (file: File | null) => void
+  isPhotoRequired: boolean
+}) => (
   <div className="space-y-8">
     <div className="text-center mb-8">
       <h3 className="text-xl font-semibold text-foreground mb-2">Let's start with the basics</h3>
@@ -1423,7 +1438,14 @@ const PersonalInfoStep = ({
   </div>
 )
 
-const ExperienceStep = ({ experience, onAIGenerate, sensors, activeId, onDragStart, onDragEnd }: any) => (
+const ExperienceStep = ({ experience, onAIGenerate, sensors, activeId, onDragStart, onDragEnd }: {
+  experience: { values: Experience[]; onChange: (index: number, field: string, value: string) => void; add: () => void; remove: (index: number) => void }
+  onAIGenerate: (type: "experience", index: number) => void
+  sensors: ReturnType<typeof useSensors>
+  activeId: string | null
+  onDragStart: (event: DragStartEvent) => void
+  onDragEnd: (event: DragEndEvent) => void
+}) => (
   <div className="space-y-8">
     <div className="text-center mb-8">
       <h3 className="text-xl font-semibold text-foreground mb-2">Your Professional Journey</h3>
@@ -1462,7 +1484,13 @@ const ExperienceStep = ({ experience, onAIGenerate, sensors, activeId, onDragSta
   </div>
 )
 
-const EducationStep = ({ education, sensors, activeId, onDragStart, onDragEnd }: any) => (
+const EducationStep = ({ education, sensors, activeId, onDragStart, onDragEnd }: {
+  education: { values: Education[]; onChange: (index: number, field: string, value: string) => void; add: () => void; remove: (index: number) => void }
+  sensors: ReturnType<typeof useSensors>
+  activeId: string | null
+  onDragStart: (event: DragStartEvent) => void
+  onDragEnd: (event: DragEndEvent) => void
+}) => (
   <div className="space-y-8">
     <div className="text-center mb-8">
       <h3 className="text-xl font-semibold text-foreground mb-2">Educational Background</h3>
@@ -1490,7 +1518,13 @@ const EducationStep = ({ education, sensors, activeId, onDragStart, onDragEnd }:
   </div>
 )
 
-const SkillsStep = ({ skills }: any) => (
+const SkillsStep = ({ skills }: {
+  skills: {
+    languages: ReturnType<typeof useFormField>
+    frameworks: ReturnType<typeof useFormField>
+    tools: ReturnType<typeof useFormField>
+  }
+}) => (
   <div className="space-y-8">
     <div className="text-center mb-8">
       <h3 className="text-xl font-semibold text-foreground mb-2">Your Skill Arsenal</h3>
@@ -1513,7 +1547,14 @@ const SkillsStep = ({ skills }: any) => (
   </div>
 )
 
-const ProjectsStep = ({ projects, onAIGenerate, sensors, activeId, onDragStart, onDragEnd }: any) => (
+const ProjectsStep = ({ projects, onAIGenerate, sensors, activeId, onDragStart, onDragEnd }: {
+  projects: { values: Project[]; onChange: (index: number, field: string, value: string) => void; add: () => void; remove: (index: number) => void }
+  onAIGenerate: (type: "project", index: number) => void
+  sensors: ReturnType<typeof useSensors>
+  activeId: string | null
+  onDragStart: (event: DragStartEvent) => void
+  onDragEnd: (event: DragEndEvent) => void
+}) => (
   <div className="space-y-8">
     <div className="text-center mb-8">
       <h3 className="text-xl font-semibold text-foreground mb-2">Portfolio Showcase</h3>
@@ -1557,7 +1598,14 @@ const ProjectsStep = ({ projects, onAIGenerate, sensors, activeId, onDragStart, 
   </div>
 )
 
-const AdditionalStep = ({ certifications, references, sensors, activeId, onDragStart, onDragEnd }: any) => (
+const AdditionalStep = ({ certifications, references, sensors, activeId, onDragStart, onDragEnd }: {
+  certifications: { values: Certification[]; onChange: (index: number, field: string, value: string) => void; add: () => void; remove: (index: number) => void }
+  references: { values: Reference[]; onChange: (index: number, field: string, value: string) => void; add: () => void; remove: (index: number) => void }
+  sensors: ReturnType<typeof useSensors>
+  activeId: string | null
+  onDragStart: (event: DragStartEvent) => void
+  onDragEnd: (event: DragEndEvent) => void
+}) => (
   <div className="space-y-12">
     <div className="text-center mb-8">
       <h3 className="text-xl font-semibold text-foreground mb-2">Additional Credentials</h3>
