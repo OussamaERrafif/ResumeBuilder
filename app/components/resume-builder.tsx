@@ -29,6 +29,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  Coins,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -95,6 +96,7 @@ import {
   PhotoTemplate,
 } from "./template-previews"
 import { useAuth } from "@/hooks/use-auth"
+import { useCredits } from "@/hooks/use-credits"
 import { ResumeService } from "@/lib/resume-service"
 import { FileUpload } from "@/components/ui/file-upload"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -345,6 +347,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   )
 
   const { user } = useAuth()
+  const { balance, refreshBalance, getFeatureCost } = useCredits()
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
@@ -564,6 +567,20 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
       const data = await response.json()
 
+      // Handle insufficient credits (402 Payment Required)
+      if (response.status === 402) {
+        toast({
+          title: "Insufficient Credits",
+          description: data.message || `You need ${data.creditsRequired || 'more'} credits but only have ${data.creditsAvailable || 0}. Please purchase more credits to continue.`,
+          variant: "destructive",
+          duration: 6000,
+        })
+        setShowAIModal(false)
+        setAiModalType(null)
+        setAiModalIndex(null)
+        return
+      }
+
       if (data.success && data.content) {
         const aiContent = data.content
 
@@ -583,17 +600,24 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
             break
         }
 
+        // Refresh credit balance after successful operation
+        if (data.creditsRemaining !== undefined) {
+          await refreshBalance()
+        }
+
         // Show success message if it was a fallback
         if (data.fallback) {
           toast({
             title: "Content Generated",
-            description: "Using fallback templates. Add your Gemini API key to .env.local for AI-powered content.",
+            description: "Using fallback templates. Add your OpenAI API key to .env.local for AI-powered content.",
             duration: 5000,
           })
         } else {
           toast({
-            title: "AI Content Generated",
-            description: "Successfully generated professional content using Google Gemini.",
+            title: "AI Content Generated ✨",
+            description: data.creditsRemaining !== undefined
+              ? `Successfully generated content. ${data.creditsRemaining} credits remaining.`
+              : "Successfully generated professional content.",
             duration: 3000,
           })
         }
@@ -768,6 +792,16 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              {/* Credit Balance Display */}
+              {balance && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+                  <Coins className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">
+                    {balance.current} credits
+                  </span>
+                </div>
+              )}
+
               <Button
                 onClick={() => {
                   setShowAnalysis(true)

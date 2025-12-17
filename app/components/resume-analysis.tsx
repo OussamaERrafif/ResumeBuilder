@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { useCredits } from "@/hooks/use-credits"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +59,7 @@ interface ResumeAnalysisProps {
 }
 
 export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: ResumeAnalysisProps) {
+  const { refreshBalance } = useCredits()
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,16 +86,26 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: 
         body: JSON.stringify({ resumeData, userId }),
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Analysis failed: ${response.statusText}`)
+      const data = await response.json()
+
+      // Handle insufficient credits (402 Payment Required)
+      if (response.status === 402) {
+        setError(data.message || `Resume analysis requires ${data.creditsRequired || 3} credits but you only have ${data.creditsAvailable || 0}. Please purchase more credits.`)
+        return
       }
 
-      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || `Analysis failed: ${response.statusText}`)
+      }
 
       if (data.success && data.analysis) {
         setAnalysis(data.analysis)
         setIsFallback(data.fallback || false)
+
+        // Refresh credit balance after successful analysis
+        if (data.creditsRemaining !== undefined) {
+          await refreshBalance()
+        }
       } else {
         throw new Error(data.error || 'Analysis failed')
       }

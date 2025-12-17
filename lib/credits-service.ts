@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { supabaseAdmin } from './supabase-admin'
 import { ProfileService, AICreditsUsage } from './profile-service'
 
 /**
@@ -10,15 +11,15 @@ export const AI_FEATURE_COSTS = {
   'resume_summary': 1,
   'resume_experience': 1,
   'resume_project': 1,
-  
+
   // Analysis features
   'resume_analysis': 3,
   'ats_score': 2,
-  
+
   // Cover letter features
   'cover_letter_generation': 5,
   'cover_letter_improvement': 3,
-  
+
   // Advanced features
   'resume_rewrite': 5,
   'job_match_analysis': 3,
@@ -149,22 +150,37 @@ export interface CreditCheckResult {
  */
 export class CreditsService {
   /**
+   * Helper to get the correct client (Admin if on server, Standard if on client)
+   */
+  private static getClient() {
+    return supabaseAdmin || supabase
+  }
+
+  /**
    * Check if user has enough credits for a feature
    */
   static async checkCredits(userId: string, feature: AIFeature): Promise<CreditCheckResult> {
-    const profile = await ProfileService.getUserProfile(userId)
-    
-    if (!profile) {
-      return {
-        allowed: false,
-        currentBalance: 0,
-        required: AI_FEATURE_COSTS[feature],
-        shortfall: AI_FEATURE_COSTS[feature],
+    const required = AI_FEATURE_COSTS[feature]
+    let currentBalance = 0
+
+    // Use admin client if available to bypass RLS on server
+    if (supabaseAdmin) {
+      const { data } = await supabaseAdmin
+        .from('user_profiles')
+        .select('ai_credits')
+        .eq('user_id', userId)
+        .single()
+
+      if (data) {
+        currentBalance = data.ai_credits
+      }
+    } else {
+      // Client-side fallback to ProfileService
+      const profile = await ProfileService.getUserProfile(userId)
+      if (profile) {
+        currentBalance = profile.ai_credits
       }
     }
-
-    const required = AI_FEATURE_COSTS[feature]
-    const currentBalance = profile.ai_credits
 
     return {
       allowed: currentBalance >= required,
@@ -195,15 +211,24 @@ export class CreditsService {
 
     const creditsUsed = AI_FEATURE_COSTS[feature]
     const featureDescription = description || this.getFeatureDescription(feature)
+    const newBalance = Math.max(0, check.currentBalance - creditsUsed)
 
-    const success = await ProfileService.recordCreditUsage(
-      userId,
-      feature,
-      creditsUsed,
-      featureDescription
-    )
+    // db operation
+    const client = this.getClient()
 
-    if (!success) {
+    // 1. Record usage
+    const { error: usageError } = await client
+      .from('ai_credits_usage')
+      .insert({
+        user_id: userId,
+        feature,
+        credits_used: creditsUsed,
+        description: featureDescription,
+        created_at: new Date().toISOString(),
+      })
+
+    if (usageError) {
+      console.error('Error recording credit usage:', usageError)
       return {
         success: false,
         newBalance: check.currentBalance,
@@ -211,9 +236,27 @@ export class CreditsService {
       }
     }
 
+    // 2. Update user's credit balance
+    const { error: updateError } = await client
+      .from('user_profiles')
+      .update({
+        ai_credits: newBalance,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+
+    if (updateError) {
+      console.error('Error updating credit balance:', updateError)
+      return {
+        success: true,
+        newBalance: check.currentBalance,
+        error: 'Failed to update wallet balance.',
+      }
+    }
+
     return {
       success: true,
-      newBalance: check.currentBalance - creditsUsed,
+      newBalance,
     }
   }
 
@@ -227,8 +270,15 @@ export class CreditsService {
     description: string
   ): Promise<{ success: boolean; newBalance: number; error?: string }> {
     try {
-      const profile = await ProfileService.getUserProfile(userId)
-      
+      const client = this.getClient()
+
+      // Get current profile for limits
+      const { data: profile } = await client
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
       if (!profile) {
         return {
           success: false,
@@ -241,9 +291,15 @@ export class CreditsService {
       const newBalance = Math.min(profile.ai_credits + amount, tier.maxCredits)
 
       // Update credits balance
-      const updateSuccess = await ProfileService.updateAICredits(userId, newBalance)
+      const { error: updateError } = await client
+        .from('user_profiles')
+        .update({
+          ai_credits: newBalance,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
 
-      if (!updateSuccess) {
+      if (updateError) {
         return {
           success: false,
           newBalance: profile.ai_credits,
@@ -251,8 +307,8 @@ export class CreditsService {
         }
       }
 
-      // Record the transaction (using negative credits_used for additions)
-      await supabase.from('ai_credits_usage').insert({
+      // Record the transaction
+      await client.from('ai_credits_usage').insert({
         user_id: userId,
         feature: type,
         credits_used: -amount, // Negative to indicate credits added
@@ -279,8 +335,14 @@ export class CreditsService {
    */
   static async getCreditBalance(userId: string): Promise<CreditBalance | null> {
     try {
-      const profile = await ProfileService.getUserProfile(userId)
-      
+      const client = this.getClient()
+
+      const { data: profile } = await client
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
       if (!profile) {
         return null
       }
@@ -290,7 +352,7 @@ export class CreditsService {
       startOfMonth.setDate(1)
       startOfMonth.setHours(0, 0, 0, 0)
 
-      const { data: usageData } = await supabase
+      const { data: usageData } = await client
         .from('ai_credits_usage')
         .select('credits_used')
         .eq('user_id', userId)
@@ -327,7 +389,19 @@ export class CreditsService {
     limit = 50,
     offset = 0
   ): Promise<AICreditsUsage[]> {
-    return ProfileService.getAICreditsUsage(userId, limit)
+    const client = this.getClient()
+    const { data, error } = await client
+      .from('ai_credits_usage')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching AI credits usage:', error)
+      return []
+    }
+    return data || []
   }
 
   /**
@@ -339,11 +413,12 @@ export class CreditsService {
     transactions: number
   }> {
     try {
+      const client = this.getClient()
       const startOfMonth = new Date()
       startOfMonth.setDate(1)
       startOfMonth.setHours(0, 0, 0, 0)
 
-      const { data } = await supabase
+      const { data } = await client
         .from('ai_credits_usage')
         .select('feature, credits_used')
         .eq('user_id', userId)
@@ -379,14 +454,19 @@ export class CreditsService {
    */
   static async resetMonthlyCredits(userId: string): Promise<boolean> {
     try {
-      const profile = await ProfileService.getUserProfile(userId)
-      
+      const client = this.getClient()
+      const { data: profile } = await client
+        .from('user_profiles')
+        .select('subscription_tier, ai_credits')
+        .eq('user_id', userId)
+        .single()
+
       if (!profile) {
         return false
       }
 
       const tier = SUBSCRIPTION_TIERS[profile.subscription_tier as SubscriptionTier]
-      
+
       return this.addCredits(
         userId,
         tier.monthlyCredits,
@@ -452,44 +532,10 @@ export class PaymentService {
     packageId: string
   ): Promise<{ sessionUrl: string | null; error?: string }> {
     const creditPackage = CREDIT_PACKAGES.find((p) => p.id === packageId)
-    
+
     if (!creditPackage) {
       return { sessionUrl: null, error: 'Invalid credit package.' }
     }
-
-    // TODO: Replace with actual Stripe implementation
-    // Example Stripe integration:
-    /*
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-    
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `${creditPackage.credits} AI Credits`,
-              description: `One-time purchase of ${creditPackage.credits} AI credits`,
-            },
-            unit_amount: Math.round(creditPackage.price * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile?tab=billing&credits_purchased=${creditPackage.credits}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile?tab=billing&cancelled=true`,
-      metadata: {
-        userId,
-        packageId,
-        credits: creditPackage.credits.toString(),
-        type: 'credit_purchase',
-      },
-    })
-
-    return { sessionUrl: session.url }
-    */
 
     // Placeholder response
     console.log(`[PaymentService] Would create checkout for user ${userId}, package ${packageId}`)
@@ -510,34 +556,6 @@ export class PaymentService {
     if (tier === 'free') {
       return { sessionUrl: null, error: 'Cannot subscribe to free tier.' }
     }
-
-    const tierConfig = SUBSCRIPTION_TIERS[tier]
-
-    // TODO: Replace with actual Stripe implementation
-    // Example Stripe subscription:
-    /*
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-    
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: process.env[`STRIPE_PRICE_${tier.toUpperCase()}`],
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile?tab=billing&subscribed=${tier}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile?tab=billing&cancelled=true`,
-      metadata: {
-        userId,
-        tier,
-        type: 'subscription',
-      },
-    })
-
-    return { sessionUrl: session.url }
-    */
 
     console.log(`[PaymentService] Would create subscription for user ${userId}, tier ${tier}`)
     return {
@@ -571,9 +589,10 @@ export class PaymentService {
       if (type === 'subscription') {
         const tier = metadata.tier as SubscriptionTier
         const tierConfig = SUBSCRIPTION_TIERS[tier]
-        
+
         // Update user profile with new subscription
-        const { error } = await supabase
+        const client = supabaseAdmin || supabase
+        const { error } = await client
           .from('user_profiles')
           .update({
             subscription_tier: tier,
@@ -611,19 +630,9 @@ export class PaymentService {
    * TODO: Implement with payment provider
    */
   static async cancelSubscription(userId: string): Promise<boolean> {
-    // TODO: Cancel with Stripe
-    /*
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-    
-    // Get user's subscription ID from database
-    const profile = await ProfileService.getUserProfile(userId)
-    if (!profile?.stripe_subscription_id) return false
-    
-    await stripe.subscriptions.cancel(profile.stripe_subscription_id)
-    */
-
     // Update to free tier
-    const { error } = await supabase
+    const client = supabaseAdmin || supabase
+    const { error } = await client
       .from('user_profiles')
       .update({
         subscription_tier: 'free',
