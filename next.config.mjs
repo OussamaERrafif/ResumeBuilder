@@ -133,11 +133,6 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin'
-          },
-          // Add cache control for static assets
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable'
           }
         ],
       },

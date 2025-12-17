@@ -16,6 +16,16 @@ export default function Error({
 }) {
   useEffect(() => {
     // Error occurred
+    if (error) {
+       // Check for chunk loading errors
+       const isChunkError = error.message?.includes('Loading chunk') || 
+                          error.message?.includes('minified React error');
+       
+       if (isChunkError) {
+         // Force a hard reload to get new assets
+         window.location.reload();
+       }
+    }
   }, [error])
 
   return (

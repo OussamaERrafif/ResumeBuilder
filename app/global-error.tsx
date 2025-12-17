@@ -18,8 +18,14 @@ export default function GlobalError({
       // Log error to console for monitoring and debugging
       console.error("Global error caught by GlobalError boundary:", error);
 
-      // TODO: Integrate with external error tracking service here, e.g. Sentry
-      // Sentry.captureException(error);
+      // Check for chunk loading errors
+      const isChunkError = error.message?.includes('Loading chunk') || 
+                          error.message?.includes('minified React error');
+      
+      if (isChunkError) {
+        // Force a hard reload to get new assets
+        window.location.reload();
+      }
     }
   }, [error])
 
