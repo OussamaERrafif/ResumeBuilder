@@ -23,28 +23,28 @@ const TYPE_TO_FEATURE: Record<string, AIFeature> = {
 // Validation function
 const validateAIRequest = (type: string, query: string) => {
   const validTypes = ['summary', 'experience', 'project']
-  
+
   if (!validTypes.includes(type)) {
     return {
       valid: false,
       error: 'Invalid generation type. Must be summary, experience, or project.'
     }
   }
-  
+
   if (!query || query.trim().length < 5) {
     return {
       valid: false,
       error: 'Query too short. Please provide a more detailed description.'
     }
   }
-  
+
   if (query.length > 500) {
     return {
       valid: false,
       error: 'Query too long. Please keep descriptions under 500 characters.'
     }
   }
-  
+
   return { valid: true }
 }
 
@@ -56,7 +56,7 @@ const AI_PROMPTS = {
     Do not include any formatting or bullet points, just a clear, concise paragraph.
     Make it ATS-friendly and impactful for recruiters.
   `.trim(),
-  
+
   experience: (query: string) => `
     Generate 2-3 concise professional bullet points for a resume job experience section based on: "${query}".
     Each bullet point should:
@@ -74,7 +74,7 @@ const AI_PROMPTS = {
     • Developed new features reducing load times by 40%
     • Implemented CI/CD pipelines improving deployment speed
   `.trim(),
-  
+
   project: (query: string) => `
     Write a concise professional project description (1-2 sentences, max 30 words) for a resume based on: "${query}".
     Include:
@@ -147,12 +147,12 @@ function getFallbackContent(type: string, query: string): string {
 export async function POST(request: NextRequest) {
   const requestId = generateRequestId()
   requestTracker.start(requestId, '/api/ai/generate', 'POST')
-  
+
   try {
     // Rate limiting check
     const clientIP = getClientIP(request)
     const rateLimit = aiLimiter.check(`ai:${clientIP}`)
-    
+
     if (!rateLimit.allowed) {
       requestTracker.end(requestId, 429)
       return createRateLimitResponse(rateLimit.retryAfter || 60, 0)
@@ -178,11 +178,11 @@ export async function POST(request: NextRequest) {
       if (feature) {
         // Check if user has enough credits
         const creditCheck = await CreditsService.checkCredits(userId, feature)
-        
+
         if (!creditCheck.allowed) {
           requestTracker.end(requestId, 402)
           return NextResponse.json(
-            { 
+            {
               error: 'Insufficient credits',
               creditsRequired: creditCheck.required,
               creditsAvailable: creditCheck.currentBalance,
@@ -194,8 +194,8 @@ export async function POST(request: NextRequest) {
 
         // Deduct credits before making the AI call
         creditResult = await CreditsService.consumeCredits(
-          userId, 
-          feature, 
+          userId,
+          feature,
           `Generated ${type} content`
         )
 
@@ -243,11 +243,11 @@ export async function POST(request: NextRequest) {
         return await aiRequestQueue.enqueue(async () => {
           return await aiCircuitBreaker.execute(async () => {
             const timingId = metrics.startTiming('openai_request')
-            
+
             try {
               const openai = new OpenAI({ apiKey })
               const prompt = AI_PROMPTS[type as keyof typeof AI_PROMPTS](query)
-              
+
               const completion = await openai.chat.completions.create({
                 model: 'gpt-4o-mini',
                 messages: [
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
                 max_tokens: 500,
                 temperature: 0.7,
               })
-              
+
               metrics.endTiming(timingId, { status: 'success', type })
               return completion.choices[0]?.message?.content || ''
             } catch (error) {
@@ -273,31 +273,31 @@ export async function POST(request: NextRequest) {
           })
         }, { priority: 5, timeout: 25000 })
       }) as string
-      
+
       // Clean any markdown formatting
       const cleanedText = cleanMarkdownFormatting(content)
-      
+
       // Cache the successful response
       aiCache.set(cacheKey, cleanedText, 30 * 60 * 1000) // Cache for 30 minutes
 
-      const response = NextResponse.json({ 
+      const response = NextResponse.json({
         content: cleanedText,
         success: true,
         ...(creditResult && { creditsRemaining: creditResult.newBalance }),
       })
       requestTracker.end(requestId, 200)
       return addRateLimitHeaders(response, rateLimit.remaining, rateLimit.resetTime, 10)
-      
+
     } catch (aiError) {
-      logger.warn('AI request failed, using fallback', { 
+      logger.warn('AI request failed, using fallback', {
         error: aiError instanceof Error ? aiError.message : String(aiError),
-        type 
+        type
       })
-      
+
       const fallbackContent = getFallbackContent(type, query)
       const cleanedFallback = cleanMarkdownFormatting(fallbackContent)
       aiCache.set(cacheKey, cleanedFallback, 60 * 60 * 1000) // Cache fallback for 1 hour
-      
+
       const response = NextResponse.json({
         content: cleanedFallback,
         success: true,
@@ -308,11 +308,11 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    logger.error('AI generate endpoint error', { 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error('AI generate endpoint error', {
+      error: error instanceof Error ? error.message : String(error)
     })
     requestTracker.end(requestId, 500, error instanceof Error ? error.message : 'Unknown error')
-    
+
     return NextResponse.json({
       content: "Professional content will be generated based on your input.",
       success: true,

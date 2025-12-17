@@ -12,13 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { 
-  Sparkles, 
-  Loader2, 
-  CheckCircle, 
-  AlertCircle, 
-  Target, 
-  TrendingUp, 
+import {
+  Sparkles,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Target,
+  TrendingUp,
   FileSearch,
   Lightbulb,
   Award,
@@ -54,9 +54,10 @@ interface ResumeAnalysisProps {
   isOpen: boolean
   onClose: () => void
   resumeData: any
+  userId?: string
 }
 
-export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAnalysisProps) {
+export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: ResumeAnalysisProps) {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -80,7 +81,7 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ resumeData }),
+        body: JSON.stringify({ resumeData, userId }),
       })
 
       if (!response.ok) {
@@ -137,10 +138,10 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
           <div className="text-center py-8">
             <FileSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-6">
-              Ready to analyze your resume? Get detailed insights about content quality, 
+              Ready to analyze your resume? Get detailed insights about content quality,
               ATS compatibility, and improvement suggestions.
             </p>
-            <Button 
+            <Button
               onClick={handleAnalyze}
               size="lg"
             >
@@ -170,8 +171,8 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">Analysis Failed</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button 
-              onClick={handleAnalyze} 
+            <Button
+              onClick={handleAnalyze}
               variant="outline"
               className="bg-transparent border-border text-foreground hover:bg-secondary"
             >
@@ -181,7 +182,7 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
         )}
 
         {analysis && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
@@ -295,7 +296,7 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
                     </Badge>
                   </div>
                   <Progress value={analysis.atsCompatibility.score} className="h-2" />
-                  
+
                   {analysis.atsCompatibility.issues.length > 0 && (
                     <div>
                       <h5 className="font-medium text-sm mb-2">Issues:</h5>
@@ -309,7 +310,7 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
                       </ul>
                     </div>
                   )}
-                  
+
                   {analysis.atsCompatibility.suggestions.length > 0 && (
                     <div>
                       <h5 className="font-medium text-sm mb-2">Suggestions:</h5>
@@ -341,7 +342,7 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
                       {analysis.industryFit.detectedIndustry}
                     </Badge>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Industry Alignment</span>
                     <Badge variant={getScoreVariant(analysis.industryFit.score)}>
@@ -349,7 +350,7 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData }: ResumeAn
                     </Badge>
                   </div>
                   <Progress value={analysis.industryFit.score} className="h-2" />
-                  
+
                   {analysis.industryFit.recommendations.length > 0 && (
                     <div>
                       <h5 className="font-medium text-sm mb-2">Recommendations:</h5>

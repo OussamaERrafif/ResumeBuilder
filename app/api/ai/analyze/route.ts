@@ -228,37 +228,37 @@ const getFallbackAnalysis = (resumeData: ResumeData): AnalysisResult => {
     sections: {
       personalInfo: {
         score: hasPersonalInfo ? 85 : 45,
-        feedback: hasPersonalInfo 
+        feedback: hasPersonalInfo
           ? ["Contact information is complete", "Consider adding LinkedIn profile"]
           : ["Missing essential contact information", "Add professional title"]
       },
       summary: {
         score: hasSummary ? 80 : 30,
-        feedback: hasSummary 
+        feedback: hasSummary
           ? ["Professional summary present", "Consider quantifying achievements"]
           : ["Missing professional summary", "Add 2-3 sentence career overview"]
       },
       experience: {
         score: hasExperience ? 75 : 25,
-        feedback: hasExperience 
+        feedback: hasExperience
           ? ["Work experience documented", "Use action verbs and quantify results"]
           : ["Add work experience entries", "Include job titles and responsibilities"]
       },
       education: {
         score: hasEducation ? 85 : 40,
-        feedback: hasEducation 
+        feedback: hasEducation
           ? ["Educational background provided", "Good foundation"]
           : ["Add educational qualifications", "Include degree and institution"]
       },
       skills: {
         score: hasSkills ? 80 : 20,
-        feedback: hasSkills 
+        feedback: hasSkills
           ? ["Skills section populated", "Ensure relevance to target role"]
           : ["Add technical and soft skills", "Include industry-relevant competencies"]
       },
       projects: {
         score: hasProjects ? 85 : 60,
-        feedback: hasProjects 
+        feedback: hasProjects
           ? ["Projects showcase practical experience", "Great portfolio addition"]
           : ["Consider adding relevant projects", "Demonstrate practical skills"]
       }
@@ -305,7 +305,7 @@ const getFallbackAnalysis = (resumeData: ResumeData): AnalysisResult => {
 export async function POST(request: NextRequest) {
   try {
     const bodyText = await request.text()
-    
+
     let body
     try {
       body = JSON.parse(bodyText)
@@ -315,27 +315,27 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     const { resumeData, userId } = body as { resumeData: ResumeData; userId?: string }
-    
+
     if (!resumeData) {
       return NextResponse.json(
         { error: 'No resumeData provided in request body' },
         { status: 400 }
       )
     }
-    
+
     // Check and deduct credits if userId is provided
     let creditResult: { success: boolean; newBalance: number; error?: string } | null = null
     if (userId) {
       const feature: AIFeature = 'resume_analysis'
-      
+
       // Check if user has enough credits
       const creditCheck = await CreditsService.checkCredits(userId, feature)
-      
+
       if (!creditCheck.allowed) {
         return NextResponse.json(
-          { 
+          {
             error: 'Insufficient credits',
             creditsRequired: creditCheck.required,
             creditsAvailable: creditCheck.currentBalance,
@@ -347,8 +347,8 @@ export async function POST(request: NextRequest) {
 
       // Deduct credits before making the AI call
       creditResult = await CreditsService.consumeCredits(
-        userId, 
-        feature, 
+        userId,
+        feature,
         'Analyzed resume for improvements'
       )
 
@@ -359,7 +359,7 @@ export async function POST(request: NextRequest) {
         )
       }
     }
-    
+
     // Validate resume data
     if (!resumeData || !resumeData.personalInfo) {
       return NextResponse.json(
@@ -369,10 +369,10 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = process.env.OPENAI_API_KEY
-    
+
     if (!apiKey) {
       const fallbackAnalysis = getFallbackAnalysis(resumeData)
-      
+
       return NextResponse.json({
         analysis: fallbackAnalysis,
         success: true,
@@ -387,11 +387,11 @@ export async function POST(request: NextRequest) {
       // const result = await model.generateContent(prompt)
       // const response = await result.response
       // const text = response.text()
-      
+
       // OpenAI Implementation
       const openai = new OpenAI({ apiKey })
       const prompt = getAnalysisPrompt(resumeData)
-      
+
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
@@ -407,30 +407,30 @@ export async function POST(request: NextRequest) {
         max_tokens: 2000,
         temperature: 0.7,
       })
-      
+
       const text = completion.choices[0]?.message?.content || ''
-      
+
       // Parse JSON response
       let analysisResult: AnalysisResult
       try {
         // Clean the response text of any markdown formatting
         const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-        
+
         analysisResult = JSON.parse(cleanText)
       } catch (_parseError) {
         throw new Error('Failed to parse AI analysis response - Invalid JSON format')
       }
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         analysis: analysisResult,
         success: true,
         fallback: false,
         ...(creditResult && { creditsRemaining: creditResult.newBalance }),
       })
-      
+
     } catch (_aiError) {
       const fallbackAnalysis = getFallbackAnalysis(resumeData)
-      
+
       return NextResponse.json({
         analysis: fallbackAnalysis,
         success: true,

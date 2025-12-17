@@ -7,7 +7,7 @@ import { CreditsService } from '@/lib/credits-service'
 
 export async function POST(request: NextRequest) {
   let resumeData: ResumeData | null = null
-  
+
   try {
     // Gemini (commented out - using OpenAI instead)
     // const GEMINI_API_KEY = process.env.GEMINI_API_KEY
@@ -53,10 +53,10 @@ export async function POST(request: NextRequest) {
     if (userId) {
       // Check if user has enough credits for cover letter generation (5 credits)
       const creditCheck = await CreditsService.checkCredits(userId, 'cover_letter_generation')
-      
+
       if (!creditCheck.allowed) {
         return NextResponse.json(
-          { 
+          {
             error: 'Insufficient credits',
             creditsRequired: creditCheck.required,
             creditsAvailable: creditCheck.currentBalance,
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
 
       // Deduct credits before making the AI call
       creditResult = await CreditsService.consumeCredits(
-        userId, 
-        'cover_letter_generation', 
+        userId,
+        'cover_letter_generation',
         `Generated cover letter for ${jobTitle || 'job application'}${companyName ? ` at ${companyName}` : ''}`
       )
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     // Also generate resume optimization suggestions
     const optimizationPrompt = createResumeOptimizationPrompt(jobDescription, resumeSummary)
-    
+
     // Gemini (commented out - using OpenAI instead)
     // const optimizationResult = await model.generateContent(optimizationPrompt)
     // let optimizationSuggestions = []
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 500,
       temperature: 0.7,
     })
-    
+
     let optimizationSuggestions = []
     try {
       const optimizationText = optimizationCompletion.choices[0]?.message?.content || '[]'
@@ -156,15 +156,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       coverLetter: coverLetterContent.trim(),
       resumeOptimizationSuggestions: optimizationSuggestions,
-      ...(creditResult && { 
+      ...(creditResult && {
         creditsUsed: 5,
-        creditsRemaining: creditResult.newBalance 
+        creditsRemaining: creditResult.newBalance
       })
     })
 
   } catch (error) {
     console.error('Cover letter generation error:', error)
-    
+
     // Return fallback content if AI fails
     const fallbackCoverLetter = createFallbackCoverLetter(resumeData ?? undefined)
     const fallbackSuggestions = [
@@ -222,7 +222,7 @@ function createCoverLetterPrompt(jobDescription: string, resumeSummary: string, 
   // Extract candidate name from resume summary
   const nameMatch = resumeSummary.match(/Name:\s*([^\n]+)/)
   const candidateName = nameMatch ? nameMatch[1].trim() : 'the candidate'
-  
+
   return `
 Write a professional cover letter based on the following information:
 
@@ -291,7 +291,7 @@ Make each suggestion specific and actionable.
 function createFallbackCoverLetter(resumeData?: ResumeData): string {
   // Extract the candidate's name from resume data
   const candidateName = resumeData?.personalInfo?.name || 'the applicant'
-  
+
   return `Dear Hiring Manager,
 
 I am writing to express my strong interest in this position. After reviewing the job description, I am excited about the opportunity to contribute to your team with my skills and experience.

@@ -10,7 +10,7 @@ export function HeroSection() {
   const [isHovered, setIsHovered] = useState(false)
   const [currentTagIndex, setCurrentTagIndex] = useState(0)
   const [isAnimated, setIsAnimated] = useState(false)
-  
+
   const containerRef = useRef<HTMLDivElement>(null)
   const badgeRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLDivElement>(null)
@@ -19,9 +19,9 @@ export function HeroSection() {
   const socialRef = useRef<HTMLDivElement>(null)
   const blob1Ref = useRef<HTMLDivElement>(null)
   const blob2Ref = useRef<HTMLDivElement>(null)
-  
+
   const tags = ["✨ Free Forever", "🤖 AI Powered", "📄 ATS Friendly"]
-  
+
   // Tag rotation logic
   useEffect(() => {
     if (!isHovered) {
@@ -35,12 +35,12 @@ export function HeroSection() {
   // GSAP animations - wrapped in try-catch for graceful degradation
   useEffect(() => {
     let cleanup: (() => void) | undefined
-    
+
     const initAnimations = async () => {
       try {
         const gsapModule = await import("gsap")
         const gsap = gsapModule.default
-        
+
         const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
 
         // Initial animations
@@ -49,27 +49,27 @@ export function HeroSection() {
           opacity: 0,
           duration: 0.8
         })
-        .from(titleRef.current, {
-          y: 50,
-          opacity: 0,
-          duration: 1,
-          stagger: 0.1
-        }, "-=0.4")
-        .from(descRef.current, {
-          y: 30,
-          opacity: 0,
-          duration: 0.8
-        }, "-=0.6")
-        .from(ctaRef.current, {
-          y: 20,
-          opacity: 0,
-          duration: 0.8
-        }, "-=0.6")
-        .from(socialRef.current, {
-          y: 20,
-          opacity: 0,
-          duration: 0.8
-        }, "-=0.6")
+          .from(titleRef.current, {
+            y: 50,
+            opacity: 0,
+            duration: 1,
+            stagger: 0.1
+          }, "-=0.4")
+          .from(descRef.current, {
+            y: 30,
+            opacity: 0,
+            duration: 0.8
+          }, "-=0.6")
+          .from(ctaRef.current, {
+            y: 20,
+            opacity: 0,
+            duration: 0.8
+          }, "-=0.6")
+          .from(socialRef.current, {
+            y: 20,
+            opacity: 0,
+            duration: 0.8
+          }, "-=0.6")
 
         // Blob animations (floating)
         gsap.to(blob1Ref.current, {
@@ -80,7 +80,7 @@ export function HeroSection() {
           yoyo: true,
           ease: "sine.inOut"
         })
-        
+
         gsap.to(blob2Ref.current, {
           x: "random(-50, 50)",
           y: "random(-50, 50)",
@@ -102,14 +102,14 @@ export function HeroSection() {
             duration: 1,
             ease: "power2.out"
           })
-          
+
           gsap.to(blob1Ref.current, {
             x: -x * 2,
             y: -y * 2,
             duration: 2,
             ease: "power2.out"
           })
-          
+
           gsap.to(blob2Ref.current, {
             x: x * 2,
             y: y * 2,
@@ -120,16 +120,16 @@ export function HeroSection() {
 
         window.addEventListener("mousemove", handleMouseMove)
         cleanup = () => window.removeEventListener("mousemove", handleMouseMove)
-        
+
         setIsAnimated(true)
       } catch (error) {
         console.warn("GSAP animation failed, showing content without animation:", error)
         setIsAnimated(true)
       }
     }
-    
+
     initAnimations()
-    
+
     return () => {
       cleanup?.()
     }
@@ -139,11 +139,11 @@ export function HeroSection() {
     <section ref={containerRef} className="pt-32 pb-20 lg:pt-40 lg:pb-32 relative overflow-hidden min-h-[90vh] flex items-center">
       {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-accent/30 via-background to-background" />
-      
+
       {/* Decorative blobs */}
       <div ref={blob1Ref} className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
       <div ref={blob2Ref} className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      
+
       <div className="container mx-auto px-4 sm:px-6 relative">
         <div className="text-center space-y-8 max-w-4xl mx-auto">
           {/* Badge */}
@@ -159,13 +159,13 @@ export function HeroSection() {
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-foreground">
               Build Professional
               <br />
-              <span className="text-primary">Resumes</span>
+              <span className="gradient-text-accent">Resumes</span>
               <br />
               <span className="text-muted-foreground">That Get You Hired</span>
             </h1>
-            
+
             <p ref={descRef} className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Create ATS-friendly resumes with AI assistance. Open-source, free to start, 
+              Create ATS-friendly resumes with AI assistance. Open-source, free to start,
               and designed to help you land your dream job.
             </p>
           </div>
@@ -173,15 +173,16 @@ export function HeroSection() {
           {/* CTA Button */}
           <div ref={ctaRef} className="flex justify-center pt-4">
             <Link href="/dashboard">
-              <Button 
-                size="lg" 
-                className="text-base sm:text-lg px-8 py-6 h-auto relative overflow-hidden min-w-[240px] rounded-xl shadow-lg shadow-primary/25 group"
+              <Button
+                size="lg"
+                className="text-base sm:text-lg px-8 py-6 h-auto relative overflow-hidden min-w-[240px] rounded-xl shadow-lg shadow-primary/25 group hover:shadow-primary/40 transition-all duration-300"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => {
                   setIsHovered(false)
                   setCurrentTagIndex(0)
                 }}
               >
+                <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative z-10 flex items-center justify-center">
                   {!isHovered ? (
                     <span key={`tag-${currentTagIndex}`} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -201,9 +202,9 @@ export function HeroSection() {
           {/* Social proof badges */}
           <div ref={socialRef} className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
             {/* Product Hunt Badge */}
-            <a 
-              href="https://www.producthunt.com/products/apexresume" 
-              target="_blank" 
+            <a
+              href="https://www.producthunt.com/products/apexresume"
+              target="_blank"
               rel="noopener noreferrer"
               className="group"
             >
@@ -222,9 +223,9 @@ export function HeroSection() {
             </a>
 
             {/* GitHub Badge */}
-            <a 
-              href="https://github.com/OussamaERrafif/ResumeBuilder" 
-              target="_blank" 
+            <a
+              href="https://github.com/OussamaERrafif/ResumeBuilder"
+              target="_blank"
               rel="noopener noreferrer"
               className="group"
             >

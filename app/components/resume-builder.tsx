@@ -53,21 +53,24 @@ import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 
 // Lazy load heavy modal components - only loaded when needed
-const AIModal = dynamic(() => import("./ai-modal"), { 
+const AIModal = dynamic(() => import("./ai-modal"), {
   ssr: false,
-  loading: () => null 
+  loading: () => null
 })
-const ResumeAnalysis = dynamic(() => import("./resume-analysis"), { 
+const ResumeAnalysis = dynamic(() => import("./resume-analysis"), {
   ssr: false,
-  loading: () => null 
+  loading: () => null
 })
-const TemplateSelector = dynamic(() => import("./template-selector"), { 
+import { type ResumeAnalysis as ResumeAnalysisType } from "@/types/resume"
+import { SkillJobMatchAnalysis } from "@/components/resume/skill-job-match-analysis"
+
+const TemplateSelector = dynamic(() => import("./template-selector"), {
   ssr: false,
-  loading: () => null 
+  loading: () => null
 })
-const ATSTemplateSelector = dynamic(() => import("./ats-template-selector"), { 
+const ATSTemplateSelector = dynamic(() => import("./ats-template-selector"), {
   ssr: false,
-  loading: () => null 
+  loading: () => null
 })
 
 import { RESUME_TEMPLATES } from "../types/templates"
@@ -78,8 +81,8 @@ const exportResumePDF = async (...args: Parameters<typeof import("@/lib/ats-resu
   return exportFn(...args)
 }
 
-import { 
-  type ATSTemplateId 
+import {
+  type ATSTemplateId
 } from "@/lib/ats-resume-exporter"
 import {
   ClassicTemplate,
@@ -111,6 +114,7 @@ interface Link {
 }
 
 interface Education {
+  id: string
   school: string
   degree: string
   date: string
@@ -118,6 +122,7 @@ interface Education {
 }
 
 interface Experience {
+  id: string
   jobTitle: string
   company: string
   date: string
@@ -125,6 +130,7 @@ interface Experience {
 }
 
 interface Project {
+  id: string
   name: string
   description: string
   technologies: string
@@ -132,12 +138,14 @@ interface Project {
 }
 
 interface Certification {
+  id: string
   name: string
   issuer: string
   date: string
 }
 
 interface Reference {
+  id: string
   name: string
   title: string
   company: string
@@ -160,6 +168,7 @@ interface ResumeData {
   projects: Project[]
   certifications: Certification[]
   references: Reference[]
+  analysis?: ResumeAnalysisType
 }
 
 // Custom hooks (same as before)
@@ -209,7 +218,10 @@ const useArrayFormField = <T extends Record<string, string>>(initialValue: T[]) 
   }, [])
 
   const add = useCallback(() => {
-    const newItem = Object.fromEntries(Object.keys(initialValue[0] || {}).map((key) => [key, ""])) as T
+    const newItem = Object.fromEntries(Object.keys(initialValue[0] || {}).map((key) => {
+      if (key === "id") return [key, crypto.randomUUID()]
+      return [key, ""]
+    })) as T
     setValues((prev) => [...prev, newItem])
   }, [initialValue])
 
@@ -237,6 +249,7 @@ const SECTIONS = [
   { id: "skills", title: "Skills", icon: Code, description: "Technical and soft skills" },
   { id: "projects", title: "Projects", icon: FolderOpen, description: "Portfolio and projects" },
   { id: "additional", title: "Additional", icon: Award, description: "Certifications and references" },
+  { id: "analysis", title: "Skill Match", icon: Target, description: "AI Skill & Job Match" },
   { id: "review", title: "Review", icon: Eye, description: "Final review and export" },
 ]
 
@@ -251,6 +264,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const [aiModalType, setAiModalType] = useState<"summary" | "experience" | "project" | null>(null)
   const [aiModalIndex, setAiModalIndex] = useState<number | null>(null)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [analysis, setAnalysis] = useState<ResumeAnalysisType | undefined>(undefined)
   const [selectedTemplate, setSelectedTemplate] = useState("classic")
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
   const [showATSExporter, setShowATSExporter] = useState(false)
@@ -266,11 +280,11 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const summary = useFormField("")
 
   const links = useArrayFormField([{ name: "", url: "" }])
-  const education = useArrayFormField([{ school: "", degree: "", date: "", gpa: "" }])
-  const experience = useArrayFormField([{ jobTitle: "", company: "", date: "", responsibilities: "" }])
-  const projects = useArrayFormField([{ name: "", description: "", technologies: "", link: "" }])
-  const certifications = useArrayFormField([{ name: "", issuer: "", date: "" }])
-  const references = useArrayFormField([{ name: "", title: "", company: "", email: "", phone: "" }])
+  const education = useArrayFormField([{ id: "", school: "", degree: "", date: "", gpa: "" }])
+  const experience = useArrayFormField([{ id: "", jobTitle: "", company: "", date: "", responsibilities: "" }])
+  const projects = useArrayFormField([{ id: "", name: "", description: "", technologies: "", link: "" }])
+  const certifications = useArrayFormField([{ id: "", name: "", issuer: "", date: "" }])
+  const references = useArrayFormField([{ id: "", name: "", title: "", company: "", email: "", phone: "", relationship: "" }])
 
   const languages = useFormField("")
   const frameworks = useFormField("")
@@ -307,6 +321,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
       projects: projects.values,
       certifications: certifications.values,
       references: references.values,
+      analysis: analysis,
     }),
     [
       name.value,
@@ -323,6 +338,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
       projects.values,
       certifications.values,
       references.values,
+      analysis,
     ],
   )
 
@@ -364,6 +380,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           if (resumeData.projects) projects.setValues(resumeData.projects)
           if (resumeData.certifications) certifications.setValues(resumeData.certifications)
           if (resumeData.references) references.setValues(resumeData.references)
+          if (resumeData.analysis) setAnalysis(resumeData.analysis)
 
           if (data.template_id) setSelectedTemplate(data.template_id)
         }
@@ -452,19 +469,19 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const lastSavedDataRef = useRef<string>("")
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const resumeDataRef = useRef(resumeData)
-  
+
   // Keep ref in sync without triggering re-renders
   useEffect(() => {
     resumeDataRef.current = resumeData
   }, [resumeData])
-  
+
   // Optimized auto-save - uses refs to avoid dependency array issues
   useEffect(() => {
     if (!user) return
-    
+
     // Don't auto-save if we're still loading an existing resume
     if (editingResumeId && !lastSaved && !name.value) return
-    
+
     // Don't auto-save immediately after loading or if no content
     if (!lastSaved && !name.value && !summary.value) return
 
@@ -475,7 +492,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
     // Create a hash of current data to detect actual changes
     const currentDataHash = JSON.stringify(resumeData)
-    
+
     // Skip if no actual changes
     if (currentDataHash === lastSavedDataRef.current) return
 
@@ -483,7 +500,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
       // Double-check we still have changes before saving
       const latestHash = JSON.stringify(resumeDataRef.current)
       if (latestHash === lastSavedDataRef.current) return
-      
+
       setIsAutoSaving(true)
       await saveResume()
       lastSavedDataRef.current = latestHash
@@ -514,7 +531,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     try {
       // Use new ATS-friendly PDF generator
       const result = await exportResumePDF(atsTemplateId, resumeData)
-      
+
       if (result.success) {
         toast({
           title: "Success! 🎉",
@@ -534,13 +551,13 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
   const handleAIGenerate = async (type: "summary" | "experience" | "project", query: string, index?: number) => {
     try {
-      // Call the AI API
+      // Call the AI API with userId for credit deduction
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ type, query }),
+        body: JSON.stringify({ type, query, userId: user?.id }),
       })
 
       const data = await response.json()
@@ -581,7 +598,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
       } else {
         // Fallback to mock data if API fails
         const mockData = generateMockAIData(type, query)
-        
+
         switch (type) {
           case "summary":
             summary.setValue(mockData)
@@ -607,7 +624,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
     } catch (error) {
       // Fallback to mock data
       const mockData = generateMockAIData(type, query)
-      
+
       switch (type) {
         case "summary":
           summary.setValue(mockData)
@@ -727,7 +744,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
               </div>
 
               <div>
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   {editingResumeId ? "Edit Resume" : "Create Resume"}
                 </h1>
                 <div className="flex items-center gap-2">
@@ -748,11 +765,11 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Button 
+              <Button
                 onClick={() => {
                   setShowAnalysis(true)
-                }} 
-                variant="outline" 
+                }}
+                variant="outline"
                 size="sm"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -911,7 +928,33 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                       onDragEnd={handleDragEnd}
                     />
                   )}
-                  {currentSection === "review" && <ReviewStep data={resumeData} onDownload={handleDownload} />}
+                  {currentSection === "analysis" && (
+                    <div className="space-y-6">
+                      <div className="text-center mb-8">
+                        <h3 className="text-xl font-semibold text-foreground mb-2">Skill Visualizer & Job Match</h3>
+                        <p className="text-muted-foreground">Analyze your skills and see how you match with top job roles</p>
+                      </div>
+                      <SkillJobMatchAnalysis
+                        resumeData={resumeData}
+                        onAnalysisComplete={(newAnalysis: ResumeAnalysisType) => {
+                          setAnalysis(newAnalysis)
+                          setTimeout(() => saveResume(), 100)
+                        }}
+                        userId={user?.id}
+                      />
+                    </div>
+                  )}
+                  {currentSection === "review" && (
+                    <ReviewStep
+                      data={resumeData}
+                      onDownload={handleDownload}
+                      onAnalysisComplete={(newAnalysis: ResumeAnalysisType) => {
+                        setAnalysis(newAnalysis)
+                        setTimeout(() => saveResume(), 100)
+                      }}
+                      userId={user?.id}
+                    />
+                  )}
                 </motion.div>
               </AnimatePresence>
             </CardContent>
@@ -943,9 +986,9 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 {/* Preview Controls */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-background/50">
                   <div className="flex items-center gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
                       onClick={() => {
                         const container = document.getElementById('resume-preview-container');
@@ -958,9 +1001,9 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                     >
                       <ZoomOut className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
                       onClick={() => {
                         const container = document.getElementById('resume-preview-container');
@@ -973,9 +1016,9 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                     >
                       <ZoomIn className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
                       onClick={() => {
                         const container = document.getElementById('resume-preview-container');
@@ -994,7 +1037,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Resume Preview Container */}
                 <div className="relative bg-gradient-to-b from-muted/50 to-muted/30 max-h-[calc(100vh-200px)] overflow-auto">
                   {/* Paper container */}
@@ -1003,10 +1046,10 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                     <div className="absolute inset-6 pointer-events-none">
                       <div className="absolute inset-0 bg-black/5 dark:bg-black/20 rounded-lg blur-xl transform translate-y-2"></div>
                     </div>
-                    
-                    <div 
+
+                    <div
                       id="resume-preview-container"
-                      className="relative bg-white rounded-lg shadow-2xl shadow-black/10 dark:shadow-black/30 transition-transform duration-200 ring-1 ring-black/5"
+                      className="relative bg-white rounded-lg shadow-2xl shadow-primary/10 dark:shadow-black/50 transition-transform duration-200 ring-1 ring-black/5 dark:ring-white/10"
                       style={{ transformOrigin: 'top center' }}
                     >
                       <div className="p-6">
@@ -1077,6 +1120,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
           setShowAnalysis(false)
         }}
         resumeData={resumeData}
+        userId={user?.id}
       />
     </div>
   )
@@ -1551,6 +1595,7 @@ const AdditionalStep = ({ certifications, references, sensors, activeId, onDragS
         { name: "company", label: "Company", placeholder: "Tech Corp Inc." },
         { name: "email", label: "Email", type: "email", placeholder: "jane.smith@techcorp.com" },
         { name: "phone", label: "Phone", type: "tel", placeholder: "+1 (555) 987-6543" },
+        { name: "relationship", label: "Relationship", placeholder: "Former Manager" },
       ]}
       sectionId="references"
       sensors={sensors}
@@ -1560,7 +1605,18 @@ const AdditionalStep = ({ certifications, references, sensors, activeId, onDragS
   </div>
 )
 
-const ReviewStep = ({ data, onDownload }: { data: ResumeData; onDownload: () => void }) => {
+
+const ReviewStep = ({
+  data,
+  onDownload,
+  onAnalysisComplete,
+  userId
+}: {
+  data: ResumeData;
+  onDownload: () => void;
+  onAnalysisComplete: (analysis: ResumeAnalysisType) => void;
+  userId?: string;
+}) => {
   const [showAnalysis, setShowAnalysis] = useState(false)
 
   return (
@@ -1634,7 +1690,7 @@ const ReviewStep = ({ data, onDownload }: { data: ResumeData; onDownload: () => 
                 Get professional insights and improvement suggestions powered by AI
               </p>
             </div>
-            <Button 
+            <Button
               onClick={() => {
                 setShowAnalysis(true)
               }}
@@ -1658,6 +1714,7 @@ const ReviewStep = ({ data, onDownload }: { data: ResumeData; onDownload: () => 
         isOpen={showAnalysis}
         onClose={() => setShowAnalysis(false)}
         resumeData={data}
+        userId={userId}
       />
     </div>
   )

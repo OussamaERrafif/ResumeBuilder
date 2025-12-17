@@ -66,7 +66,26 @@ export interface Reference {
   company: string
   email: string
   phone?: string
-  relationship: string
+  relationship?: string
+}
+
+export interface SkillAnalysis {
+  name: string
+  proficiency: number
+  category: string
+}
+
+export interface JobMatch {
+  title: string
+  matchPercentage: number
+  reasoning: string
+  salaryRange?: string
+}
+
+export interface ResumeAnalysis {
+  skillsAnalysis: SkillAnalysis[]
+  jobMatches: JobMatch[]
+  summary: string
 }
 
 export interface ResumeData {
@@ -77,6 +96,7 @@ export interface ResumeData {
   projects: Project[]
   references?: Reference[]
   customSections?: CustomSection[]
+  analysis?: ResumeAnalysis // Persisted AI analysis
 }
 
 export interface CustomSection {

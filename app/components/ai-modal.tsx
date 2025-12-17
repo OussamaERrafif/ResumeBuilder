@@ -40,7 +40,7 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
 
   const feature = type ? TYPE_TO_FEATURE[type] : null
   const cost = feature ? AI_FEATURE_COSTS[feature] : 0
-  const canGenerate = feature ? hasEnoughCredits(feature) : false
+  const canGenerate = true // feature ? hasEnoughCredits(feature) : false
 
   const handleGenerate = async () => {
     if (!query.trim() || !type) return
@@ -132,90 +132,90 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
                 <span>{content.title}</span>
               </div>
               <CreditCostBadge cost={cost} current={balance?.current} />
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">{content.description}</DialogDescription>
-        </DialogHeader>
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">{content.description}</DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="ai-query" className="text-foreground">
-              Your Description
-            </Label>
-            <Textarea
-              id="ai-query"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={content.placeholder}
-              className="min-h-[100px] mt-2 bg-input border-border text-foreground focus:ring-primary focus:border-primary"
-              disabled={isGenerating}
-            />
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="ai-query" className="text-foreground">
+                Your Description
+              </Label>
+              <Textarea
+                id="ai-query"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={content.placeholder}
+                className="min-h-[100px] mt-2 bg-input border-border text-foreground focus:ring-primary focus:border-primary"
+                disabled={isGenerating}
+              />
+            </div>
+
+            {content.examples.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Example prompts:</Label>
+                <div className="mt-2 space-y-1">
+                  {content.examples.map((example, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setQuery(example)}
+                      className="block text-left text-sm text-primary hover:text-primary/90 hover:underline"
+                      disabled={isGenerating}
+                    >
+                      "{example}"
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {content.examples.length > 0 && (
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Example prompts:</Label>
-              <div className="mt-2 space-y-1">
-                {content.examples.map((example, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setQuery(example)}
-                    className="block text-left text-sm text-primary hover:text-primary/90 hover:underline"
-                    disabled={isGenerating}
-                  >
-                    "{example}"
-                  </button>
-                ))}
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
+            {!canGenerate && (
+              <div className="flex items-center gap-2 text-sm text-destructive mb-2 sm:mb-0 sm:mr-auto">
+                <AlertCircle className="h-4 w-4" />
+                <span>Insufficient credits</span>
               </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
-          {!canGenerate && (
-            <div className="flex items-center gap-2 text-sm text-destructive mb-2 sm:mb-0 sm:mr-auto">
-              <AlertCircle className="h-4 w-4" />
-              <span>Insufficient credits</span>
-            </div>
-          )}
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isGenerating}
-            className="bg-transparent border-border text-foreground hover:bg-secondary"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleGenerate}
-            disabled={!query.trim() || isGenerating}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : !canGenerate ? (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Get Credits
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate ({cost} credit{cost !== 1 ? 's' : ''})
-              </>
             )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-    
-    {/* Purchase Modal */}
-    <CreditPurchaseModal 
-      isOpen={showPurchaseModal}
-      onClose={() => setShowPurchaseModal(false)}
-    />
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={isGenerating}
+              className="bg-transparent border-border text-foreground hover:bg-secondary"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={!query.trim() || isGenerating}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : !canGenerate ? (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Get Credits
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate (Free)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Purchase Modal */}
+      <CreditPurchaseModal
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+      />
     </>
   )
 }

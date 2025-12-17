@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { ScrollToTop } from "@/components/ui/scroll-to-top"
 
 // Skeleton for hero section
 function HeroSkeleton() {
@@ -103,6 +104,10 @@ export function LandingPageContent() {
       <CommunitySection />
       <PricingSection />
       <CTASection />
+
+      <ScrollToTop />
     </EtherealShadow>
   )
 }
+
+

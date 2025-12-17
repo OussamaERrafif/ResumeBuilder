@@ -39,7 +39,7 @@ export function Navigation() {
   // Mobile Menu Animation
   useEffect(() => {
     if (!isMenuOpen) return
-    
+
     const loadGsap = async () => {
       try {
         const gsapModule = await import("gsap")
@@ -65,7 +65,7 @@ export function Navigation() {
       try {
         const gsapModule = await import("gsap")
         const gsap = gsapModule.default
-        
+
         if (isMenuOpen) {
           if (menuIconRef.current) gsap.to(menuIconRef.current, { rotate: 90, opacity: 0, duration: 0.15 })
           if (closeIconRef.current) gsap.fromTo(closeIconRef.current, { rotate: -90, opacity: 0 }, { rotate: 0, opacity: 1, duration: 0.15 })
@@ -89,16 +89,16 @@ export function Navigation() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105 overflow-hidden">
-              <Image 
-                src="/icon.png" 
-                alt="ApexResume Logo" 
-                width={40} 
-                height={40} 
+              <Image
+                src="/icon.png"
+                alt="ApexResume Logo"
+                width={40}
+                height={40}
                 className="object-contain"
                 priority
               />
             </div>
-            <span className="text-xl font-bold text-foreground">ApexResume</span>
+            <span className="text-xl font-bold tracking-tight text-foreground">ApexResume</span>
           </Link>
 
           {/* Desktop Navigation */}

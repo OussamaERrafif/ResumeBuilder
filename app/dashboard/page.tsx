@@ -96,9 +96,9 @@ const AddResumeCard = memo(({ onClick }: { onClick: () => void }) => (
     className="group cursor-pointer"
     onClick={onClick}
   >
-    <Card className="border-2 border-dashed border-muted-foreground/20 bg-muted/10 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 h-full min-h-[400px] flex items-center justify-center rounded-2xl">
+    <Card className="border-2 border-dashed border-muted-foreground/20 bg-muted/10 hover:border-primary hover:bg-primary/5 hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)] transition-all duration-300 h-full min-h-[400px] flex items-center justify-center rounded-2xl cursor-pointer">
       <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-primary/25">
           <Plus className="h-8 w-8 text-primary" />
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">Create New Resume</h3>
@@ -407,18 +407,18 @@ export default function Dashboard() {
 
           <main className="container mx-auto px-4 sm:px-6 py-8 pt-20">
             {/* HERO SECTION */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="text-center mb-12 lg:mb-16"
             >
-              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground tracking-tight">
                 Create Professional
                 <br />
-                <span className="text-muted-foreground">Resumes</span>
+                <span className="gradient-text-accent">Resumes</span>
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
                 Build professional resumes with AI assistance, clean templates, and seamless export options.
               </p>
 
@@ -450,7 +450,7 @@ export default function Dashboard() {
                       </div>
                       <div className="h-4 w-px bg-border" />
                       <div className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">1 credit</span> = summary/experience • 
+                        <span className="font-medium text-foreground">1 credit</span> = summary/experience •
                         <span className="font-medium text-foreground ml-1">5 credits</span> = cover letter
                       </div>
                     </div>
@@ -476,7 +476,7 @@ export default function Dashboard() {
             </AnimatePresence>
 
             {/* STATS & SEARCH */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
@@ -566,15 +566,15 @@ export default function Dashboard() {
               isOpen={showUploadModal}
               onClose={() => setShowUploadModal(false)}
               onAnalysisComplete={async (data: { resumeData: Record<string, unknown> }) => {
-                
+
                 if (user) {
                   try {
                     // Create a new resume with the parsed data
                     const personalInfo = data.resumeData.personalInfo as { name?: string } | undefined
-                    const resumeName = personalInfo?.name 
+                    const resumeName = personalInfo?.name
                       ? `${personalInfo.name}'s Resume`
                       : `Uploaded Resume ${new Date().toLocaleDateString()}`
-                    
+
                     const { error: createError } = await ResumeService.createResume({
                       user_id: user.id,
                       name: resumeName,

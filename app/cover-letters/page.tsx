@@ -28,6 +28,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 
@@ -162,15 +168,15 @@ export default function CoverLettersPage() {
     try {
       // Check if user has enough credits before making the request
       const coverLetterCost = featureCosts?.cover_letter_generation || 5
-      if (balance && balance.current < coverLetterCost) {
-        toast({
-          title: "Insufficient Credits",
-          description: `You need ${coverLetterCost} credits to generate a cover letter. You have ${balance.current} credits remaining.`,
-          variant: "destructive",
-        })
-        setGenerating(false)
-        return
-      }
+      // if (balance && balance.current < coverLetterCost) {
+      //   toast({
+      //     title: "Insufficient Credits",
+      //     description: `You need ${coverLetterCost} credits to generate a cover letter. You have ${balance.current} credits remaining.`,
+      //     variant: "destructive",
+      //   })
+      //   setGenerating(false)
+      //   return
+      // }
 
       const response = await fetch("/api/ai/generate-cover-letter", {
         method: "POST",
@@ -217,9 +223,9 @@ export default function CoverLettersPage() {
 
       toast({
         title: "Cover Letter Generated!",
-        description: data.fallback 
+        description: data.fallback
           ? "Generated using fallback template. Please review and customize."
-          : data.creditsUsed 
+          : data.creditsUsed
             ? `Cover letter generated! ${data.creditsUsed} credits used. ${data.creditsRemaining} credits remaining.`
             : "Your cover letter has been generated successfully.",
         variant: data.fallback ? "destructive" : "default",
@@ -370,8 +376,63 @@ export default function CoverLettersPage() {
     resetForm()
   }
 
+  // Export as PDF
+  const exportAsPDF = async (coverLetter: CoverLetter) => {
+    try {
+      const { jsPDF } = await import("jspdf")
+      const doc = new jsPDF()
+
+      // Font setup
+      doc.setFont("helvetica", "normal")
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const margin = 20
+      const contentWidth = pageWidth - (margin * 2)
+      let yPos = 20
+
+      // Header
+      doc.setFontSize(18)
+      doc.setFont("helvetica", "bold")
+      doc.text(coverLetter.name, margin, yPos)
+      yPos += 10
+
+      // Subheader (Company & Job Title)
+      doc.setFontSize(12)
+      doc.setFont("helvetica", "normal")
+      const subHeader = [
+        coverLetter.company_name,
+        coverLetter.job_title
+      ].filter(Boolean).join(" - ")
+
+      if (subHeader) {
+        doc.text(subHeader, margin, yPos)
+        yPos += 15
+      } else {
+        yPos += 5
+      }
+
+      // Content
+      doc.setFontSize(11)
+      const splitText = doc.splitTextToSize(coverLetter.content, contentWidth)
+      doc.text(splitText, margin, yPos)
+
+      doc.save(`${coverLetter.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`)
+
+      toast({
+        title: "Download Started",
+        description: "Your PDF is being generated",
+      })
+    } catch (error) {
+      console.error("PDF Export failed:", error)
+      toast({
+        title: "Export Failed",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Download cover letter as text file
-  const downloadCoverLetter = (coverLetter: CoverLetter) => {
+  const exportAsTxt = (coverLetter: CoverLetter) => {
     const element = document.createElement("a")
     const file = new Blob([coverLetter.content], { type: "text/plain" })
     element.href = URL.createObjectURL(file)
@@ -569,13 +630,24 @@ export default function CoverLettersPage() {
                         <Copy className="w-4 h-4 mr-1" />
                         Copy
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => downloadCoverLetter(coverLetter)}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Download className="w-4 h-4 mr-1" />
+                            Export
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => exportAsPDF(coverLetter)}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Export as PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => exportAsTxt(coverLetter)}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Export as TXT
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button
                         variant="outline"
                         size="sm"
@@ -608,8 +680,8 @@ export default function CoverLettersPage() {
             {editingCoverLetter ? "Edit Cover Letter" : "Create Cover Letter"}
           </h1>
           <p className="text-muted-foreground">
-            {editingCoverLetter 
-              ? "Update your cover letter details" 
+            {editingCoverLetter
+              ? "Update your cover letter details"
               : "Generate a personalized cover letter with AI assistance"
             }
           </p>
@@ -716,15 +788,15 @@ export default function CoverLettersPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Your balance:</span>
-                  <span className={`text-sm font-semibold ${balance && balance.current < 5 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
-                    {balance?.current ?? 0} credits
+                  <span className={`text-sm font-semibold ${balance && balance.current >= 5 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {balance ? `${balance.current} credits` : 'Loading...'}
                   </span>
                 </div>
               </div>
 
               <Button
                 onClick={generateCoverLetter}
-                disabled={!formData.jobDescription || !formData.resumeId || generating || !!(balance && balance.current < 5)}
+                disabled={!formData.jobDescription || !formData.resumeId || generating}
                 className="w-full"
                 size="lg"
               >
@@ -750,7 +822,7 @@ export default function CoverLettersPage() {
                 <Alert className="border-destructive/50 bg-destructive/10">
                   <Sparkles className="h-4 w-4 text-destructive" />
                   <AlertDescription className="text-destructive">
-                    You need at least 5 credits to generate a cover letter. 
+                    You need at least 5 credits to generate a cover letter.
                     <Link href="/profile" className="underline font-medium ml-1">
                       Get more credits →
                     </Link>
@@ -861,7 +933,7 @@ export default function CoverLettersPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           {currentView === "list" ? renderListView() : renderFormView()}
         </div>
       </div>
