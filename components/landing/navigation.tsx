@@ -127,6 +127,12 @@ export function Navigation() {
             >
               FAQ
             </Link>
+            <Link
+              href="/blogs"
+              className="text-muted-foreground hover:text-foreground transition-colors duration-200 px-4 py-2 rounded-lg hover:bg-accent text-sm font-medium"
+            >
+              Blogs
+            </Link>
           </div>
 
           <div className="hidden md:flex items-center space-x-3">
@@ -196,6 +202,13 @@ export function Navigation() {
                   className="text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-200 px-4 py-3 rounded-lg text-sm font-medium"
                 >
                   FAQ
+                </Link>
+                <Link
+                  href="/blogs"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-200 px-4 py-3 rounded-lg text-sm font-medium"
+                >
+                  Blogs
                 </Link>
 
                 <div className="flex flex-col space-y-2 pt-4 mt-2 border-t border-border/50">

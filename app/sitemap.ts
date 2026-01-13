@@ -1,10 +1,20 @@
 import { MetadataRoute } from 'next'
+import { getAllPosts } from '@/lib/blog'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://apexresume.com'
   const currentDate = new Date().toISOString()
 
-  return [
+  // Get all blog posts
+  const posts = getAllPosts()
+  const blogUrls = posts.map((post) => ({
+    url: `${baseUrl}/blogs/${post.slug}`,
+    lastModified: new Date(post.metadata.date).toISOString(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  const staticUrls = [
     {
       url: baseUrl,
       lastModified: currentDate,
@@ -16,6 +26,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: currentDate,
       changeFrequency: 'daily',
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blogs`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/faq`,
@@ -53,5 +69,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     }
-  ]
+  ] as MetadataRoute.Sitemap
+
+  return [...staticUrls, ...blogUrls]
 }
