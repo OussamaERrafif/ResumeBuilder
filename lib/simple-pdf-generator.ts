@@ -69,10 +69,10 @@ export class SimplePDFGenerator {
     // Set font
     const style = options.bold ? 'bold' : options.italic ? 'italic' : 'normal'
     this.doc.setFont(this.config.fonts.primary, style)
-    
+
     // Set size
     this.doc.setFontSize(options.size || 10)
-    
+
     // Set color
     if (options.color) {
       this.setColor(options.color)
@@ -94,7 +94,7 @@ export class SimplePDFGenerator {
   // Main generation methods
   generate(): jsPDF {
     this.generateHeader()
-    
+
     switch (this.config.layout) {
       case 'single-column':
         this.generateSingleColumn()
@@ -106,7 +106,7 @@ export class SimplePDFGenerator {
         this.generateHeaderFocus()
         break
     }
-    
+
     return this.doc
   }
 
@@ -117,51 +117,51 @@ export class SimplePDFGenerator {
       // Colored background
       this.setFillColor(this.config.colors.primary)
       this.doc.rect(0, 0, this.pageWidth, this.config.spacing.headerHeight, 'F')
-      
+
       // White text on colored background
       this.addText(this.data.personalInfo.name || 'Your Name', this.margins.left, 18, {
         size: 18,
         bold: true,
         color: '#ffffff'
       })
-      
+
       this.addText(this.data.personalInfo.title || 'Your Title', this.margins.left, 26, {
         size: 12,
         color: '#ffffff'
       })
-      
+
       this.yPos = this.config.spacing.headerHeight + 8
     } else {
-      // Standard header
-      this.addText(this.data.personalInfo.name || 'Your Name', this.pageWidth / 2, this.yPos, {
+      // Centered header matching LaTeX Template 1
+      this.addText((this.data.personalInfo.name || 'Your Name').toUpperCase(), this.pageWidth / 2, this.yPos, {
         size: 20,
         bold: true,
         color: this.config.colors.primary,
         align: 'center'
       })
       this.yPos += 8
-
-      this.addText(this.data.personalInfo.title || 'Your Title', this.pageWidth / 2, this.yPos, {
-        size: 12,
-        color: this.config.colors.secondary,
-        align: 'center'
-      })
-      this.yPos += 6
     }
 
-    // Contact info
-    const contact = [
-      this.data.personalInfo.email,
+    // Contact info with pipe separators (LaTeX style)
+    const contactParts = [
       this.data.personalInfo.phone,
+      this.data.personalInfo.email,
       this.data.personalInfo.location
-    ].filter(Boolean).join(' • ')
+    ].filter(Boolean)
+
+    const contact = contactParts.join(' | ')
 
     this.addText(contact, this.pageWidth / 2, this.yPos, {
       size: 9,
       color: this.config.colors.secondary,
       align: 'center'
     })
-    this.yPos += 8
+    this.yPos += 4
+
+    // Draw titlerule line under header
+    this.setFillColor(this.config.colors.primary)
+    this.doc.rect(this.margins.left, this.yPos, this.contentWidth, 0.3, 'F')
+    this.yPos += 6
   }
 
   private generateSingleColumn() {
@@ -210,7 +210,7 @@ export class SimplePDFGenerator {
 
     // Left column
     let leftY = this.yPos
-    
+
     // Summary in left column
     if (this.data.personalInfo.summary) {
       this.addText('PROFILE', this.margins.left, leftY, {
@@ -219,7 +219,7 @@ export class SimplePDFGenerator {
         color: this.config.colors.primary
       })
       leftY += 5
-      
+
       if (this.config.features.sectionLines) {
         this.setFillColor(this.config.colors.accent)
         this.doc.rect(this.margins.left, leftY, 20, 0.5, 'F')
@@ -252,7 +252,7 @@ export class SimplePDFGenerator {
       { label: 'Frameworks', value: this.data.skills.frameworks },
       { label: 'Tools', value: this.data.skills.tools }
     ]
-    
+
     skillsData.forEach((skill: { label: string; value: string }) => {
       if (skill.value) {
         this.addText(`${skill.label}:`, this.margins.left, leftY, {
@@ -290,7 +290,7 @@ export class SimplePDFGenerator {
         size: 10,
         bold: true
       })
-      
+
       this.addText(exp.date, this.pageWidth - this.margins.right, rightY, {
         size: 8,
         color: this.config.colors.secondary,
@@ -308,10 +308,10 @@ export class SimplePDFGenerator {
 
       // Responsibilities (truncated)
       if (exp.responsibilities) {
-        const truncated = exp.responsibilities.length > 200 ? 
-          exp.responsibilities.substring(0, 200) + '...' : 
+        const truncated = exp.responsibilities.length > 200 ?
+          exp.responsibilities.substring(0, 200) + '...' :
           exp.responsibilities
-        
+
         const height = this.addText(truncated, rightX, rightY, {
           size: 8,
           maxWidth: rightWidth
@@ -340,7 +340,7 @@ export class SimplePDFGenerator {
           size: 9,
           bold: true
         })
-        
+
         this.addText(edu.date, this.pageWidth - this.margins.right, rightY, {
           size: 8,
           color: this.config.colors.secondary,
@@ -388,7 +388,7 @@ export class SimplePDFGenerator {
       size: 10,
       bold: true
     })
-    
+
     this.addText(exp.date, this.pageWidth - this.margins.right, this.yPos, {
       size: 9,
       color: this.config.colors.secondary,
@@ -406,10 +406,10 @@ export class SimplePDFGenerator {
 
     // Responsibilities (truncated for space)
     if (exp.responsibilities) {
-      const truncated = exp.responsibilities.length > 180 ? 
-        exp.responsibilities.substring(0, 180) + '...' : 
+      const truncated = exp.responsibilities.length > 180 ?
+        exp.responsibilities.substring(0, 180) + '...' :
         exp.responsibilities
-      
+
       const height = this.addText(truncated, this.margins.left, this.yPos, {
         size: 9,
         maxWidth: this.contentWidth
@@ -425,7 +425,7 @@ export class SimplePDFGenerator {
       size: 10,
       bold: true
     })
-    
+
     this.addText(edu.date, this.pageWidth - this.margins.right, this.yPos, {
       size: 9,
       color: this.config.colors.secondary,
@@ -449,10 +449,10 @@ export class SimplePDFGenerator {
     this.yPos += 3
 
     if (proj.description) {
-      const truncated = proj.description.length > 120 ? 
-        proj.description.substring(0, 120) + '...' : 
+      const truncated = proj.description.length > 120 ?
+        proj.description.substring(0, 120) + '...' :
         proj.description
-      
+
       const height = this.addText(truncated, this.margins.left, this.yPos, {
         size: 8,
         maxWidth: this.contentWidth

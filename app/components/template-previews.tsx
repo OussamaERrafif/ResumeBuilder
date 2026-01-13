@@ -33,47 +33,31 @@ interface TemplatePreviewProps {
 
 export function ClassicTemplate({ data, template }: TemplatePreviewProps) {
   return (
-    <div className="space-y-6 font-serif text-sm leading-relaxed text-black bg-white">
-      {/* Header */}
-      <div className="pb-6 border-b-2 border-gray-800">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
-          {/* Profile Image */}
-          {data.personalInfo.profileImage ? (
-            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-600 flex-shrink-0">
-              <img
-                src={data.personalInfo.profileImage}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <DefaultAvatar className="w-24 h-24" size={24} />
-          )}
-
-          {/* Contact Info */}
-          <div className={`text-center ${data.personalInfo.profileImage ? "md:text-left" : ""} flex-1`}>
-            <h1 className="text-2xl font-bold mb-2 tracking-wide text-gray-800">
-              {data.personalInfo.name || "Your Name"}
-            </h1>
-            <p className="text-base mb-3 text-gray-700">{data.personalInfo.title || "Your Professional Title"}</p>
-            <div className="flex flex-col sm:flex-row sm:justify-center items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
-              <span>{data.personalInfo.email}</span>
-              <span className="hidden sm:inline">•</span>
-              <span>{data.personalInfo.phone}</span>
-              <span className="hidden sm:inline">•</span>
-              <span>{data.personalInfo.location}</span>
-            </div>
-            {data.links.some((link) => link.name && link.url) && (
-              <div className="flex flex-wrap justify-center md:justify-start space-x-4 text-sm mt-2 text-gray-600">
-                {data.links
-                  .filter((link) => link.name && link.url)
-                  .map((link, index) => (
-                    <span key={index}>{link.name}</span>
-                  ))}
-              </div>
-            )}
-          </div>
+    <div className="p-8 font-sans text-sm leading-relaxed text-black bg-white">
+      {/* Header - Centered like LaTeX Template 1 */}
+      <div className="text-center pb-4 mb-6 border-b border-gray-800">
+        <h1 className="text-2xl font-bold tracking-wide text-gray-900 uppercase">
+          {data.personalInfo.name || "Your Name"}
+        </h1>
+        <div className="flex flex-wrap justify-center items-center gap-x-2 text-sm text-gray-600 mt-2">
+          {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
+          {data.personalInfo.phone && data.personalInfo.email && <span className="text-gray-400">|</span>}
+          {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
+          {data.personalInfo.email && data.personalInfo.location && <span className="text-gray-400">|</span>}
+          {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
         </div>
+        {data.links.some((link) => link.name && link.url) && (
+          <div className="flex flex-wrap justify-center items-center gap-x-2 text-sm text-gray-600 mt-1">
+            {data.links
+              .filter((link) => link.name && link.url)
+              .map((link, index, arr) => (
+                <span key={index}>
+                  {link.name}
+                  {index < arr.length - 1 && <span className="text-gray-400 ml-2">|</span>}
+                </span>
+              ))}
+          </div>
+        )}
       </div>
 
       {/* Professional Summary */}

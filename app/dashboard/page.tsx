@@ -96,7 +96,7 @@ const AddResumeCard = memo(({ onClick }: { onClick: () => void }) => (
     className="group cursor-pointer"
     onClick={onClick}
   >
-    <Card className="border-2 border-dashed border-muted-foreground/20 bg-muted/10 hover:border-primary hover:bg-primary/5 hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)] transition-all duration-300 h-full min-h-[400px] flex items-center justify-center rounded-2xl cursor-pointer">
+    <Card className="border-2 border-dashed border-muted-foreground/20 bg-muted/10 hover:border-primary hover:bg-primary/5 hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)] transition-all duration-300 h-[400px] flex items-center justify-center rounded-2xl cursor-pointer">
       <CardContent className="flex flex-col items-center justify-center p-8 text-center">
         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-primary/25">
           <Plus className="h-8 w-8 text-primary" />
@@ -143,7 +143,7 @@ const ResumeCard = memo(
         whileHover={{ y: -4 }}
         className="group"
       >
-        <Card className="border border-border bg-card hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 rounded-2xl overflow-hidden">
+        <Card className="border border-border bg-card hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 rounded-2xl overflow-hidden h-[400px] flex flex-col">
           <CardHeader className="pb-3">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -167,17 +167,30 @@ const ResumeCard = memo(
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4 pt-0">
-            {/* TEMPLATE PREVIEW - Simplified: show template name/icon instead of full render */}
-            <div className="w-full h-32 border border-border rounded-xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group-hover:border-primary/30 transition-colors flex flex-col items-center justify-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <span className="text-xs text-muted-foreground">{template?.name || "Classic"} Template</span>
+          <CardContent className="space-y-4 pt-0 flex-1 flex flex-col">
+            {/* TEMPLATE PREVIEW - Scaled miniature resume preview */}
+            <div className="w-full h-44 border border-border rounded-xl overflow-hidden bg-white group-hover:border-primary/30 transition-colors relative">
+              {template && resume.data ? (
+                <div
+                  className="absolute inset-0 transform scale-[0.18] origin-top-left pointer-events-none"
+                  style={{ width: '555%', height: '555%' }}
+                >
+                  <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
+                    <TemplatePreview data={resume.data} template={template} />
+                  </Suspense>
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{template?.name || "Classic"} Template</span>
+                </div>
+              )}
             </div>
 
             {/* ACTION BUTTONS */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 mt-auto">
               <Button size="sm" onClick={handleEdit} className="w-full rounded-lg">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
@@ -216,7 +229,7 @@ ResumeCard.displayName = "ResumeCard"
 const LoadingSkeleton = memo(() => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
     {Array.from({ length: 8 }).map((_, i) => (
-      <div key={i} className="border border-border rounded-lg p-6 animate-pulse">
+      <div key={i} className="border border-border rounded-lg p-6 animate-pulse h-[400px] flex flex-col">
         <div className="flex items-start gap-4 mb-4">
           <div className="w-10 h-10 bg-muted rounded-lg" />
           <div className="flex-1">
@@ -224,7 +237,7 @@ const LoadingSkeleton = memo(() => (
             <div className="h-3 bg-muted rounded w-2/3" />
           </div>
         </div>
-        <div className="w-full h-32 bg-muted rounded-lg mb-4" />
+        <div className="w-full h-44 bg-muted rounded-lg mb-4 flex-1" />
         <div className="grid grid-cols-2 gap-2">
           <div className="h-8 bg-muted rounded" />
           <div className="h-8 bg-muted rounded" />
