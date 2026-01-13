@@ -15,6 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         '/unauthorized/'
       ],
     },
-    sitemap: 'https://apexresume.com/sitemap.xml',
+    sitemap: 'https://apexresume.tech/sitemap.xml',
   }
 }
