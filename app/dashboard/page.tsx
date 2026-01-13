@@ -54,7 +54,7 @@ const ResumeBuilder = dynamic(() => import("../components/resume-builder"), {
   )
 })
 const TemplatePreview = dynamic(
-  () => import("../components/template-previews").then(mod => ({ default: mod.TemplatePreview })),
+  () => import("../components/templates/preview").then(mod => ({ default: mod.TemplatePreview })),
   { ssr: false, loading: () => <div className="w-full h-32 bg-muted animate-pulse rounded-xl" /> }
 )
 

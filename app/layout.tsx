@@ -146,6 +146,7 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#8B5CF6" />
         <meta name="msapplication-TileImage" content="/icon.png" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossOrigin="anonymous" referrerPolicy="no-referrer" />
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//api.producthunt.com" />
         <link rel="dns-prefetch" href="//github.com" />
@@ -157,12 +158,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="ApexResume" />
       </head>
       <body className={`${montserrat.className} font-sans antialiased`} suppressHydrationWarning>
-        <StructuredData 
+        <StructuredData
           data={[
             generateOrganizationSchema(),
             generateWebApplicationSchema(),
             generateSoftwareApplicationSchema()
-          ]} 
+          ]}
         />
         <ThemeProvider
           attribute="class"

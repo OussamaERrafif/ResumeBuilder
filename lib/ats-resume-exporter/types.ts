@@ -85,13 +85,12 @@ export interface ResumeData {
 // ATS Template Configuration
 // ============================================================================
 
-export type ATSTemplateId = 
-  | 'ats-professional'
-  | 'ats-modern'
-  | 'ats-executive'
-  | 'ats-minimal'
-  | 'ats-technical'
+export type ATSTemplateId =
   | 'ats-classic'
+  | 'ats-creative'
+  | 'ats-minimal'
+  | 'ats-modern'
+  | 'ats-photo'
 
 export type FontFamily = 'helvetica' | 'times' | 'courier'
 
@@ -126,7 +125,7 @@ export interface ATSTemplateConfig {
   id: ATSTemplateId
   name: string
   description: string
-  category: 'professional' | 'modern' | 'executive' | 'minimal' | 'technical' | 'classic'
+  category: 'classic' | 'creative' | 'minimal' | 'modern' | 'executive'
   font: FontFamily
   colors: ATSTemplateColors
   spacing: ATSTemplateSpacing

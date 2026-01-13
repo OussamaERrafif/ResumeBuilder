@@ -1,163 +1,41 @@
 /**
  * ATS Resume Exporter - Template Configurations
  * 
- * These templates are designed specifically for ATS (Applicant Tracking System) compatibility.
- * Key ATS-friendly features:
- * - Simple, single-column layouts
- * - Standard fonts (Helvetica, Times New Roman)
- * - Clear section headers with standard naming
- * - No graphics, tables, or complex formatting
- * - Proper text hierarchy and structure
+ * These templates match the 5 LaTeX templates from tempalte.ltx.
+ * Each template is designed for ATS (Applicant Tracking System) compatibility
+ * while maintaining the visual style of the corresponding LaTeX template.
  */
 
 import type { ATSTemplateConfig, ATSTemplateId } from './types'
 
 // ============================================================================
-// ATS Template Configurations
+// ATS Template Configurations - Matching LaTeX Templates
 // ============================================================================
 
 export const ATS_TEMPLATES: Record<ATSTemplateId, ATSTemplateConfig> = {
-  'ats-professional': {
-    id: 'ats-professional',
-    name: 'ATS Professional',
-    description: 'Clean, professional layout optimized for maximum ATS compatibility',
-    category: 'professional',
-    font: 'helvetica',
+  // LaTeX Template 1: Classic (Lines 1-130)
+  // Roboto font, centered header, pipe separators, titlerule sections
+  'ats-classic': {
+    id: 'ats-classic',
+    name: 'Classic Professional',
+    description: 'Clean single-column layout with centered header and section underlines (LaTeX Template 1)',
+    category: 'classic',
+    font: 'helvetica', // Closest to Roboto
     colors: {
-      primary: '#1a1a1a',
-      secondary: '#333333',
-      text: '#000000',
-      muted: '#555555',
-      accent: '#2563eb'
+      primary: '#1f2937',
+      secondary: '#4b5563',
+      text: '#111827',
+      muted: '#6b7280',
+      accent: '#374151'
     },
     spacing: {
-      marginTop: 20,
-      marginBottom: 20,
-      marginLeft: 20,
-      marginRight: 20,
-      sectionGap: 12,
-      itemGap: 8,
+      marginTop: 15,
+      marginBottom: 15,
+      marginLeft: 15,
+      marginRight: 15,
+      sectionGap: 6,
+      itemGap: 4,
       lineHeight: 1.4
-    },
-    fonts: {
-      name: { size: 22, weight: 'bold' },
-      title: { size: 12, weight: 'normal' },
-      sectionHeader: { size: 12, weight: 'bold' },
-      itemHeader: { size: 11, weight: 'bold' },
-      body: { size: 10, weight: 'normal' },
-      small: { size: 9, weight: 'normal' }
-    },
-    features: {
-      showLines: true,
-      showBullets: true,
-      centeredHeader: true,
-      showIcons: false,
-      compactMode: false
-    },
-    atsScore: 98
-  },
-
-  'ats-modern': {
-    id: 'ats-modern',
-    name: 'ATS Modern',
-    description: 'Contemporary design with clean lines, fully ATS compliant',
-    category: 'modern',
-    font: 'helvetica',
-    colors: {
-      primary: '#0f172a',
-      secondary: '#334155',
-      text: '#1e293b',
-      muted: '#64748b',
-      accent: '#3b82f6'
-    },
-    spacing: {
-      marginTop: 18,
-      marginBottom: 18,
-      marginLeft: 22,
-      marginRight: 22,
-      sectionGap: 10,
-      itemGap: 6,
-      lineHeight: 1.35
-    },
-    fonts: {
-      name: { size: 24, weight: 'bold' },
-      title: { size: 11, weight: 'normal' },
-      sectionHeader: { size: 11, weight: 'bold' },
-      itemHeader: { size: 10, weight: 'bold' },
-      body: { size: 9.5, weight: 'normal' },
-      small: { size: 8.5, weight: 'normal' }
-    },
-    features: {
-      showLines: true,
-      showBullets: true,
-      centeredHeader: false,
-      showIcons: false,
-      compactMode: true
-    },
-    atsScore: 96
-  },
-
-  'ats-executive': {
-    id: 'ats-executive',
-    name: 'ATS Executive',
-    description: 'Premium executive layout for senior professionals, ATS optimized',
-    category: 'executive',
-    font: 'times',
-    colors: {
-      primary: '#1a1a1a',
-      secondary: '#2d2d2d',
-      text: '#000000',
-      muted: '#4a4a4a',
-      accent: '#1e3a5f'
-    },
-    spacing: {
-      marginTop: 25,
-      marginBottom: 25,
-      marginLeft: 25,
-      marginRight: 25,
-      sectionGap: 14,
-      itemGap: 10,
-      lineHeight: 1.5
-    },
-    fonts: {
-      name: { size: 26, weight: 'bold' },
-      title: { size: 13, weight: 'normal' },
-      sectionHeader: { size: 13, weight: 'bold' },
-      itemHeader: { size: 11, weight: 'bold' },
-      body: { size: 10.5, weight: 'normal' },
-      small: { size: 9.5, weight: 'normal' }
-    },
-    features: {
-      showLines: true,
-      showBullets: true,
-      centeredHeader: true,
-      showIcons: false,
-      compactMode: false
-    },
-    atsScore: 97
-  },
-
-  'ats-minimal': {
-    id: 'ats-minimal',
-    name: 'ATS Minimal',
-    description: 'Ultra-clean minimalist design, highest ATS compatibility',
-    category: 'minimal',
-    font: 'helvetica',
-    colors: {
-      primary: '#000000',
-      secondary: '#333333',
-      text: '#000000',
-      muted: '#666666',
-      accent: '#000000'
-    },
-    spacing: {
-      marginTop: 20,
-      marginBottom: 20,
-      marginLeft: 20,
-      marginRight: 20,
-      sectionGap: 10,
-      itemGap: 6,
-      lineHeight: 1.3
     },
     fonts: {
       name: { size: 20, weight: 'bold' },
@@ -168,35 +46,37 @@ export const ATS_TEMPLATES: Record<ATSTemplateId, ATSTemplateConfig> = {
       small: { size: 8, weight: 'normal' }
     },
     features: {
-      showLines: false,
+      showLines: true,  // titlerule
       showBullets: true,
       centeredHeader: true,
       showIcons: false,
-      compactMode: true
+      compactMode: false
     },
-    atsScore: 100
+    atsScore: 98
   },
 
-  'ats-technical': {
-    id: 'ats-technical',
-    name: 'ATS Technical',
-    description: 'Optimized for technical roles with skills emphasis',
-    category: 'technical',
-    font: 'helvetica',
+  // LaTeX Template 2: MaltaCV/Creative (Lines 131-337)
+  // Colorful flame orange, bio section, multicol skills
+  'ats-creative': {
+    id: 'ats-creative',
+    name: 'Creative MaltaCV',
+    description: 'Colorful design with bio section and multi-column skill grid (LaTeX Template 2)',
+    category: 'creative',
+    font: 'helvetica', // tgheros/sans-serif
     colors: {
-      primary: '#111827',
-      secondary: '#374151',
+      primary: '#e85d04',  // flame
+      secondary: '#232323', // raisinblack
       text: '#1f2937',
       muted: '#6b7280',
-      accent: '#2563eb'
+      accent: '#f48c06'
     },
     spacing: {
-      marginTop: 18,
-      marginBottom: 18,
-      marginLeft: 20,
-      marginRight: 20,
-      sectionGap: 10,
-      itemGap: 6,
+      marginTop: 15,
+      marginBottom: 15,
+      marginLeft: 15,
+      marginRight: 15,
+      sectionGap: 8,
+      itemGap: 5,
       lineHeight: 1.35
     },
     fonts: {
@@ -205,56 +85,142 @@ export const ATS_TEMPLATES: Record<ATSTemplateId, ATSTemplateConfig> = {
       sectionHeader: { size: 11, weight: 'bold' },
       itemHeader: { size: 10, weight: 'bold' },
       body: { size: 9, weight: 'normal' },
-      small: { size: 8.5, weight: 'normal' }
+      small: { size: 8, weight: 'normal' }
     },
     features: {
       showLines: true,
       showBullets: true,
       centeredHeader: false,
       showIcons: false,
+      compactMode: false
+    },
+    atsScore: 95
+  },
+
+  // LaTeX Template 3: Jitin Nair/Minimal (Lines 338-556)
+  // Clean black/white, dash bullets, tabularx
+  'ats-minimal': {
+    id: 'ats-minimal',
+    name: 'Minimal Clean',
+    description: 'Ultra-clean design with dash bullets and icon-style contact info (LaTeX Template 3)',
+    category: 'minimal',
+    font: 'helvetica',
+    colors: {
+      primary: '#000000',
+      secondary: '#333333',
+      text: '#000000',
+      muted: '#666666',
+      accent: '#0066cc'  // linkcolour
+    },
+    spacing: {
+      marginTop: 15,
+      marginBottom: 15,
+      marginLeft: 15,
+      marginRight: 15,
+      sectionGap: 5,
+      itemGap: 3,
+      lineHeight: 1.3
+    },
+    fonts: {
+      name: { size: 22, weight: 'bold' },
+      title: { size: 10, weight: 'normal' },
+      sectionHeader: { size: 12, weight: 'bold' },
+      itemHeader: { size: 10, weight: 'bold' },
+      body: { size: 9, weight: 'normal' },
+      small: { size: 8, weight: 'normal' }
+    },
+    features: {
+      showLines: true,
+      showBullets: false,  // Uses dash bullets instead
+      centeredHeader: true,
+      showIcons: false,
+      compactMode: true
+    },
+    atsScore: 100
+  },
+
+  // LaTeX Template 4: Anubhav Singh/Modern (Lines 557-739)
+  // Detailed subheadings, skills with alignment, tech focus
+  'ats-modern': {
+    id: 'ats-modern',
+    name: 'Modern Developer',
+    description: 'Detailed tech-focused layout with aligned skills and project highlights (LaTeX Template 4)',
+    category: 'modern',
+    font: 'helvetica',
+    colors: {
+      primary: '#1f2937',
+      secondary: '#374151',
+      text: '#111827',
+      muted: '#6b7280',
+      accent: '#3b82f6'
+    },
+    spacing: {
+      marginTop: 15,
+      marginBottom: 15,
+      marginLeft: 15,
+      marginRight: 15,
+      sectionGap: 5,
+      itemGap: 4,
+      lineHeight: 1.35
+    },
+    fonts: {
+      name: { size: 20, weight: 'bold' },
+      title: { size: 10, weight: 'normal' },
+      sectionHeader: { size: 11, weight: 'bold' },
+      itemHeader: { size: 10, weight: 'bold' },
+      body: { size: 9, weight: 'normal' },
+      small: { size: 8, weight: 'normal' }
+    },
+    features: {
+      showLines: true,
+      showBullets: true,
+      centeredHeader: false,  // Left-aligned header
+      showIcons: false,
       compactMode: true
     },
     atsScore: 97
   },
 
-  'ats-classic': {
-    id: 'ats-classic',
-    name: 'ATS Classic',
-    description: 'Traditional resume format, universally compatible',
-    category: 'classic',
-    font: 'times',
+  // LaTeX Template 5: LuxSleek/Photo (Lines 740-933)
+  // Two-column with dark navy sidebar, profile photo, FiraSans
+  'ats-photo': {
+    id: 'ats-photo',
+    name: 'LuxSleek Sidebar',
+    description: 'Two-column layout with dark navy sidebar featuring profile and contact (LaTeX Template 5)',
+    category: 'executive',  // Premium category
+    font: 'helvetica',  // FiraSans
     colors: {
-      primary: '#1a1a1a',
-      secondary: '#333333',
-      text: '#000000',
-      muted: '#555555',
-      accent: '#1a1a1a'
+      primary: '#304263',  // cvblue
+      secondary: '#1e3a5f',
+      text: '#1f2937',
+      muted: '#6b7280',
+      accent: '#4a6fa5'
     },
     spacing: {
-      marginTop: 22,
-      marginBottom: 22,
-      marginLeft: 22,
-      marginRight: 22,
-      sectionGap: 12,
-      itemGap: 8,
-      lineHeight: 1.45
+      marginTop: 0,  // No traditional margins for sidebar layout
+      marginBottom: 15,
+      marginLeft: 0,
+      marginRight: 15,
+      sectionGap: 6,
+      itemGap: 4,
+      lineHeight: 1.4
     },
     fonts: {
-      name: { size: 24, weight: 'bold' },
-      title: { size: 12, weight: 'normal' },
-      sectionHeader: { size: 12, weight: 'bold' },
-      itemHeader: { size: 11, weight: 'bold' },
-      body: { size: 10, weight: 'normal' },
-      small: { size: 9, weight: 'normal' }
+      name: { size: 14, weight: 'bold' },
+      title: { size: 10, weight: 'normal' },
+      sectionHeader: { size: 11, weight: 'bold' },
+      itemHeader: { size: 9, weight: 'bold' },
+      body: { size: 8, weight: 'normal' },
+      small: { size: 7, weight: 'normal' }
     },
     features: {
       showLines: true,
       showBullets: true,
-      centeredHeader: true,
+      centeredHeader: false,
       showIcons: false,
       compactMode: false
     },
-    atsScore: 99
+    atsScore: 92  // Lower due to two-column being less ATS-friendly
   }
 }
 
@@ -266,7 +232,7 @@ export const ATS_TEMPLATES: Record<ATSTemplateId, ATSTemplateConfig> = {
  * Get template configuration by ID
  */
 export function getATSTemplate(id: ATSTemplateId): ATSTemplateConfig {
-  return ATS_TEMPLATES[id] || ATS_TEMPLATES['ats-professional']
+  return ATS_TEMPLATES[id] || ATS_TEMPLATES['ats-classic']
 }
 
 /**
@@ -292,18 +258,21 @@ export function getTemplatesByCategory(category: ATSTemplateConfig['category']):
 
 /**
  * Map legacy template IDs to ATS template IDs
+ * Maps the 5 LaTeX template names to ATS template IDs
  */
 export function mapLegacyTemplateId(legacyId: string): ATSTemplateId {
   const mapping: Record<string, ATSTemplateId> = {
     'classic': 'ats-classic',
-    'modern': 'ats-modern',
-    'creative': 'ats-modern',
+    'creative': 'ats-creative',
     'minimal': 'ats-minimal',
-    'executive': 'ats-executive',
-    'tech': 'ats-technical',
-    'photo': 'ats-professional'
+    'modern': 'ats-modern',
+    'photo': 'ats-photo',
+    // Legacy mappings for backward compatibility
+    'executive': 'ats-classic',
+    'tech': 'ats-modern',
+    'professional': 'ats-classic'
   }
-  return mapping[legacyId] || 'ats-professional'
+  return mapping[legacyId] || 'ats-classic'
 }
 
 // ============================================================================

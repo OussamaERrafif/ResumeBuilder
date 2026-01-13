@@ -21,7 +21,7 @@ const TYPE_TO_FEATURE: Record<string, AIFeature> = {
 }
 
 // Validation function
-const validateAIRequest = (type: string, query: string) => {
+const validateAIRequest = (type: string, query: string, context?: any) => {
   const validTypes = ['summary', 'experience', 'project']
 
   if (!validTypes.includes(type)) {
@@ -29,6 +29,11 @@ const validateAIRequest = (type: string, query: string) => {
       valid: false,
       error: 'Invalid generation type. Must be summary, experience, or project.'
     }
+  }
+
+  // If context is provided, query can be empty
+  if (context && (!query || query.trim().length === 0)) {
+    return { valid: true }
   }
 
   if (!query || query.trim().length < 5) {
@@ -48,17 +53,58 @@ const validateAIRequest = (type: string, query: string) => {
   return { valid: true }
 }
 
+// Helper to format context for the prompt
+const formatContext = (context: any): string => {
+  if (!context) return ""
+
+  const { personalInfo, experience, education, skills, projects } = context
+
+  let contextStr = "Resume Context:\n"
+
+  if (personalInfo) {
+    contextStr += `Name: ${personalInfo.name}\nTitle: ${personalInfo.title}\n`
+  }
+
+  if (skills) {
+    contextStr += `Skills: ${skills.languages}, ${skills.frameworks}, ${skills.tools}\n`
+  }
+
+  if (experience && Array.isArray(experience) && experience.length > 0) {
+    contextStr += "Experience:\n"
+    experience.forEach((exp: any) => {
+      if (exp.company) contextStr += `- ${exp.jobTitle} at ${exp.company} (${exp.date})\n`
+    })
+  }
+
+  if (projects && Array.isArray(projects) && projects.length > 0) {
+    contextStr += "Projects:\n"
+    projects.forEach((proj: any) => {
+      if (proj.name) contextStr += `- ${proj.name}: ${proj.description}\n`
+    })
+  }
+
+  return contextStr
+}
+
 // AI Prompts
 const AI_PROMPTS = {
-  summary: (query: string) => `
-    Write a professional resume summary (2 sentences, max 40 words) based on this description: "${query}". 
+  summary: (query: string, context?: any) => `
+    ${context ? formatContext(context) : ""}
+    
+    Task: Write a professional resume summary (2 sentences, max 40 words).
+    ${query ? `Based on this specific request: "${query}"` : "Based on the provided resume context."}
+    
     Make it compelling, concise, and highlight key strengths. Focus on achievements and value proposition.
     Do not include any formatting or bullet points, just a clear, concise paragraph.
     Make it ATS-friendly and impactful for recruiters.
   `.trim(),
 
-  experience: (query: string) => `
-    Generate 2-3 concise professional bullet points for a resume job experience section based on: "${query}".
+  experience: (query: string, context?: any) => `
+    ${context ? formatContext(context) : ""}
+    
+    Task: Generate 2-3 concise professional bullet points for a resume job experience section.
+    ${query ? `Based on this specific request: "${query}"` : "Based on the provided resume context, suggest 2-3 standard responsibilities/achievements for this type of role/profile."}
+    
     Each bullet point should:
     - Start with a strong action verb (Led, Developed, Implemented, Managed, etc.)
     - Include specific achievements or responsibilities
@@ -75,8 +121,12 @@ const AI_PROMPTS = {
     • Implemented CI/CD pipelines improving deployment speed
   `.trim(),
 
-  project: (query: string) => `
-    Write a concise professional project description (1-2 sentences, max 30 words) for a resume based on: "${query}".
+  project: (query: string, context?: any) => `
+    ${context ? formatContext(context) : ""}
+    
+    Task: Write a concise professional project description (1-2 sentences, max 30 words).
+    ${query ? `Based on this specific request: "${query}"` : "Based on the provided resume context, suggest a description for a project suitable for this profile."}
+    
     Include:
     - What the project accomplished (business impact)
     - Key technologies or methods used
@@ -108,21 +158,21 @@ function cleanMarkdownFormatting(text: string): string {
 // Fallback content function
 function getFallbackContent(type: string, query: string): string {
   const summaryTemplates = [
-    `Experienced ${query} professional with proven track record of delivering results and driving innovation in fast-paced environments.`,
-    `Results-driven ${query} specialist with expertise in modern technologies and strong problem-solving abilities.`,
-    `Dynamic ${query} professional with extensive experience in technical leadership and strategic thinking.`,
+    `Experienced ${query || 'professional'} with proven track record of delivering results and driving innovation in fast-paced environments.`,
+    `Results-driven ${query || 'specialist'} with expertise in modern technologies and strong problem-solving abilities.`,
+    `Dynamic ${query || 'leader'} with extensive experience in technical leadership and strategic thinking.`,
   ]
 
   const experienceTemplates = [
-    `• Led ${query} initiatives resulting in improved efficiency\n• Implemented modern methodologies to streamline processes\n• Collaborated with stakeholders to deliver solutions`,
-    `• Developed ${query} systems with focus on scalability\n• Participated in architectural decisions and code reviews\n• Contributed to documentation and process improvements`,
-    `• Managed ${query} projects from conception to deployment\n• Coordinated with teams to ensure project success\n• Implemented quality assurance and testing strategies`,
+    `• Led ${query || 'project'} initiatives resulting in improved efficiency\n• Implemented modern methodologies to streamline processes\n• Collaborated with stakeholders to deliver solutions`,
+    `• Developed ${query || 'systems'} with focus on scalability\n• Participated in architectural decisions and code reviews\n• Contributed to documentation and process improvements`,
+    `• Managed ${query || 'teams'} projects from conception to deployment\n• Coordinated with teams to ensure project success\n• Implemented quality assurance and testing strategies`,
   ]
 
   const projectTemplates = [
-    `Developed comprehensive ${query} solution improving user experience and system performance using modern technologies.`,
-    `Created innovative ${query} application with focus on scalability, implementing automated testing and CI/CD pipelines.`,
-    `Built robust ${query} platform streamlining business processes and enhancing productivity within budget and timeline.`,
+    `Developed comprehensive ${query || 'software'} solution improving user experience and system performance using modern technologies.`,
+    `Created innovative ${query || 'application'} with focus on scalability, implementing automated testing and CI/CD pipelines.`,
+    `Built robust ${query || 'platform'} streamlining business processes and enhancing productivity within budget and timeline.`,
   ]
 
   let templates: string[]
@@ -159,10 +209,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { type, query, userId } = body
+    const { type, query, userId, context } = body
 
     // Validate the request
-    const validation = validateAIRequest(type, query)
+    const validation = validateAIRequest(type, query, context)
     if (!validation.valid) {
       requestTracker.end(requestId, 400)
       return NextResponse.json(
@@ -209,8 +259,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check cache first
-    const cacheKey = getAICacheKey(type, query)
+    // Check cache first (include context in cache key if applicable, though context makes it harder to cache effectively)
+    // If context is present, we might skip cache or make a unique key based on context hash. 
+    // For simplicity, if context is involved, we might want to bypass shared cache or include context hash.
+    // Here we'll just append a simple hash of context if it exists.
+    const contextHash = context ? JSON.stringify(context).length : 0
+    const cacheKey = getAICacheKey(type, `${query}-${contextHash}`)
+
+    // Only use cache if query is present, otherwise we always generate fresh from context? 
+    // Actually, same context + same (empty) query should yield same result.
     const cached = aiCache.get(cacheKey)
     if (cached) {
       logger.debug('AI cache hit', { type, cacheKey })
@@ -228,7 +285,10 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       const fallbackContent = getFallbackContent(type, query)
-      aiCache.set(cacheKey, fallbackContent, 60 * 60 * 1000) // Cache fallback for 1 hour
+      // Don't cache fallback for context-heavy requests as they might be unique
+      if (!context) {
+        aiCache.set(cacheKey, fallbackContent, 60 * 60 * 1000)
+      }
       requestTracker.end(requestId, 200)
       return NextResponse.json({
         content: fallbackContent,
@@ -246,7 +306,7 @@ export async function POST(request: NextRequest) {
 
             try {
               const openai = new OpenAI({ apiKey })
-              const prompt = AI_PROMPTS[type as keyof typeof AI_PROMPTS](query)
+              const prompt = AI_PROMPTS[type as keyof typeof AI_PROMPTS](query, context)
 
               const completion = await openai.chat.completions.create({
                 model: 'gpt-4o-mini',
@@ -296,7 +356,10 @@ export async function POST(request: NextRequest) {
 
       const fallbackContent = getFallbackContent(type, query)
       const cleanedFallback = cleanMarkdownFormatting(fallbackContent)
-      aiCache.set(cacheKey, cleanedFallback, 60 * 60 * 1000) // Cache fallback for 1 hour
+      // Only cache fallback if simple query
+      if (!context) {
+        aiCache.set(cacheKey, cleanedFallback, 60 * 60 * 1000)
+      }
 
       const response = NextResponse.json({
         content: cleanedFallback,
