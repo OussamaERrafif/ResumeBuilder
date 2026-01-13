@@ -40,10 +40,10 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
 
   const feature = type ? TYPE_TO_FEATURE[type] : null
   const cost = feature ? AI_FEATURE_COSTS[feature] : 0
-  const canGenerate = true // feature ? hasEnoughCredits(feature) : false
+  const canGenerate = feature ? hasEnoughCredits(feature) : false
 
   const handleGenerate = async () => {
-    if (!query.trim() || !type) return
+    if (!type) return
 
     // Check credits before generating
     if (!canGenerate) {
@@ -145,7 +145,7 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
                 id="ai-query"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={content.placeholder}
+                placeholder={`${content.placeholder} (or leave blank to generate from your resume)`}
                 className="min-h-[100px] mt-2 bg-input border-border text-foreground focus:ring-primary focus:border-primary"
                 disabled={isGenerating}
               />
@@ -187,7 +187,7 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
             </Button>
             <Button
               onClick={handleGenerate}
-              disabled={!query.trim() || isGenerating}
+              disabled={isGenerating}
               className="bg-accent hover:bg-accent/90 text-accent-foreground"
             >
               {isGenerating ? (
@@ -203,7 +203,7 @@ export default function AIModal({ isOpen, onClose, onGenerate, type, index }: AI
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Generate (Free)
+                  {query.trim() ? "Generate" : "Auto-Generate"}
                 </>
               )}
             </Button>

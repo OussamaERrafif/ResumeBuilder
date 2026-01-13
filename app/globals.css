@@ -345,3 +345,44 @@ html {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
+
+/* EasyMDE Dark Mode Overrides */
+.dark .EasyMDEContainer .CodeMirror {
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+.dark .EasyMDEContainer .editor-toolbar {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.dark .EasyMDEContainer .editor-toolbar button {
+  color: hsl(var(--foreground));
+}
+
+.dark .EasyMDEContainer .editor-toolbar button:hover,
+.dark .EasyMDEContainer .editor-toolbar button.active {
+  background-color: hsl(var(--accent));
+  border-color: hsl(var(--border));
+}
+
+.dark .EasyMDEContainer .editor-preview {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+
+.dark .EasyMDEContainer .editor-statusbar {
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .EasyMDEContainer .CodeMirror-cursor {
+  border-left: 1px solid hsl(var(--foreground));
+}
+
+/* Fix z-index issues with sticky headers if any */
+.EasyMDEContainer {
+  z-index: 0;
+}

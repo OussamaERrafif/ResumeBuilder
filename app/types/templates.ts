@@ -2,7 +2,7 @@ export interface Template {
   id: string
   name: string
   description: string
-  category: "classic" | "modern" | "creative" | "minimal" | "executive" | "tech" | "photo"
+  category: "classic" | "creative" | "minimal" | "modern" | "photo"
   preview: string
   requiresPhoto: boolean
   isPremium?: boolean
@@ -19,125 +19,100 @@ export interface Template {
 
 export const RESUME_TEMPLATES: Template[] = [
   {
+    // LaTeX Template 1: Classic single-column (Lines 1-130)
+    // Roboto font, centered header, pipe separators, titlerule sections
     id: "classic",
-    name: "Professional Classic",
-    description: "Timeless design perfect for traditional corporate environments",
+    name: "Classic Professional",
+    description: "Clean single-column layout with centered header and section underlines",
     category: "classic",
     requiresPhoto: false,
-    preview: "Classic professional template preview",
+    preview: "Classic professional template",
     colors: {
       primary: "#1f2937",
-      secondary: "#374151",
-      accent: "#6b7280",
+      secondary: "#4b5563",
+      accent: "#374151",
       text: "#111827",
-      background: "#f9fafb",
-      muted: "#9ca3af",
-    },
-    features: ["Traditional layout", "Corporate-friendly", "ATS-optimized", "Clean typography"],
-  },
-  {
-    id: "modern",
-    name: "Contemporary Professional",
-    description: "Modern design with vibrant accents for progressive companies",
-    category: "modern",
-    requiresPhoto: false,
-    preview: "Modern professional template preview",
-    colors: {
-      primary: "#3b82f6",
-      secondary: "#1e40af",
-      accent: "#60a5fa",
-      text: "#1f2937",
       background: "#ffffff",
       muted: "#6b7280",
     },
-    features: ["Contemporary styling", "Color accents", "Professional appeal", "Versatile layout"],
+    features: ["Single column", "Centered header", "Section rules", "ATS-optimized"],
   },
   {
+    // LaTeX Template 2: MaltaCV (Lines 131-337)
+    // Colorful raisinblack_flame, bio section, multicolumn skills
     id: "creative",
-    name: "Creative Professional",
-    description: "Bold design for creative fields with striking visual elements",
+    name: "Creative MaltaCV",
+    description: "Colorful design with bio section and multi-column skill grid",
     category: "creative",
     requiresPhoto: false,
     isPremium: true,
-    preview: "Creative template preview",
+    preview: "Creative MaltaCV template",
     colors: {
-      primary: "#7c3aed",
-      secondary: "#5b21b6",
-      accent: "#a78bfa",
+      primary: "#e85d04",  // flame orange
+      secondary: "#232323", // raisinblack
+      accent: "#f48c06",
       text: "#1f2937",
       background: "#ffffff",
       muted: "#6b7280",
     },
-    features: ["Creative design", "Bold colors", "Visual hierarchy", "Industry-appropriate"],
+    features: ["Colorful accents", "Bio section", "Multi-column skills", "Awards section"],
   },
   {
+    // LaTeX Template 3: Jitin Nair (Lines 338-556)
+    // Clean with fontawesome icons, jobshort/joblong, -- bullets
     id: "minimal",
-    name: "Minimalist ATS-Friendly",
-    description: "Ultra-clean black and white design optimized for ATS systems",
+    name: "Minimal Clean",
+    description: "Ultra-clean design with dash bullets and icon-style contact info",
     category: "minimal",
     requiresPhoto: false,
-    preview: "Minimal template preview",
+    preview: "Minimal clean template",
     colors: {
       primary: "#000000",
       secondary: "#333333",
-      accent: "#666666",
+      accent: "#0066cc",  // linkcolour
       text: "#000000",
       background: "#ffffff",
-      muted: "#888888",
+      muted: "#666666",
     },
-    features: ["ATS-optimized", "Black & white only", "Maximum readability", "Clean typography"],
+    features: ["Dash bullets", "Centered header", "Tabular layout", "Maximum readability"],
   },
   {
-    id: "executive",
-    name: "Executive Professional",
-    description: "Premium design for senior-level positions and leadership roles",
-    category: "executive",
+    // LaTeX Template 4: Anubhav Singh (Lines 557-739)
+    // Detailed resume subheadings, skills with alignment, projects section
+    id: "modern",
+    name: "Modern Developer",
+    description: "Detailed tech-focused layout with aligned skills and project highlights",
+    category: "modern",
     requiresPhoto: false,
-    isPremium: true,
-    preview: "Executive template preview",
-    colors: {
-      primary: "#059669",
-      secondary: "#047857",
-      accent: "#34d399",
-      text: "#1f2937",
-      background: "#ffffff",
-      muted: "#6b7280",
-    },
-    features: ["Executive styling", "Premium appearance", "Leadership-focused", "Sophisticated layout"],
-  },
-  {
-    id: "tech",
-    name: "Technology Professional",
-    description: "Clean, modern template optimized for technology professionals",
-    category: "tech",
-    requiresPhoto: false,
-    preview: "Tech template preview",
-    colors: {
-      primary: "#dc2626",
-      secondary: "#b91c1c",
-      accent: "#f87171",
-      text: "#1f2937",
-      background: "#ffffff",
-      muted: "#6b7280",
-    },
-    features: ["Tech-optimized", "Modern layout", "Skill-focused", "Industry-standard"],
-  },
-  {
-    id: "photo",
-    name: "Photo Professional",
-    description: "Elegant template that showcases your professional photo prominently",
-    category: "photo",
-    requiresPhoto: true,
-    isPremium: true,
-    preview: "Photo-focused template preview",
+    preview: "Modern developer template",
     colors: {
       primary: "#1f2937",
       secondary: "#374151",
       accent: "#3b82f6",
       text: "#111827",
-      background: "#f8fafc",
-      muted: "#64748b",
+      background: "#ffffff",
+      muted: "#6b7280",
     },
-    features: ["Photo-centric", "Professional showcase", "Personal branding", "Visual impact"],
+    features: ["Skills alignment", "Project descriptions", "Course listings", "Tech-focused"],
+  },
+  {
+    // LaTeX Template 5: LuxSleek (Lines 740-933)
+    // Two-column with dark navy sidebar, photo, FiraSans
+    id: "photo",
+    name: "LuxSleek Sidebar",
+    description: "Two-column layout with dark navy sidebar featuring profile and contact",
+    category: "photo",
+    requiresPhoto: true,
+    isPremium: true,
+    preview: "LuxSleek sidebar template",
+    colors: {
+      primary: "#304263",  // cvblue
+      secondary: "#1e3a5f",
+      accent: "#4a6fa5",
+      text: "#1f2937",
+      background: "#ffffff",
+      muted: "#6b7280",
+    },
+    features: ["Two-column", "Photo sidebar", "Dark accent", "Professional"],
   },
 ]

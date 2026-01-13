@@ -67,14 +67,17 @@ const ResumeAnalysis = dynamic(() => import("./resume-analysis"), {
 import { type ResumeAnalysis as ResumeAnalysisType } from "@/types/resume"
 import { SkillJobMatchAnalysis } from "@/components/resume/skill-job-match-analysis"
 
-const TemplateSelector = dynamic(() => import("./template-selector"), {
+const TemplateSelector = dynamic(() => import("./templates/selector/template-selector"), {
   ssr: false,
   loading: () => null
 })
-const ATSTemplateSelector = dynamic(() => import("./ats-template-selector"), {
+const ATSTemplateSelector = dynamic(() => import("./templates/selector/ats-template-selector"), {
   ssr: false,
   loading: () => null
 })
+
+import "easymde/dist/easymde.min.css"
+const SimpleMDE = dynamic(() => import("react-simplemde-editor"), { ssr: false })
 
 import { RESUME_TEMPLATES } from "../types/templates"
 
@@ -85,16 +88,16 @@ const exportResumePDF = async (...args: Parameters<typeof import("@/lib/ats-resu
 }
 
 import {
-  type ATSTemplateId
+  type ATSTemplateId,
+  mapLegacyTemplateId
 } from "@/lib/ats-resume-exporter"
 import {
   ClassicTemplate,
   ModernTemplate,
   CreativeTemplate,
   MinimalTemplate,
-  ExecutiveTemplate,
   PhotoTemplate,
-} from "./template-previews"
+} from "./templates/preview"
 import { useAuth } from "@/hooks/use-auth"
 import { useCredits } from "@/hooks/use-credits"
 import { ResumeService } from "@/lib/resume-service"
@@ -272,8 +275,14 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const [selectedTemplate, setSelectedTemplate] = useState("classic")
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
   const [showATSExporter, setShowATSExporter] = useState(false)
-  const [atsTemplateId, setATSTemplateId] = useState<ATSTemplateId>("ats-professional")
+  const [atsTemplateId, setATSTemplateId] = useState<ATSTemplateId>("ats-classic")
   const [profileImage, setProfileImage] = useState<string | null>(null)
+
+  // Sync ATS template with selected preview template
+  useEffect(() => {
+    const mappedId = mapLegacyTemplateId(selectedTemplate)
+    setATSTemplateId(mappedId)
+  }, [selectedTemplate])
 
   // Form fields
   const name = useFormField("")
@@ -562,7 +571,12 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ type, query, userId: user?.id }),
+        body: JSON.stringify({
+          type,
+          query,
+          userId: user?.id,
+          context: resumeData
+        }),
       })
 
       const data = await response.json()
@@ -1172,9 +1186,9 @@ function generateMockAIData(type: "summary" | "experience" | "project", query: s
   ]
 
   const experienceTemplates = [
-    "• Led cross-functional teams in {query} initiatives, resulting in improved efficiency and cost savings\n• Implemented best practices and modern methodologies to streamline processes\n• Collaborated with stakeholders to define requirements and deliver solutions\n• Mentored junior team members and conducted knowledge sharing sessions",
-    "• Developed and maintained {query} systems with focus on scalability and performance\n• Participated in code reviews and architectural decisions\n• Worked closely with product managers to translate business requirements into technical solutions\n• Contributed to documentation and process improvement initiatives",
-    "• Managed {query} projects from conception to deployment\n• Coordinated with multiple departments to ensure project success\n• Implemented quality assurance processes and testing strategies\n• Provided technical support and troubleshooting for production systems",
+    "- Led cross-functional teams in {query} initiatives, resulting in improved efficiency and cost savings\n- Implemented best practices and modern methodologies to streamline processes\n- Collaborated with stakeholders to define requirements and deliver solutions\n- Mentored junior team members and conducted knowledge sharing sessions",
+    "- Developed and maintained {query} systems with focus on scalability and performance\n- Participated in code reviews and architectural decisions\n- Worked closely with product managers to translate business requirements into technical solutions\n- Contributed to documentation and process improvement initiatives",
+    "- Managed {query} projects from conception to deployment\n- Coordinated with multiple departments to ensure project success\n- Implemented quality assurance processes and testing strategies\n- Provided technical support and troubleshooting for production systems",
   ]
 
   const projectTemplates = [
@@ -1242,6 +1256,23 @@ const FormField = ({
           placeholder={placeholder}
           className="min-h-[120px] resize-none"
         />
+      ) : type === "markdown" ? (
+        <div className="markdown-editor-wrapper">
+          <SimpleMDE
+            id={label.toLowerCase().replace(/\s+/g, "-")}
+            value={value}
+            onChange={(val) => {
+              onChange({ target: { value: val } } as any)
+            }}
+            options={{
+              spellChecker: false,
+              maxHeight: "300px",
+              placeholder: placeholder,
+              status: false,
+              toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "preview"]
+            }}
+          />
+        </div>
       ) : (
         <Input
           type={type}
@@ -1451,7 +1482,7 @@ const PersonalInfoStep = ({
     <FormField
       label="Professional Summary"
       {...summary}
-      type="textarea"
+      type="markdown"
       placeholder="Write a compelling summary that highlights your key achievements and career goals..."
       showAI={true}
       onAIClick={() => onAIGenerate("summary")}
@@ -1500,7 +1531,7 @@ const ExperienceStep = ({ experience, onAIGenerate, sensors, activeId, onDragSta
         {
           name: "responsibilities",
           label: "Key Responsibilities & Achievements",
-          type: "textarea",
+          type: "markdown",
           placeholder: "Describe your main responsibilities, achievements, and impact...",
           showAI: true,
         },
@@ -1607,7 +1638,7 @@ const ProjectsStep = ({ projects, onAIGenerate, sensors, activeId, onDragStart, 
         {
           name: "description",
           label: "Project Description",
-          type: "textarea",
+          type: "markdown",
           placeholder: "Describe the project, your role, and the impact it made...",
           showAI: true,
         },
@@ -1806,15 +1837,13 @@ const ResumePreview = ({ data, templateId = "classic" }: { data: ResumeData; tem
   const template = RESUME_TEMPLATES.find((t) => t.id === templateId) || RESUME_TEMPLATES[0]
 
   switch (templateId) {
-    case "modern":
-      return <ModernTemplate data={data} template={template} />
+    case "classic":
+      return <ClassicTemplate data={data} template={template} />
     case "creative":
       return <CreativeTemplate data={data} template={template} />
     case "minimal":
       return <MinimalTemplate data={data} template={template} />
-    case "executive":
-      return <ExecutiveTemplate data={data} template={template} />
-    case "tech":
+    case "modern":
       return <ModernTemplate data={data} template={template} />
     case "photo":
       return <PhotoTemplate data={data} template={template} />
