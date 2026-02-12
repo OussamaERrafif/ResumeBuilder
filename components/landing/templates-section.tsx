@@ -9,7 +9,7 @@ import { RESUME_TEMPLATES } from "@/app/types/templates"
 import { TemplatePreview } from "./template-preview"
 import { useRef } from "react"
 
-export function TemplatesCarousel() {
+export function TemplatesSection() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const scroll = (direction: 'left' | 'right') => {

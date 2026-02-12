@@ -32,7 +32,7 @@ const FeaturesSection = dynamic(
   { ssr: false, loading: () => <SectionSkeleton /> }
 )
 const TemplatesSection = dynamic(
-  () => import("@/components/landing/templates-section").then(mod => mod.TemplatesCarousel),
+  () => import("@/components/landing/templates-section").then(mod => mod.TemplatesSection),
   { ssr: false, loading: () => <SectionSkeleton /> }
 )
 const CommunitySection = dynamic(
