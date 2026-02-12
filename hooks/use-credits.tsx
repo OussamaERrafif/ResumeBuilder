@@ -2,10 +2,10 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react"
 import { useAuth } from "./use-auth"
-import { 
-  CreditsService, 
-  CreditBalance, 
-  AIFeature, 
+import {
+  CreditsService,
+  CreditBalance,
+  AIFeature,
   AI_FEATURE_COSTS,
   SUBSCRIPTION_TIERS,
   CREDIT_PACKAGES,
@@ -16,35 +16,35 @@ import {
 import { AICreditsUsage } from "@/lib/profile-service"
 
 // Timeout for credits initialization
-const CREDITS_INIT_TIMEOUT = 5000
+const CREDITS_INIT_TIMEOUT = 10000
 
 interface UseCreditsResult {
   // Balance and state
   balance: CreditBalance | null
   loading: boolean
   error: string | null
-  
+
   // Credit operations
   checkCredits: (feature: AIFeature) => Promise<{ allowed: boolean; required: number; current: number }>
   consumeCredits: (feature: AIFeature, description?: string) => Promise<{ success: boolean; error?: string }>
   refreshBalance: () => Promise<void>
-  
+
   // History and stats
   history: AICreditsUsage[]
   loadingHistory: boolean
   fetchHistory: () => Promise<void>
   monthlyStats: { totalUsed: number; byFeature: Record<string, number>; transactions: number } | null
   fetchMonthlyStats: () => Promise<void>
-  
+
   // Purchase helpers
   purchaseCredits: (packageId: string) => Promise<{ success: boolean; error?: string }>
   upgradeSubscription: (tier: SubscriptionTier) => Promise<{ success: boolean; error?: string }>
-  
+
   // Utilities
   getFeatureCost: (feature: AIFeature) => number
   getFeatureName: (feature: AIFeature) => string
   hasEnoughCredits: (feature: AIFeature) => boolean
-  
+
   // Constants for UI
   tiers: typeof SUBSCRIPTION_TIERS
   packages: typeof CREDIT_PACKAGES
@@ -127,7 +127,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     if (!user) {
       return { allowed: false, required: AI_FEATURE_COSTS[feature], current: 0 }
     }
-    
+
     const result = await CreditsService.checkCredits(user.id, feature)
     return {
       allowed: result.allowed,
@@ -143,7 +143,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }
 
     const result = await CreditsService.consumeCredits(user.id, feature, description)
-    
+
     if (result.success) {
       // Update local balance
       setBalance((prev) => prev ? { ...prev, current: result.newBalance } : null)
@@ -186,7 +186,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }
 
     const result = await PaymentService.createCreditPurchaseSession(user.id, packageId)
-    
+
     if (result.sessionUrl) {
       // Redirect to payment page
       window.location.href = result.sessionUrl
@@ -203,7 +203,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }
 
     const result = await PaymentService.createSubscriptionSession(user.id, tier)
-    
+
     if (result.sessionUrl) {
       window.location.href = result.sessionUrl
       return { success: true }
@@ -257,11 +257,11 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
 
 export function useCredits(): UseCreditsResult {
   const context = useContext(CreditsContext)
-  
+
   if (context === undefined) {
     throw new Error("useCredits must be used within a CreditsProvider")
   }
-  
+
   return context
 }
 
@@ -297,7 +297,7 @@ export function useAIFeature(feature: AIFeature) {
 
       // If successful, deduct credits
       const creditResult = await credits.consumeCredits(feature, description)
-      
+
       if (!creditResult.success) {
         // Action succeeded but credit deduction failed - log but don't fail
         console.warn("Credit deduction failed after successful AI action:", creditResult.error)

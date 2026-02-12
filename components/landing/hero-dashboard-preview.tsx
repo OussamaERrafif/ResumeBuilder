@@ -51,7 +51,7 @@ export function HeroDashboardPreview() {
                         Export PDF
                     </Button>
                     <Avatar className="w-8 h-8 border border-border">
-                        <AvatarImage src="/placeholder-user.jpg" />
+                        <AvatarImage src="https://github.com/shadcn.png" />
                         <AvatarFallback className="text-xs">JD</AvatarFallback>
                     </Avatar>
                 </div>

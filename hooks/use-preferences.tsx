@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { ProfileService, UserPreferences } from '@/lib/profile-service'
 
 // Timeout for preferences initialization
-const PREFERENCES_INIT_TIMEOUT = 5000
+const PREFERENCES_INIT_TIMEOUT = 10000
 
 interface PreferencesContextType {
   preferences: UserPreferences | null
@@ -39,7 +39,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     try {
       const data = await ProfileService.getUserPreferences(user.id)
       setPreferences(data)
-      
+
       // Apply theme immediately
       if (data?.theme) {
         applyTheme(data.theme)
@@ -53,9 +53,9 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
 
   const applyTheme = (theme: 'light' | 'dark' | 'system') => {
     if (typeof window === 'undefined') return
-    
+
     const root = document.documentElement
-    
+
     if (theme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
       root.setAttribute('data-theme', systemTheme)
@@ -126,13 +126,13 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   // Listen for system theme changes
   useEffect(() => {
     if (typeof window === 'undefined') return
-    
+
     if (preferences?.theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
       const handleChange = () => {
         applyTheme('system')
       }
-      
+
       mediaQuery.addEventListener('change', handleChange)
       return () => mediaQuery.removeEventListener('change', handleChange)
     }

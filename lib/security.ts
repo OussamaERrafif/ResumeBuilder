@@ -15,13 +15,13 @@ export function sanitizeHtml(html: string): string {
 
   // Remove script tags and their content
   html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-  
+
   // Remove dangerous attributes
   html = html.replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
   html = html.replace(/\sjavascript\s*:/gi, '') // Remove javascript: protocols
   html = html.replace(/\svbscript\s*:/gi, '') // Remove vbscript: protocols
   html = html.replace(/\sdata\s*:/gi, '') // Remove data: protocols
-  
+
   // Allow only basic formatting tags
   const allowedTags = /<\/?(?:p|br|strong|em|u|ul|ol|li|h[1-6]|span)(?:\s[^>]*)?>/i
   const cleanHtml = html.replace(/<[^>]+>/g, (match) => {
@@ -61,7 +61,7 @@ export function sanitizeEmail(email: string): string | null {
 
   const sanitized = email.toLowerCase().trim()
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  
+
   if (!emailRegex.test(sanitized)) {
     return null
   }
@@ -86,11 +86,11 @@ export function sanitizePhone(phone: string): string {
 
   // Remove all non-digit characters except + at the beginning
   const cleaned = phone.replace(/[^\d+]/g, '')
-  
+
   // Ensure + is only at the beginning
   const hasCountryCode = cleaned.startsWith('+')
   const digits = cleaned.replace(/\+/g, '')
-  
+
   // Validate length (international phone numbers are typically 7-15 digits)
   if (digits.length < 7 || digits.length > 15) {
     return ''
@@ -106,7 +106,7 @@ export function sanitizePhone(phone: string): string {
  * @returns Sanitized URL or null if invalid
  */
 export function sanitizeUrl(
-  url: string, 
+  url: string,
   allowedProtocols: string[] = ['http:', 'https:', 'mailto:']
 ): string | null {
   if (typeof url !== 'string') {
@@ -114,14 +114,14 @@ export function sanitizeUrl(
   }
 
   const trimmed = url.trim()
-  
+
   if (!trimmed) {
     return null
   }
 
   try {
     const parsed = new URL(trimmed)
-    
+
     if (!allowedProtocols.includes(parsed.protocol)) {
       return null
     }
@@ -172,7 +172,7 @@ export function generateSecureToken(length: number = 32): string {
     window.crypto.getRandomValues(array)
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
   }
-  
+
   // Use Web Crypto API (available in modern Node.js and browsers)
   if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.getRandomValues) {
     const array = new Uint8Array(length)
@@ -218,7 +218,7 @@ export function validateFile(file: File, options: FileValidationOptions = {}): F
   } = options
 
   const errors: string[] = []
-  
+
   // Sanitize filename
   const sanitizedName = file.name
     .replace(/[^a-zA-Z0-9.-_]/g, '_') // Replace unsafe characters
@@ -271,7 +271,7 @@ export class ClientRateLimit {
   constructor(
     private maxAttempts: number = 5,
     private windowMs: number = 15 * 60 * 1000 // 15 minutes
-  ) {}
+  ) { }
 
   checkLimit(key: string): { allowed: boolean; remaining: number; resetTime: number } {
     const now = Date.now()
@@ -303,11 +303,11 @@ export class ClientRateLimit {
 export const CSP_DIRECTIVES = {
   defaultSrc: ["'self'"],
   scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-  styleSrc: ["'self'", "'unsafe-inline'"],
-  imgSrc: ["'self'", "data:", "https:"],
-  fontSrc: ["'self'", "data:", "https:"],
-  connectSrc: ["'self'", "https://*.supabase.co", "https://api.openai.com", "https://generativelanguage.googleapis.com"],
-  frameSrc: ["'none'"],
+  styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://maxcdn.bootstrapcdn.com"],
+  imgSrc: ["'self'", "data:", "https:", "blob:"],
+  fontSrc: ["'self'", "data:", "https:", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://maxcdn.bootstrapcdn.com"],
+  connectSrc: ["'self'", "https://*.supabase.co", "https://api.openai.com", "https://generativelanguage.googleapis.com", "https://vercel.live", "https://*.vercel.app"],
+  frameSrc: ["'self'", "https://vercel.live"],
   objectSrc: ["'none'"],
   mediaSrc: ["'self'"],
   formAction: ["'self'"],
@@ -357,25 +357,25 @@ export const SECURITY_HEADERS = {
  */
 export class CSRFProtection {
   private static tokens = new Map<string, { token: string; expires: number }>()
-  
+
   static generateToken(sessionId: string): string {
     const token = generateSecureToken(32)
     const expires = Date.now() + (60 * 60 * 1000) // 1 hour
-    
+
     this.tokens.set(sessionId, { token, expires })
     return token
   }
-  
+
   static validateToken(sessionId: string, token: string): boolean {
     const stored = this.tokens.get(sessionId)
     if (!stored || stored.expires < Date.now()) {
       this.tokens.delete(sessionId)
       return false
     }
-    
+
     return stored.token === token
   }
-  
+
   static cleanupExpired(): void {
     const now = Date.now()
     const entries = Array.from(this.tokens.entries())
@@ -397,7 +397,7 @@ export class SessionSecurity {
     lastActivity: number
     isActive: boolean
   }>()
-  
+
   static createSession(sessionId: string, ip: string, userAgent: string): void {
     this.activeSessions.set(sessionId, {
       ip,
@@ -406,31 +406,31 @@ export class SessionSecurity {
       isActive: true
     })
   }
-  
+
   static validateSession(sessionId: string, ip: string, userAgent: string): boolean {
     const session = this.activeSessions.get(sessionId)
     if (!session || !session.isActive) {
       return false
     }
-    
+
     // Check for session hijacking
     if (session.ip !== ip || session.userAgent !== userAgent) {
       this.invalidateSession(sessionId)
       return false
     }
-    
+
     // Update last activity
     session.lastActivity = Date.now()
     return true
   }
-  
+
   static invalidateSession(sessionId: string): void {
     const session = this.activeSessions.get(sessionId)
     if (session) {
       session.isActive = false
     }
   }
-  
+
   static cleanupInactiveSessions(maxInactiveMs: number = 24 * 60 * 60 * 1000): void {
     const now = Date.now()
     const entries = Array.from(this.activeSessions.entries())
@@ -452,44 +452,44 @@ export class IPSecurity {
     lastAttempt: number
     violations: string[]
   }>()
-  
+
   static blockIP(ip: string, reason: string): void {
     this.blockedIPs.add(ip)
     console.warn(`[SECURITY] IP ${ip} blocked: ${reason}`)
   }
-  
+
   static unblockIP(ip: string): void {
     this.blockedIPs.delete(ip)
   }
-  
+
   static isBlocked(ip: string): boolean {
     return this.blockedIPs.has(ip)
   }
-  
+
   static reportSuspiciousActivity(ip: string, violation: string): void {
     const activity = this.suspiciousActivity.get(ip) || {
       count: 0,
       lastAttempt: 0,
       violations: []
     }
-    
+
     activity.count++
     activity.lastAttempt = Date.now()
     activity.violations.push(`${new Date().toISOString()}: ${violation}`)
-    
+
     // Keep only last 10 violations
     if (activity.violations.length > 10) {
       activity.violations = activity.violations.slice(-10)
     }
-    
+
     this.suspiciousActivity.set(ip, activity)
-    
+
     // Auto-block after 5 violations within 1 hour
     if (activity.count >= 5 && Date.now() - activity.lastAttempt < 60 * 60 * 1000) {
       this.blockIP(ip, `Multiple violations: ${violation}`)
     }
   }
-  
+
   static getSuspiciousActivity(ip: string) {
     return this.suspiciousActivity.get(ip)
   }
@@ -503,7 +503,7 @@ export class SecureValidator {
     if (jsonString.length > maxSize) {
       throw new Error('JSON payload too large')
     }
-    
+
     try {
       const parsed = JSON.parse(jsonString)
       return this.sanitizeObject(parsed)
@@ -511,20 +511,20 @@ export class SecureValidator {
       throw new Error('Invalid JSON format')
     }
   }
-  
+
   static sanitizeObject(obj: any, depth: number = 0): any {
     if (depth > 10) {
       throw new Error('Object depth too deep')
     }
-    
+
     if (obj === null || typeof obj !== 'object') {
       return obj
     }
-    
+
     if (Array.isArray(obj)) {
       return obj.map(item => this.sanitizeObject(item, depth + 1))
     }
-    
+
     const sanitized: any = {}
     for (const [key, value] of Object.entries(obj)) {
       // Sanitize key
@@ -533,18 +533,18 @@ export class SecureValidator {
         sanitized[cleanKey] = this.sanitizeObject(value, depth + 1)
       }
     }
-    
+
     return sanitized
   }
-  
+
   static validateFileUpload(file: File): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
-    
+
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       errors.push('File size exceeds 10MB limit')
     }
-    
+
     // Check file name for dangerous patterns
     const dangerousPatterns = [
       /\.\./,           // Directory traversal
@@ -555,14 +555,14 @@ export class SecureValidator {
       /\.cmd$/i,
       /\.sh$/i
     ]
-    
+
     for (const pattern of dangerousPatterns) {
       if (pattern.test(file.name)) {
         errors.push(`Filename contains dangerous patterns: ${file.name}`)
         break
       }
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors
@@ -582,7 +582,7 @@ export class SecurityAudit {
     details: string
     severity: 'low' | 'medium' | 'high' | 'critical'
   }> = []
-  
+
   static log(
     event: string,
     ip: string,
@@ -598,17 +598,17 @@ export class SecurityAudit {
       details,
       severity
     }
-    
+
     this.logs.push(logEntry)
-    
+
     // Keep only last 1000 logs in memory
     if (this.logs.length > 1000) {
       this.logs = this.logs.slice(-1000)
     }
-    
+
     // Log to console based on severity
     const message = `[${severity.toUpperCase()}] ${event} from ${ip}${userId ? ` (user: ${userId})` : ''} - ${details}`
-    
+
     switch (severity) {
       case 'critical':
         console.error(message)
@@ -624,15 +624,15 @@ export class SecurityAudit {
         break
     }
   }
-  
+
   static getLogs(limit: number = 100) {
     return this.logs.slice(-limit)
   }
-  
+
   static getLogsByIP(ip: string, limit: number = 50) {
     return this.logs.filter(log => log.ip === ip).slice(-limit)
   }
-  
+
   static getLogsBySeverity(severity: 'low' | 'medium' | 'high' | 'critical', limit: number = 100) {
     return this.logs.filter(log => log.severity === severity).slice(-limit)
   }

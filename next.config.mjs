@@ -19,6 +19,18 @@ const nextConfig = {
         port: '',
         pathname: '/widgets/embed-image/v1/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'github.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   serverExternalPackages: ['pdf-parse'],

@@ -18,7 +18,7 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Timeout for auth initialization to prevent endless loading
-const AUTH_INIT_TIMEOUT = 5000 // 5 seconds
+const AUTH_INIT_TIMEOUT = 10000 // 10 seconds
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes (only if Supabase is configured)
     let subscription: { unsubscribe: () => void } | null = null
-    
+
     if (isSupabaseConfigured) {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         setSession(session)
