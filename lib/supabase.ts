@@ -4,7 +4,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 // Check if we have valid Supabase credentials
-const hasValidCredentials: boolean = Boolean(supabaseUrl && supabaseAnonKey && 
+const hasValidCredentials: boolean = Boolean(supabaseUrl && supabaseAnonKey &&
   supabaseUrl.startsWith('https://') && supabaseAnonKey.length > 20)
 
 // Create a mock client for when credentials are missing (prevents crashes)
@@ -13,7 +13,7 @@ function createMockClient(): SupabaseClient {
     data: null,
     error: { message: 'Supabase not configured. Please check your environment variables.', status: 500 }
   }
-  
+
   return {
     auth: {
       getSession: async () => ({ data: { session: null }, error: null }),
@@ -23,7 +23,7 @@ function createMockClient(): SupabaseClient {
       signOut: async () => ({ error: null }),
       resetPasswordForEmail: async () => mockResponse,
       updateUser: async () => mockResponse,
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
     },
     from: () => ({
       select: () => ({ data: null, error: mockResponse.error, single: () => mockResponse, eq: () => ({ data: null, error: mockResponse.error, single: () => mockResponse, order: () => ({ data: null, error: mockResponse.error }) }) }),
@@ -43,14 +43,14 @@ function createMockClient(): SupabaseClient {
   } as unknown as SupabaseClient
 }
 
-export const supabase: SupabaseClient = hasValidCredentials 
+export const supabase: SupabaseClient = hasValidCredentials
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    })
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  })
   : createMockClient()
 
 // Export a flag to check if Supabase is properly configured
@@ -226,6 +226,41 @@ export interface Database {
           credits_used?: number
           description?: string | null
           created_at?: string
+        }
+      }
+      resume_analyses: {
+        Row: {
+          id: string
+          user_id: string
+          resume_id: string
+          analysis_type: 'full_analysis' | 'skill_job_match'
+          analysis_data: any
+          overall_score: number | null
+          is_fallback: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          resume_id: string
+          analysis_type?: 'full_analysis' | 'skill_job_match'
+          analysis_data: any
+          overall_score?: number | null
+          is_fallback?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          resume_id?: string
+          analysis_type?: 'full_analysis' | 'skill_job_match'
+          analysis_data?: any
+          overall_score?: number | null
+          is_fallback?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
     }

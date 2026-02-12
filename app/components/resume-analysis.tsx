@@ -23,9 +23,13 @@ import {
   FileSearch,
   Lightbulb,
   Award,
-  Users
+  Users,
+  Clock,
+  RefreshCw,
+  Save,
 } from "lucide-react"
 import { motion } from "framer-motion"
+import { toast } from "@/hooks/use-toast"
 
 interface AnalysisResult {
   overallScore: number
@@ -56,26 +60,93 @@ interface ResumeAnalysisProps {
   onClose: () => void
   resumeData: any
   userId?: string
+  resumeId?: string | null
 }
 
-export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: ResumeAnalysisProps) {
+export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId, resumeId }: ResumeAnalysisProps) {
   const { refreshBalance } = useCredits()
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isLoadingSaved, setIsLoadingSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isFallback, setIsFallback] = useState(false)
+  const [analyzedAt, setAnalyzedAt] = useState<string | null>(null)
+  const [isSaved, setIsSaved] = useState(false)
 
-  // Auto-trigger analysis when modal opens
+  // Load saved analysis when modal opens
   useEffect(() => {
     if (isOpen && !analysis && !isAnalyzing && !error) {
-      handleAnalyze()
+      loadSavedAnalysis()
     }
   }, [isOpen])
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setAnalysis(null)
+      setAnalyzedAt(null)
+      setIsSaved(false)
+      setError(null)
+      setIsFallback(false)
+    }
+  }, [isOpen])
+
+  const loadSavedAnalysis = async () => {
+    if (!resumeId || !userId) {
+      // No resume saved yet, can't load analysis
+      return
+    }
+
+    setIsLoadingSaved(true)
+    try {
+      const response = await fetch(
+        `/api/ai/analysis?resumeId=${resumeId}&userId=${userId}&type=full_analysis`
+      )
+      const data = await response.json()
+
+      if (data.success && data.hasAnalysis && data.analysis) {
+        setAnalysis(data.analysis)
+        setIsFallback(data.isFallback || false)
+        setAnalyzedAt(data.analyzedAt)
+        setIsSaved(true)
+      }
+      // If no saved analysis found, user will need to trigger one
+    } catch (err) {
+      // Silently fail — user can still trigger a new analysis
+      console.error("Failed to load saved analysis:", err)
+    } finally {
+      setIsLoadingSaved(false)
+    }
+  }
+
+  const saveAnalysisToDb = async (analysisResult: AnalysisResult, fallback: boolean) => {
+    if (!resumeId || !userId) return
+
+    try {
+      await fetch("/api/ai/analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resumeId,
+          userId,
+          analysisType: "full_analysis",
+          analysisData: analysisResult,
+          overallScore: analysisResult.overallScore,
+          isFallback: fallback,
+        }),
+      })
+      setIsSaved(true)
+      setAnalyzedAt(new Date().toISOString())
+    } catch (err) {
+      console.error("Failed to save analysis:", err)
+    }
+  }
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true)
     setError(null)
     setAnalysis(null)
+    setIsSaved(false)
 
     try {
       const response = await fetch('/api/ai/analyze', {
@@ -102,10 +173,18 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: 
         setAnalysis(data.analysis)
         setIsFallback(data.fallback || false)
 
+        // Save analysis to Supabase
+        await saveAnalysisToDb(data.analysis, data.fallback || false)
+
         // Refresh credit balance after successful analysis
         if (data.creditsRemaining !== undefined) {
           await refreshBalance()
         }
+
+        toast({
+          title: "Analysis Complete ✨",
+          description: "Your resume analysis has been saved.",
+        })
       } else {
         throw new Error(data.error || 'Analysis failed')
       }
@@ -128,6 +207,17 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: 
     return "destructive"
   }
 
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl bg-card border-border rounded-xl max-h-[80vh] overflow-y-auto">
@@ -140,18 +230,41 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: 
                 Template Mode
               </Badge>
             )}
+            {isSaved && (
+              <Badge variant="outline" className="ml-2 text-green-600 border-green-600">
+                <Save className="h-3 w-3 mr-1" />
+                Saved
+              </Badge>
+            )}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Get comprehensive feedback on your resume's effectiveness and improvement suggestions
+            {analyzedAt ? (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                Last analyzed: {formatDate(analyzedAt)}
+              </span>
+            ) : (
+              "Get comprehensive feedback on your resume's effectiveness and improvement suggestions"
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        {!analysis && !isAnalyzing && (
+        {/* Loading saved analysis */}
+        {isLoadingSaved && !analysis && (
+          <div className="text-center py-8">
+            <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-3 animate-spin" />
+            <p className="text-muted-foreground text-sm">Checking for saved analysis...</p>
+          </div>
+        )}
+
+        {/* No analysis yet */}
+        {!analysis && !isAnalyzing && !isLoadingSaved && !error && (
           <div className="text-center py-8">
             <FileSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-6">
-              Ready to analyze your resume? Get detailed insights about content quality,
-              ATS compatibility, and improvement suggestions.
+              {resumeId
+                ? "No saved analysis found. Run AI analysis to get detailed insights about content quality, ATS compatibility, and improvement suggestions."
+                : "Ready to analyze your resume? Get detailed insights about content quality, ATS compatibility, and improvement suggestions."}
             </p>
             <Button
               onClick={handleAnalyze}
@@ -160,6 +273,11 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: 
               <Sparkles className="mr-2 h-4 w-4" />
               Start AI Analysis
             </Button>
+            {!resumeId && (
+              <p className="text-xs text-muted-foreground mt-3">
+                💡 Save your resume first to persist analysis results.
+              </p>
+            )}
           </div>
         )}
 
@@ -384,7 +502,9 @@ export default function ResumeAnalysis({ isOpen, onClose, resumeData, userId }: 
               <Button
                 onClick={handleAnalyze}
                 variant="outline"
+                className="gap-2"
               >
+                <RefreshCw className="h-4 w-4" />
                 Re-analyze
               </Button>
               <Button

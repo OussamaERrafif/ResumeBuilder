@@ -2,19 +2,18 @@
 
 import dynamic from "next/dynamic"
 import { ScrollToTop } from "@/components/ui/scroll-to-top"
-import { EtherealShadow } from "@/components/ui/ethereal-shadow"
 import { HeroSection } from "@/components/landing/hero-section"
 
 // Section skeleton
 function SectionSkeleton() {
   return (
-    <section className="py-20">
+    <section className="py-24 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="space-y-8">
-          <div className="h-10 w-64 bg-muted rounded mx-auto animate-pulse" />
+          <div className="h-10 w-64 bg-muted/50 rounded mx-auto animate-pulse" />
           <div className="grid md:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-48 bg-muted rounded-xl animate-pulse" />
+              <div key={i} className="h-48 bg-muted/30 rounded-xl animate-pulse" />
             ))}
           </div>
         </div>
@@ -33,7 +32,7 @@ const FeaturesSection = dynamic(
   { ssr: false, loading: () => <SectionSkeleton /> }
 )
 const TemplatesSection = dynamic(
-  () => import("@/components/landing/templates-section").then(mod => mod.TemplatesSection),
+  () => import("@/components/landing/templates-section").then(mod => mod.TemplatesCarousel),
   { ssr: false, loading: () => <SectionSkeleton /> }
 )
 const CommunitySection = dynamic(
@@ -49,30 +48,27 @@ const CTASection = dynamic(
   { ssr: false, loading: () => <SectionSkeleton /> }
 )
 
-/**
- * Client-side landing page content
- * Hero section is statically imported for immediate LCP
- * Heavier downstream sections are code-split
- */
 export function LandingPageContent() {
   return (
-    <EtherealShadow
-      color="rgba(100, 50, 200, 0.6)"
-      animation={{ scale: 50, speed: 30 }}
-      noise={{ opacity: 0.3, scale: 2 }}
-      className="min-h-screen"
-    >
-      <HeroSection />
-      <ValuePropsSection />
-      <FeaturesSection />
-      <TemplatesSection />
-      <CommunitySection />
-      <PricingSection />
-      <CTASection />
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-primary/20">
+
+      {/* Global Background Gradient - Static CSS, highly performant */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" />
+        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-primary/5 to-transparent blur-3xl" />
+      </div>
+
+      <main className="relative z-10">
+        <HeroSection />
+        <ValuePropsSection />
+        <FeaturesSection />
+        <TemplatesSection />
+        <CommunitySection />
+        <PricingSection />
+        <CTASection />
+      </main>
 
       <ScrollToTop />
-    </EtherealShadow>
+    </div>
   )
 }
-
-

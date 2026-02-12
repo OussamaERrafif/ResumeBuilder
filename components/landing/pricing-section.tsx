@@ -69,8 +69,8 @@ export function PricingSection() {
           {PRICING_PLANS.map((plan, index) => (
             <div key={index} className="relative">
               <Card className={`h-full relative border-border transition-all duration-300 hover:shadow-lg ${plan.popular
-                  ? "ring-2 ring-primary shadow-xl shadow-primary/10 hover:shadow-primary/20"
-                  : "hover:border-primary/30"
+                ? "ring-2 ring-primary shadow-xl shadow-primary/10 hover:shadow-primary/20"
+                : "hover:border-primary/30"
                 }`}>
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
@@ -99,8 +99,8 @@ export function PricingSection() {
                   <Link href="/dashboard" className="block">
                     <Button
                       className={`w-full ${plan.popular
-                          ? "bg-primary hover:bg-primary/90 shadow-md"
-                          : ""
+                        ? "bg-primary hover:bg-primary/90 shadow-md"
+                        : ""
                         }`}
                       variant={plan.popular ? "default" : "outline"}
                       size="lg"

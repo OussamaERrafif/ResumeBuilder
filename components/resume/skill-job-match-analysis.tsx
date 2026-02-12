@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
     Radar,
@@ -9,14 +9,9 @@ import {
     PolarAngleAxis,
     PolarRadiusAxis,
     ResponsiveContainer,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
     Tooltip,
-    Cell
 } from "recharts"
-import { Lock, Sparkles, Target, Briefcase, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react"
+import { Lock, Sparkles, Target, Briefcase, TrendingUp, RefreshCw, Clock, Save } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,19 +20,76 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { ResumeData, ResumeAnalysis } from "@/types/resume"
 import { useCredits } from "@/hooks/use-credits"
+import { Loader2 } from "lucide-react"
 
 interface SkillJobMatchAnalysisProps {
     resumeData: ResumeData
     onAnalysisComplete: (analysis: ResumeAnalysis) => void
     userId?: string
+    resumeId?: string | null
 }
 
-export function SkillJobMatchAnalysis({ resumeData, onAnalysisComplete, userId }: SkillJobMatchAnalysisProps) {
+export function SkillJobMatchAnalysis({ resumeData, onAnalysisComplete, userId, resumeId }: SkillJobMatchAnalysisProps) {
     const [loading, setLoading] = useState(false)
+    const [isLoadingSaved, setIsLoadingSaved] = useState(false)
     const { toast } = useToast()
     const { balance, refreshBalance } = useCredits()
+    const [analyzedAt, setAnalyzedAt] = useState<string | null>(null)
+    const [isSaved, setIsSaved] = useState(false)
 
     const analysis = resumeData.analysis
+
+    // Load saved analysis on mount
+    useEffect(() => {
+        if (!analysis && resumeId && userId) {
+            loadSavedAnalysis()
+        }
+    }, [resumeId, userId])
+
+    const loadSavedAnalysis = async () => {
+        if (!resumeId || !userId) return
+
+        setIsLoadingSaved(true)
+        try {
+            const response = await fetch(
+                `/api/ai/analysis?resumeId=${resumeId}&userId=${userId}&type=skill_job_match`
+            )
+            const data = await response.json()
+
+            if (data.success && data.hasAnalysis && data.analysis) {
+                onAnalysisComplete(data.analysis)
+                setAnalyzedAt(data.analyzedAt)
+                setIsSaved(true)
+            }
+        } catch (err) {
+            console.error("Failed to load saved skill-job analysis:", err)
+        } finally {
+            setIsLoadingSaved(false)
+        }
+    }
+
+    const saveAnalysisToDb = async (analysisResult: ResumeAnalysis) => {
+        if (!resumeId || !userId) return
+
+        try {
+            await fetch("/api/ai/analysis", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    resumeId,
+                    userId,
+                    analysisType: "skill_job_match",
+                    analysisData: analysisResult,
+                    overallScore: null,
+                    isFallback: false,
+                }),
+            })
+            setIsSaved(true)
+            setAnalyzedAt(new Date().toISOString())
+        } catch (err) {
+            console.error("Failed to save skill-job analysis:", err)
+        }
+    }
 
     const handleUnlockAnalysis = async () => {
         if (!userId) {
@@ -48,16 +100,6 @@ export function SkillJobMatchAnalysis({ resumeData, onAnalysisComplete, userId }
             })
             return
         }
-
-        const COST = 10
-        // if (balance && balance.current < COST) {
-        //     toast({
-        //         title: "Insufficient Credits",
-        //         description: `You need ${COST} credits to unlock this analysis.`,
-        //         variant: "destructive"
-        //     })
-        //     return
-        // }
 
         setLoading(true)
         try {
@@ -77,9 +119,12 @@ export function SkillJobMatchAnalysis({ resumeData, onAnalysisComplete, userId }
             onAnalysisComplete(result)
             refreshBalance()
 
+            // Save to Supabase
+            await saveAnalysisToDb(result)
+
             toast({
-                title: "Analysis Complete",
-                description: "Your Resume Skill & Job Match Report is ready!",
+                title: "Analysis Complete ✨",
+                description: "Your Skill & Job Match Report is ready and saved!",
             })
         } catch (error) {
             console.error(error)
@@ -91,6 +136,29 @@ export function SkillJobMatchAnalysis({ resumeData, onAnalysisComplete, userId }
         } finally {
             setLoading(false)
         }
+    }
+
+    const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr)
+        return date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+    }
+
+    // --- Loading saved analysis ---
+    if (isLoadingSaved && !analysis) {
+        return (
+            <Card className="border border-border">
+                <CardContent className="p-8 text-center">
+                    <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-3 animate-spin" />
+                    <p className="text-muted-foreground text-sm">Loading saved analysis...</p>
+                </CardContent>
+            </Card>
+        )
     }
 
     // --- Render Locked State ---
@@ -125,6 +193,11 @@ export function SkillJobMatchAnalysis({ resumeData, onAnalysisComplete, userId }
                     <p className="text-xs text-muted-foreground mt-4">
                         Uses AI to analyze your skills and match you with suitable job roles.
                     </p>
+                    {!resumeId && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                            💡 Save your resume first to persist analysis results.
+                        </p>
+                    )}
                 </div>
 
                 {/* Placeholder UI behind blur */}
@@ -147,6 +220,36 @@ export function SkillJobMatchAnalysis({ resumeData, onAnalysisComplete, userId }
     // --- Render Unlocked Report ---
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* Status bar */}
+            {(isSaved || analyzedAt) && (
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        {isSaved && (
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                                <Save className="h-3 w-3 mr-1" />
+                                Saved
+                            </Badge>
+                        )}
+                        {analyzedAt && (
+                            <span className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" />
+                                Last analyzed: {formatDate(analyzedAt)}
+                            </span>
+                        )}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUnlockAnalysis}
+                        disabled={loading}
+                        className="gap-1"
+                    >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Re-analyze (3 Credits)
+                    </Button>
+                </div>
+            )}
 
             {/* Summary Card */}
             <Card className="bg-gradient-to-r from-primary/5 via-primary/10 to-transparent border-primary/20">

@@ -104,7 +104,7 @@ export const ATS_TEMPLATES: Record<ATSTemplateId, ATSTemplateConfig> = {
     name: 'Minimal Clean',
     description: 'Ultra-clean design with dash bullets and icon-style contact info (LaTeX Template 3)',
     category: 'minimal',
-    font: 'helvetica',
+    font: 'times',
     colors: {
       primary: '#000000',
       secondary: '#333333',
@@ -146,7 +146,7 @@ export const ATS_TEMPLATES: Record<ATSTemplateId, ATSTemplateConfig> = {
     name: 'Modern Developer',
     description: 'Detailed tech-focused layout with aligned skills and project highlights (LaTeX Template 4)',
     category: 'modern',
-    font: 'helvetica',
+    font: 'times',
     colors: {
       primary: '#1f2937',
       secondary: '#374151',
