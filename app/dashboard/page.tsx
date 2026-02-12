@@ -25,6 +25,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DashboardNav } from "@/components/dashboard-nav"
 import { useToast } from "@/hooks/use-toast"
+import { TutorialOverlay } from "@/components/tutorial/tutorial-overlay"
 
 import ProtectedRoute from "@/components/auth/protected-route"
 import { RESUME_TEMPLATES } from "../types/templates"
@@ -251,7 +252,7 @@ LoadingSkeleton.displayName = "LoadingSkeleton"
 
 // DASHBOARD COMPONENT
 export default function Dashboard() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading: authLoading } = useAuth()
   const { balance } = useCredits()
   const { toast } = useToast()
 
@@ -264,8 +265,76 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
 
   const [showUploadModal, setShowUploadModal] = useState(false)
+
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [duplicatingResume, setDuplicatingResume] = useState<SavedResume | null>(null)
+
+  // TUTORIAL STATE
+  const [showTutorial, setShowTutorial] = useState(false)
+
+  useEffect(() => {
+    if (authLoading || !user) return
+
+    // Check if user is redirected from onboarding
+    const params = new URLSearchParams(window.location.search)
+    const isNewUserParam = params.get('new') === 'true'
+
+    // Check local storage
+    const hasSeenTutorial = localStorage.getItem("apex_has_seen_tutorial")
+
+    // Check if user is recent (created within last 24 hours) - date is string in Supabase User
+    const isUserRecent = user.created_at
+      ? (Date.now() - new Date(user.created_at).getTime() < 24 * 60 * 60 * 1000)
+      : false
+
+    if (!hasSeenTutorial && (isNewUserParam || isUserRecent)) {
+      // Small delay to ensure everything is rendered
+      const timeout = setTimeout(() => {
+        setShowTutorial(true)
+      }, 1500)
+      return () => clearTimeout(timeout)
+    }
+  }, [user, authLoading])
+
+  const handleTutorialComplete = () => {
+    setShowTutorial(false)
+    localStorage.setItem("apex_has_seen_tutorial", "true")
+    toast({
+      title: "You're all set!",
+      description: "Start building your resume now.",
+    })
+    // Remove query param
+    const url = new URL(window.location.href)
+    url.searchParams.delete('new')
+    window.history.replaceState({}, '', url)
+  }
+
+  const tutorialSteps = useMemo(() => [
+    {
+      targetId: "create-resume-hero-btn",
+      title: "Start Building",
+      description: "Create a new resume from scratch using our professional templates. Choose from a variety of styles.",
+      position: "bottom" as const,
+    },
+    {
+      targetId: "upload-resume-hero-btn",
+      title: "Smart Import",
+      description: "Already have a resume? Upload it and let our AI analyze and improve it for you automatically.",
+      position: "bottom" as const,
+    },
+    {
+      targetId: "credits-info-card",
+      title: "AI Credits",
+      description: "Track your AI credits here. Use them to generate smart content, optimize your resume, and write cover letters.",
+      position: "left" as const,
+    },
+    {
+      targetId: "dashboard-search-input",
+      title: "Search & Manage",
+      description: "Quickly find your resumes. You can also duplicate, edit, or delete them from the grid below.",
+      position: "bottom" as const,
+    }
+  ], [])
 
   // Debounced search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -436,11 +505,11 @@ export default function Dashboard() {
               </p>
 
               <div className="flex flex-wrap justify-center gap-4">
-                <Button onClick={createNewResume} size="lg" className="px-8 py-3 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30">
+                <Button id="create-resume-hero-btn" onClick={createNewResume} size="lg" className="px-8 py-3 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30">
                   <Plus className="h-5 w-5 mr-2" />
                   Create New Resume
                 </Button>
-                <Button onClick={() => setShowUploadModal(true)} size="lg" variant="outline" className="px-8 py-3">
+                <Button id="upload-resume-hero-btn" onClick={() => setShowUploadModal(true)} size="lg" variant="outline" className="px-8 py-3">
                   <Upload className="h-5 w-5 mr-2" />
                   Upload & Analyze
                 </Button>
@@ -455,7 +524,7 @@ export default function Dashboard() {
                   className="mt-8"
                 >
                   <Link href="/profile">
-                    <div className="inline-flex items-center gap-4 px-6 py-3 bg-muted/50 hover:bg-muted rounded-xl border border-border transition-colors cursor-pointer">
+                    <div id="credits-info-card" className="inline-flex items-center gap-4 px-6 py-3 bg-muted/50 hover:bg-muted rounded-xl border border-border transition-colors cursor-pointer">
                       <div className="flex items-center gap-2">
                         <Sparkles className={`h-5 w-5 ${balance.current <= 5 ? 'text-destructive' : 'text-yellow-500'}`} />
                         <span className="text-lg font-semibold">{balance.current}</span>
@@ -496,7 +565,7 @@ export default function Dashboard() {
               className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10"
             >
               <div className="lg:col-span-3">
-                <div className="relative">
+                <div className="relative" id="dashboard-search-input">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     placeholder="Search your resumes..."
@@ -629,6 +698,14 @@ export default function Dashboard() {
               originalResumeName={duplicatingResume?.name || ""}
             />
           )}
+
+          <TutorialOverlay
+            isOpen={showTutorial}
+            onClose={() => setShowTutorial(false)}
+            onComplete={handleTutorialComplete}
+            onSkip={handleTutorialComplete}
+            steps={tutorialSteps}
+          />
         </div>
       </TooltipProvider>
     </ProtectedRoute>

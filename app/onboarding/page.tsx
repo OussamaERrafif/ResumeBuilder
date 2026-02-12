@@ -157,7 +157,7 @@ export default function OnboardingPage() {
           title: "Welcome aboard!",
           description: "Your profile has been set up successfully.",
         })
-        router.replace("/dashboard")
+        router.replace("/dashboard?new=true")
       } else {
         throw new Error("Failed to update profile")
       }
@@ -181,8 +181,14 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-      <Card className="w-full max-w-2xl border-none shadow-xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/5 blur-3xl animate-pulse delay-1000" />
+      </div>
+
+      <Card className="w-full max-w-2xl border-white/20 shadow-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl relative z-10">
         <CardHeader className="space-y-4">
           <div className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold">Welcome to ResumeBuilder</CardTitle>
@@ -201,8 +207,8 @@ export default function OnboardingPage() {
                     currentStep === step.id
                       ? "bg-primary text-primary-foreground"
                       : currentStep > step.id
-                      ? "bg-primary/20 text-primary"
-                      : "bg-muted text-muted-foreground"
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground"
                   )}
                 >
                   {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
@@ -210,8 +216,8 @@ export default function OnboardingPage() {
                 {index < STEPS.length - 1 && (
                   <div
                     className={cn(
-                      "w-12 h-0.5 mx-2 transition-colors duration-200",
-                      currentStep > step.id ? "bg-primary/50" : "bg-muted"
+                      "w-12 h-0.5 mx-2 transition-all duration-500 ease-in-out",
+                      currentStep > step.id ? "bg-primary w-20" : "bg-muted w-12"
                     )}
                   />
                 )}

@@ -43,6 +43,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useCredits } from "@/hooks/use-credits"
 import { CoverLetterService, type CoverLetter } from "@/lib/cover-letter-service"
 import { ResumeService } from "@/lib/resume-service"
+import { TutorialOverlay } from "@/components/tutorial/tutorial-overlay"
 
 interface SavedResume {
   id: string
@@ -77,6 +78,60 @@ export default function CoverLettersPage() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingCoverLetter, setEditingCoverLetter] = useState<CoverLetter | null>(null)
+
+  // TUTORIAL STATE
+  const [showCLTutorial, setShowCLTutorial] = useState(false)
+
+  useEffect(() => {
+    const hasSeenCLTutorial = localStorage.getItem("apex_has_seen_cl_tutorial")
+    if (!hasSeenCLTutorial) {
+      const timeout = setTimeout(() => {
+        setShowCLTutorial(true)
+      }, 1200)
+      return () => clearTimeout(timeout)
+    }
+  }, [])
+
+  const handleCLTutorialComplete = useCallback(() => {
+    setShowCLTutorial(false)
+    localStorage.setItem("apex_has_seen_cl_tutorial", "true")
+  }, [])
+
+  const clTutorialSteps = useMemo(() => [
+    {
+      targetId: "cl-create-btn",
+      title: "Create Cover Letter",
+      description: "Start crafting a new AI-generated cover letter tailored to a specific job posting.",
+      position: "bottom" as const,
+    },
+    {
+      targetId: "cl-search-input",
+      title: "Search & Filter",
+      description: "Find your saved cover letters by name, company, or job title.",
+      position: "bottom" as const,
+    },
+  ], [])
+
+  const clFormTutorialSteps = useMemo(() => [
+    {
+      targetId: "cl-job-info-card",
+      title: "Job Details",
+      description: "Fill in the job title, company name, and paste the job description. Select one of your resumes to base the letter on.",
+      position: "right" as const,
+    },
+    {
+      targetId: "cl-generate-btn",
+      title: "AI Generation",
+      description: "Click here to have AI generate a tailored cover letter. This costs 5 credits per generation.",
+      position: "top" as const,
+    },
+    {
+      targetId: "cl-preview-card",
+      title: "Preview & Edit",
+      description: "Review and edit your generated cover letter. When you're happy, save it for later.",
+      position: "left" as const,
+    },
+  ], [])
 
   // Form data
   const [formData, setFormData] = useState<CoverLetterFormData>({
@@ -491,7 +546,7 @@ export default function CoverLettersPage() {
               </Badge>
             </div>
           )}
-          <Button onClick={startCreateNew} size="lg">
+          <Button id="cl-create-btn" onClick={startCreateNew} size="lg">
             <Plus className="mr-2 h-5 w-5" />
             Create Cover Letter
           </Button>
@@ -500,7 +555,7 @@ export default function CoverLettersPage() {
 
       {/* Search and Stats */}
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1 relative">
+        <div id="cl-search-input" className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search cover letters by name, company, or job title..."
@@ -691,7 +746,7 @@ export default function CoverLettersPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Form Section */}
         <div className="space-y-6">
-          <Card>
+          <Card id="cl-job-info-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
@@ -795,6 +850,7 @@ export default function CoverLettersPage() {
               </div>
 
               <Button
+                id="cl-generate-btn"
                 onClick={generateCoverLetter}
                 disabled={!formData.jobDescription || !formData.resumeId || generating}
                 className="w-full"
@@ -859,7 +915,7 @@ export default function CoverLettersPage() {
 
         {/* Preview Section */}
         <div className="space-y-6">
-          <Card className="h-fit">
+          <Card id="cl-preview-card" className="h-fit">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -935,6 +991,26 @@ export default function CoverLettersPage() {
           )}
 
           {currentView === "list" ? renderListView() : renderFormView()}
+
+          {/* Tutorials */}
+          {currentView === "list" && (
+            <TutorialOverlay
+              isOpen={showCLTutorial}
+              onClose={() => setShowCLTutorial(false)}
+              onComplete={handleCLTutorialComplete}
+              onSkip={handleCLTutorialComplete}
+              steps={clTutorialSteps}
+            />
+          )}
+          {(currentView === "create" || currentView === "edit") && (
+            <TutorialOverlay
+              isOpen={showCLTutorial}
+              onClose={() => setShowCLTutorial(false)}
+              onComplete={handleCLTutorialComplete}
+              onSkip={handleCLTutorialComplete}
+              steps={clFormTutorialSteps}
+            />
+          )}
         </div>
       </div>
     </ProtectedRoute>

@@ -110,6 +110,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { TutorialOverlay } from "@/components/tutorial/tutorial-overlay"
 
 // Types (same as before)
 interface PersonalInfo {
@@ -285,6 +286,58 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const [atsTemplateId, setATSTemplateId] = useState<ATSTemplateId>("ats-classic")
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [currentResumeId, setCurrentResumeId] = useState<string | null>(editingResumeId)
+
+  // TUTORIAL STATE
+  const [showBuilderTutorial, setShowBuilderTutorial] = useState(false)
+
+  // Initialize tutorial on mount if not seen
+  useEffect(() => {
+    const hasSeenBuilderTutorial = localStorage.getItem("apex_has_seen_builder_tutorial")
+    if (!hasSeenBuilderTutorial) {
+      const timeout = setTimeout(() => {
+        setShowBuilderTutorial(true)
+      }, 1000)
+      return () => clearTimeout(timeout)
+    }
+  }, [])
+
+  const handleTutorialComplete = () => {
+    setShowBuilderTutorial(false)
+    localStorage.setItem("apex_has_seen_builder_tutorial", "true")
+  }
+
+  const builderTutorialSteps = useMemo(() => [
+    {
+      targetId: "builder-sections-sidebar",
+      title: "Navigation",
+      description: "Navigate through different sections of your resume like Experience, Education, and Skills.",
+      position: "right" as const,
+    },
+    {
+      targetId: "builder-preview-panel",
+      title: "Live Preview",
+      description: "See your changes in real-time. Zoom in/out or expand to full screen.",
+      position: "left" as const,
+    },
+    {
+      targetId: "builder-ai-analysis-btn",
+      title: "AI Analysis",
+      description: "Get instant feedback and optimization suggestions from our AI.",
+      position: "bottom" as const,
+    },
+    {
+      targetId: "builder-template-btn",
+      title: "Change Template",
+      description: "Switch between different professional templates anytime.",
+      position: "bottom" as const,
+    },
+    {
+      targetId: "builder-export-btn",
+      title: "Export PDF",
+      description: "Download your ATS-friendly resume when you're ready.",
+      position: "bottom" as const,
+    }
+  ], [])
 
   // Preview State
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false)
@@ -833,6 +886,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
               )}
 
               <Button
+                id="builder-ai-analysis-btn"
                 onClick={() => {
                   setShowAnalysis(true)
                 }}
@@ -843,7 +897,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 AI Analysis
               </Button>
 
-              <Button onClick={() => setShowTemplateSelector(true)} variant="outline" size="sm">
+              <Button id="builder-template-btn" onClick={() => setShowTemplateSelector(true)} variant="outline" size="sm">
                 <Palette className="h-4 w-4 mr-2" />
                 Preview Template
               </Button>
@@ -853,7 +907,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 {isAutoSaving ? 'Saving...' : 'Save Now'}
               </Button>
 
-              <Button onClick={() => setShowATSExporter(true)} size="sm" className="bg-primary hover:bg-primary/90">
+              <Button id="builder-export-btn" onClick={() => setShowATSExporter(true)} size="sm" className="bg-primary hover:bg-primary/90">
                 <Download className="h-4 w-4 mr-2" />
                 Export ATS PDF
               </Button>
@@ -872,7 +926,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
           {/* Main Navigation Sidebar */}
 
-          <aside className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-24 space-y-4">
+          <aside id="builder-sections-sidebar" className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-24 space-y-4">
 
             <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
 
@@ -1461,12 +1515,22 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 transform: `scale(${expandedPreviewScale})`,
                 marginBottom: `calc(${expandedPreviewScale * 50}vh)` // Extra scroll space
               }}
+              id="builder-preview-panel"
             >
               <ResumePreview data={resumeData} templateId={selectedTemplate} />
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tutorials */}
+      <TutorialOverlay
+        isOpen={showBuilderTutorial}
+        onClose={() => setShowBuilderTutorial(false)}
+        onComplete={handleTutorialComplete}
+        onSkip={handleTutorialComplete}
+        steps={builderTutorialSteps}
+      />
     </div>
   )
 }
