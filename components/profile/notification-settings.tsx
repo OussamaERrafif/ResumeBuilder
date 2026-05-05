@@ -5,7 +5,7 @@ import { Bell, Mail, Shield, Zap } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { NotificationSettings as NotificationSettingsType } from "@/lib/profile-service"
+import { NotificationSettings as NotificationSettingsType } from "@/lib/services/profile"
 
 interface NotificationSettingsProps {
   notifications: NotificationSettingsType

@@ -15,7 +15,7 @@ import {
 import { Sparkles, Loader2, AlertCircle } from "lucide-react"
 import { useCredits } from "@/hooks/use-credits"
 import { CreditCostBadge, CreditPurchaseModal } from "@/components/credits"
-import { AIFeature, AI_FEATURE_COSTS } from "@/lib/credits-service"
+import { AIFeature, AI_FEATURE_COSTS } from "@/lib/services/credits"
 
 // Map modal types to AI features
 const TYPE_TO_FEATURE: Record<string, AIFeature> = {

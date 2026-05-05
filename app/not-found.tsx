@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, Home, ArrowLeft, Search } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/theme/toggle"
 
 export default function NotFound() {
   return (

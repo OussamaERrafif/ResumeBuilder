@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getHealthStatus, requestTracker, metrics, logger } from '@/lib/monitoring'
-import { getCacheStats } from '@/lib/cache'
-import { requestLimiter, apiLimiter, aiLimiter } from '@/lib/rate-limiter'
+import { getHealthStatus, requestTracker, metrics, logger } from '@/lib/utils/monitoring'
+import { getCacheStats } from '@/lib/utils/cache'
+import { requestLimiter, apiLimiter, aiLimiter } from '@/lib/security/rate-limiter'
 import { aiRequestQueue, aiCircuitBreaker } from '@/lib/request-queue'
 
 export const dynamic = 'force-dynamic'

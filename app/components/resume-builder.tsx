@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/theme/toggle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   FileText,
@@ -30,6 +30,7 @@ import {
   ZoomOut,
   RotateCcw,
   Coins,
+  Maximize2,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -79,18 +80,18 @@ const ATSTemplateSelector = dynamic(() => import("./templates/selector/ats-templ
 import "easymde/dist/easymde.min.css"
 const SimpleMDE = dynamic(() => import("react-simplemde-editor"), { ssr: false })
 
-import { RESUME_TEMPLATES } from "../types/templates"
+import { RESUME_TEMPLATES } from '@/types/templates'
 
 // Lazy load PDF export (heavy jspdf library) - only imported when downloading
-const exportResumePDF = async (...args: Parameters<typeof import("@/lib/ats-resume-exporter").exportResumePDF>) => {
-  const { exportResumePDF: exportFn } = await import("@/lib/ats-resume-exporter")
+const exportResumePDF = async (...args: Parameters<typeof import("@/lib/exporters").exportResumePDF>) => {
+  const { exportResumePDF: exportFn } = await import("@/lib/exporters")
   return exportFn(...args)
 }
 
 import {
   type ATSTemplateId,
   mapLegacyTemplateId
-} from "@/lib/ats-resume-exporter"
+} from "@/lib/exporters"
 import {
   ClassicTemplate,
   ModernTemplate,
@@ -100,9 +101,16 @@ import {
 } from "./templates/preview"
 import { useAuth } from "@/hooks/use-auth"
 import { useCredits } from "@/hooks/use-credits"
-import { ResumeService } from "@/lib/resume-service"
-import { FileUpload } from "@/components/ui/file-upload"
+import { ResumeService } from "@/lib/services/resume"
+import { FileUpload } from "@/components/shared/file-upload"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { TutorialOverlay } from "@/components/tutorial/tutorial-overlay"
 
 // Types (same as before)
 interface PersonalInfo {
@@ -277,6 +285,64 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
   const [showATSExporter, setShowATSExporter] = useState(false)
   const [atsTemplateId, setATSTemplateId] = useState<ATSTemplateId>("ats-classic")
   const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [currentResumeId, setCurrentResumeId] = useState<string | null>(editingResumeId)
+
+  // TUTORIAL STATE
+  const [showBuilderTutorial, setShowBuilderTutorial] = useState(false)
+
+  // Initialize tutorial on mount if not seen
+  useEffect(() => {
+    const hasSeenBuilderTutorial = localStorage.getItem("apex_has_seen_builder_tutorial")
+    if (!hasSeenBuilderTutorial) {
+      const timeout = setTimeout(() => {
+        setShowBuilderTutorial(true)
+      }, 1000)
+      return () => clearTimeout(timeout)
+    }
+  }, [])
+
+  const handleTutorialComplete = () => {
+    setShowBuilderTutorial(false)
+    localStorage.setItem("apex_has_seen_builder_tutorial", "true")
+  }
+
+  const builderTutorialSteps = useMemo(() => [
+    {
+      targetId: "builder-sections-sidebar",
+      title: "Navigation",
+      description: "Navigate through different sections of your resume like Experience, Education, and Skills.",
+      position: "right" as const,
+    },
+    {
+      targetId: "builder-preview-panel",
+      title: "Live Preview",
+      description: "See your changes in real-time. Zoom in/out or expand to full screen.",
+      position: "left" as const,
+    },
+    {
+      targetId: "builder-ai-analysis-btn",
+      title: "AI Analysis",
+      description: "Get instant feedback and optimization suggestions from our AI.",
+      position: "bottom" as const,
+    },
+    {
+      targetId: "builder-template-btn",
+      title: "Change Template",
+      description: "Switch between different professional templates anytime.",
+      position: "bottom" as const,
+    },
+    {
+      targetId: "builder-export-btn",
+      title: "Export PDF",
+      description: "Download your ATS-friendly resume when you're ready.",
+      position: "bottom" as const,
+    }
+  ], [])
+
+  // Preview State
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false)
+  const [previewScale, setPreviewScale] = useState(0.65)
+  const [expandedPreviewScale, setExpandedPreviewScale] = useState(0.8)
 
   // Sync ATS template with selected preview template
   useEffect(() => {
@@ -446,7 +512,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
       }
     } else {
       // Create new resume
-      const { error } = await ResumeService.createResume({
+      const { data, error } = await ResumeService.createResume({
         user_id: user.id,
         name: resumeName,
         template_id: selectedTemplate,
@@ -455,6 +521,9 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
 
       if (error) {
         setSaveError("Failed to create resume")
+      } else if (data?.id) {
+        // Track the new resume ID so analysis can be saved
+        setCurrentResumeId(data.id)
       }
     }
   }, [
@@ -817,6 +886,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
               )}
 
               <Button
+                id="builder-ai-analysis-btn"
                 onClick={() => {
                   setShowAnalysis(true)
                 }}
@@ -827,7 +897,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 AI Analysis
               </Button>
 
-              <Button onClick={() => setShowTemplateSelector(true)} variant="outline" size="sm">
+              <Button id="builder-template-btn" onClick={() => setShowTemplateSelector(true)} variant="outline" size="sm">
                 <Palette className="h-4 w-4 mr-2" />
                 Preview Template
               </Button>
@@ -837,7 +907,7 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
                 {isAutoSaving ? 'Saving...' : 'Save Now'}
               </Button>
 
-              <Button onClick={() => setShowATSExporter(true)} size="sm" className="bg-primary hover:bg-primary/90">
+              <Button id="builder-export-btn" onClick={() => setShowATSExporter(true)} size="sm" className="bg-primary hover:bg-primary/90">
                 <Download className="h-4 w-4 mr-2" />
                 Export ATS PDF
               </Button>
@@ -850,268 +920,497 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Section Navigation */}
-        <div className="mb-8">
-          <Card className="border border-border">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">Resume Sections</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-8">
+
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+
+          {/* Main Navigation Sidebar */}
+
+          <aside id="builder-sections-sidebar" className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-24 space-y-4">
+
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+
+              <div className="p-4 border-b border-border bg-muted/30">
+
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-2">
+
+                  Editor Sections
+
+                </h3>
+
+              </div>
+
+              <div className="p-2 space-y-1">
+
                 {SECTIONS.map((section) => {
+
                   const Icon = section.icon
+
                   const isActive = section.id === currentSection
 
+
+
                   return (
-                    <Button
+
+                    <button
+
                       key={section.id}
+
                       onClick={() => setCurrentSection(section.id)}
-                      variant={isActive ? "default" : "outline"}
-                      className={`flex flex-col items-center space-y-2 p-4 h-auto ${isActive ? "" : "bg-transparent"}`}
+
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all group ${isActive
+
+                        ? "bg-primary text-primary-foreground shadow-md"
+
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+
+                        }`}
+
                     >
-                      <Icon className="h-5 w-5" />
-                      <span className="text-xs font-medium text-center">{section.title}</span>
-                    </Button>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Error Alert */}
-        <AnimatePresence>
-          {saveError && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-8"
-            >
-              <Alert variant="destructive">
-                <AlertDescription>{saveError}</AlertDescription>
-              </Alert>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                      <div className={`p-1.5 rounded-lg transition-colors ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background"
 
-        {/* Photo Required Warning */}
-        {isPhotoRequired && !profileImage && (
-          <Alert className="mb-8 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
-            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-              ⚠️ This template requires a profile photo. Please upload one in the Personal Info section.
-            </AlertDescription>
-          </Alert>
-        )}
+                        }`}>
 
-        {/* Form Content */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Form Section */}
-          <Card className="border border-border">
-            <CardHeader className="border-b border-border">
-              <CardTitle className="flex items-center space-x-3 text-foreground">
-                {React.createElement(SECTIONS.find((s) => s.id === currentSection)?.icon || User, {
-                  className: "h-6 w-6",
-                })}
-                <span>{SECTIONS.find((s) => s.id === currentSection)?.title}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSection}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {currentSection === "personal" && (
-                    <PersonalInfoStep
-                      name={name}
-                      title={title}
-                      email={email}
-                      phone={phone}
-                      location={location}
-                      summary={summary}
-                      links={links}
-                      onAIGenerate={openAIModal}
-                      profileImage={profileImage}
-                      onProfileImageChange={handleProfileImageChange}
-                      isPhotoRequired={isPhotoRequired}
-                    />
-                  )}
-                  {currentSection === "experience" && (
-                    <ExperienceStep
-                      experience={experience}
-                      onAIGenerate={openAIModal}
-                      sensors={sensors}
-                      activeId={activeId}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                    />
-                  )}
-                  {currentSection === "education" && (
-                    <EducationStep
-                      education={education}
-                      sensors={sensors}
-                      activeId={activeId}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                    />
-                  )}
-                  {currentSection === "skills" && <SkillsStep skills={skills} />}
-                  {currentSection === "projects" && (
-                    <ProjectsStep
-                      projects={projects}
-                      onAIGenerate={openAIModal}
-                      sensors={sensors}
-                      activeId={activeId}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                    />
-                  )}
-                  {currentSection === "additional" && (
-                    <AdditionalStep
-                      certifications={certifications}
-                      references={references}
-                      sensors={sensors}
-                      activeId={activeId}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                    />
-                  )}
-                  {currentSection === "analysis" && (
-                    <div className="space-y-6">
-                      <div className="text-center mb-8">
-                        <h3 className="text-xl font-semibold text-foreground mb-2">Skill Visualizer & Job Match</h3>
-                        <p className="text-muted-foreground">Analyze your skills and see how you match with top job roles</p>
+                        <Icon className="h-4 w-4" />
+
                       </div>
-                      <SkillJobMatchAnalysis
-                        resumeData={resumeData}
-                        onAnalysisComplete={(newAnalysis: ResumeAnalysisType) => {
-                          setAnalysis(newAnalysis)
-                          setTimeout(() => saveResume(), 100)
-                        }}
-                        userId={user?.id}
-                      />
-                    </div>
-                  )}
-                  {currentSection === "review" && (
-                    <ReviewStep
-                      data={resumeData}
-                      onDownload={handleDownload}
-                      onAnalysisComplete={(newAnalysis: ResumeAnalysisType) => {
-                        setAnalysis(newAnalysis)
-                        setTimeout(() => saveResume(), 100)
-                      }}
-                      userId={user?.id}
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </CardContent>
-          </Card>
 
-          {/* Preview Section - Enhanced */}
-          <div className="xl:sticky xl:top-8 xl:self-start">
-            <Card className="border border-border rounded-2xl overflow-hidden shadow-lg">
-              <CardHeader className="border-b border-border bg-muted/30 py-3">
-                <CardTitle className="flex items-center justify-between text-foreground">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Eye className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <span className="font-semibold text-base">Live Preview</span>
-                      <p className="text-xs text-muted-foreground font-normal">Real-time updates</p>
-                    </div>
-                  </div>
+                      <div className="flex flex-col items-start overflow-hidden">
+
+                        <span className="text-sm font-semibold truncate w-full">
+
+                          {section.title}
+
+                        </span>
+
+                        <span className={`text-[10px] truncate w-full ${isActive ? "text-primary-foreground/70" : "text-muted-foreground/60"
+
+                          }`}>
+
+                          {section.description}
+
+                        </span>
+
+                      </div>
+
+                    </button>
+
+                  )
+
+                })}
+
+              </div>
+
+
+
+              <div className="p-4 border-t border-border bg-muted/10">
+
+                <div className="flex items-center justify-between mb-3">
+
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs font-medium">Live</span>
-                    </div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {/* Preview Controls */}
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-background/50">
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
-                      onClick={() => {
-                        const container = document.getElementById('resume-preview-container');
-                        if (container) {
-                          const currentScale = parseFloat(container.style.transform?.replace('scale(', '').replace(')', '') || '1');
-                          container.style.transform = `scale(${Math.max(0.5, currentScale - 0.1)})`;
-                          container.style.transformOrigin = 'top center';
-                        }
-                      }}
-                    >
-                      <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
-                      onClick={() => {
-                        const container = document.getElementById('resume-preview-container');
-                        if (container) {
-                          const currentScale = parseFloat(container.style.transform?.replace('scale(', '').replace(')', '') || '1');
-                          container.style.transform = `scale(${Math.min(1.5, currentScale + 0.1)})`;
-                          container.style.transformOrigin = 'top center';
-                        }
-                      }}
-                    >
-                      <ZoomIn className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 rounded-lg hover:bg-muted"
-                      onClick={() => {
-                        const container = document.getElementById('resume-preview-container');
-                        if (container) {
-                          container.style.transform = 'scale(1)';
-                        }
-                      }}
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Template:</span>
-                    <span className="text-xs font-medium text-foreground bg-muted px-2 py-0.5 rounded-md">
-                      {RESUME_TEMPLATES.find(t => t.id === selectedTemplate)?.name || 'Classic'}
+
+                    <div className={`w-2 h-2 rounded-full ${isAutoSaving ? "bg-blue-500 animate-pulse" : "bg-emerald-500"}`}></div>
+
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+
+                      {isAutoSaving ? "Saving..." : "Synced"}
+
                     </span>
+
                   </div>
+
+                  {lastSaved && (
+
+                    <span className="text-[10px] text-muted-foreground/50">
+
+                      {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+                    </span>
+
+                  )}
+
                 </div>
 
-                {/* Resume Preview Container */}
-                <div className="relative bg-gradient-to-b from-muted/50 to-muted/30 max-h-[calc(100vh-200px)] overflow-auto">
-                  {/* Paper container */}
-                  <div className="relative p-6">
-                    {/* Decorative paper shadow effect */}
-                    <div className="absolute inset-6 pointer-events-none">
-                      <div className="absolute inset-0 bg-black/5 dark:bg-black/20 rounded-lg blur-xl transform translate-y-2"></div>
+                <div className="w-full bg-muted rounded-full h-1">
+
+                  <div
+
+                    className="bg-primary h-1 rounded-full transition-all duration-500"
+
+                    style={{ width: `${((SECTIONS.findIndex(s => s.id === currentSection) + 1) / SECTIONS.length) * 100}%` }}
+
+                  ></div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+
+            {/* Support Actions */}
+
+            <div className="hidden lg:grid grid-cols-2 gap-3">
+
+              <Button
+
+                variant="outline"
+
+                size="sm"
+
+                className="rounded-xl h-10 border-border bg-card hover:bg-muted text-xs font-medium"
+
+                onClick={() => setShowAnalysis(true)}
+
+              >
+
+                <Sparkles className="h-3 w-3 mr-1.5 text-primary" />
+
+                Analyze
+
+              </Button>
+
+              <Button
+
+                variant="outline"
+
+                size="sm"
+
+                className="rounded-xl h-10 border-border bg-card hover:bg-muted text-xs font-medium"
+
+                onClick={() => setShowTemplateSelector(true)}
+
+              >
+
+                <Palette className="h-3 w-3 mr-1.5 text-primary" />
+
+                Style
+
+              </Button>
+
+            </div>
+
+          </aside>
+
+
+
+          {/* Workspace Content */}
+
+          <main className="flex-1 min-w-0 w-full">
+
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+              {/* Form Area */}
+
+              <div className="xl:col-span-7 space-y-6">
+
+                <Card className="border border-border rounded-2xl shadow-sm overflow-hidden">
+
+                  <div className="bg-muted/30 px-8 py-6 border-b border-border flex items-center justify-between">
+
+                    <div className="flex items-center gap-4">
+
+                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+
+                        {React.createElement(SECTIONS.find((s) => s.id === currentSection)?.icon || User, {
+
+                          className: "h-6 w-6 text-primary",
+
+                        })}
+
+                      </div>
+
+                      <div>
+
+                        <h2 className="text-xl font-bold text-foreground">
+
+                          {SECTIONS.find((s) => s.id === currentSection)?.title}
+
+                        </h2>
+
+                        <p className="text-sm text-muted-foreground">
+
+                          {SECTIONS.find((s) => s.id === currentSection)?.description}
+
+                        </p>
+
+                      </div>
+
                     </div>
+
+                  </div>
+
+                  <div className="p-8">
+
+                    <AnimatePresence mode="wait">
+
+                      <motion.div
+
+                        key={currentSection}
+
+                        initial={{ opacity: 0, y: 10 }}
+
+                        animate={{ opacity: 1, y: 0 }}
+
+                        exit={{ opacity: 0, y: -10 }}
+
+                        transition={{ duration: 0.2 }}
+
+                      >
+
+                        {currentSection === "personal" && (
+
+                          <PersonalInfoStep
+
+                            name={name}
+
+                            title={title}
+
+                            email={email}
+
+                            phone={phone}
+
+                            location={location}
+
+                            summary={summary}
+
+                            links={links}
+
+                            onAIGenerate={openAIModal}
+
+                            profileImage={profileImage}
+
+                            onProfileImageChange={handleProfileImageChange}
+
+                            isPhotoRequired={isPhotoRequired}
+
+                          />
+
+                        )}
+
+                        {currentSection === "experience" && (
+
+                          <ExperienceStep
+
+                            experience={experience}
+
+                            onAIGenerate={openAIModal}
+
+                            sensors={sensors}
+
+                            activeId={activeId}
+
+                            onDragStart={handleDragStart}
+
+                            onDragEnd={handleDragEnd}
+
+                          />
+
+                        )}
+
+                        {currentSection === "education" && (
+
+                          <EducationStep
+
+                            education={education}
+
+                            sensors={sensors}
+
+                            activeId={activeId}
+
+                            onDragStart={handleDragStart}
+
+                            onDragEnd={handleDragEnd}
+
+                          />
+
+                        )}
+
+                        {currentSection === "skills" && <SkillsStep skills={skills} />}
+
+                        {currentSection === "projects" && (
+
+                          <ProjectsStep
+
+                            projects={projects}
+
+                            onAIGenerate={openAIModal}
+
+                            sensors={sensors}
+
+                            activeId={activeId}
+
+                            onDragStart={handleDragStart}
+
+                            onDragEnd={handleDragEnd}
+
+                          />
+
+                        )}
+
+                        {currentSection === "additional" && (
+
+                          <AdditionalStep
+
+                            certifications={certifications}
+
+                            references={references}
+
+                            sensors={sensors}
+
+                            activeId={activeId}
+
+                            onDragStart={handleDragStart}
+
+                            onDragEnd={handleDragEnd}
+
+                          />
+
+                        )}
+
+                        {currentSection === "analysis" && (
+
+                          <div className="space-y-6">
+
+                            <SkillJobMatchAnalysis
+                              resumeData={resumeData}
+                              onAnalysisComplete={(newAnalysis: ResumeAnalysisType) => {
+                                setAnalysis(newAnalysis)
+                                setTimeout(() => saveResume(), 100)
+                              }}
+                              userId={user?.id}
+                              resumeId={currentResumeId}
+                            />
+
+                          </div>
+
+                        )}
+
+                        {currentSection === "review" && (
+
+                          <ReviewStep
+
+                            data={resumeData}
+
+                            onDownload={handleDownload}
+
+                            onAnalysisComplete={(newAnalysis: ResumeAnalysisType) => {
+
+                              setAnalysis(newAnalysis)
+
+                              setTimeout(() => saveResume(), 100)
+
+                            }}
+
+                            userId={user?.id}
+
+                            resumeId={currentResumeId}
+
+                          />
+
+                        )}
+
+                      </motion.div>
+
+                    </AnimatePresence>
+
+                  </div>
+
+                </Card>
+
+              </div>
+
+
+
+              {/* Live Preview Area */}
+
+              <div className="xl:col-span-5 xl:sticky xl:top-24">
+
+                <Card className="border border-border rounded-2xl overflow-hidden shadow-xl bg-card">
+
+                  <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center justify-between">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+
+                        <Eye className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+
+                      </div>
+
+                      <span className="font-bold text-sm">Live Preview</span>
+
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg"
+                        onClick={() => setPreviewScale(Math.max(0.4, previewScale - 0.1))}
+                      >
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg"
+                        onClick={() => setPreviewScale(Math.min(1.2, previewScale + 0.1))}
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg"
+                        onClick={() => setIsPreviewExpanded(true)}
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+
+                      <div className="h-4 w-[1px] bg-border mx-1"></div>
+
+                      <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                        {RESUME_TEMPLATES.find(t => t.id === selectedTemplate)?.name || 'Classic'}
+                      </span>
+                    </div>
+
+                  </div>
+
+
+
+                  <div className="bg-[#f8f9fa] dark:bg-[#0f1115] overflow-auto max-h-[calc(100vh-200px)] p-8">
 
                     <div
                       id="resume-preview-container"
-                      className="relative bg-white rounded-lg shadow-2xl shadow-primary/10 dark:shadow-black/50 transition-transform duration-200 ring-1 ring-black/5 dark:ring-white/10"
-                      style={{ transformOrigin: 'top center' }}
+                      className="mx-auto origin-top transition-transform duration-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-white"
+                      style={{
+                        width: '210mm',
+                        minHeight: '297mm',
+                        transform: `scale(${previewScale})`,
+                        marginBottom: `-${(1 - previewScale) * 100}%`
+                      }}
                     >
-                      <div className="p-6">
+                      <div className="p-0 h-full">
                         <ResumePreview data={resumeData} templateId={selectedTemplate} />
                       </div>
                     </div>
+
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+
+                </Card>
+
+              </div>
+
+            </div>
+
+          </main>
+
         </div>
 
       </div>
@@ -1172,6 +1471,65 @@ export default function ResumeBuilder({ onBack, editingResumeId }: ResumeBuilder
         }}
         resumeData={resumeData}
         userId={user?.id}
+        resumeId={currentResumeId}
+      />
+
+      {/* Expanded Preview Modal */}
+      <Dialog open={isPreviewExpanded} onOpenChange={setIsPreviewExpanded}>
+        <DialogContent className="max-w-[95vw] w-full h-[95vh] p-0 gap-0 bg-secondary/20 backdrop-blur-sm border-none overflow-hidden flex flex-col">
+          <div className="p-4 bg-background border-b flex items-center justify-between shadow-sm z-10">
+            <div className="flex items-center gap-3">
+              <Eye className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Full Screen Preview</h3>
+            </div>
+
+            <div className="flex items-center gap-2 mr-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExpandedPreviewScale(Math.max(0.4, expandedPreviewScale - 0.1))}
+                className="h-8 w-8 p-0"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="text-xs font-mono w-12 text-center">
+                {Math.round(expandedPreviewScale * 100)}%
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExpandedPreviewScale(Math.min(1.5, expandedPreviewScale + 0.1))}
+                className="h-8 w-8 p-0"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-auto p-8 bg-zinc-100 dark:bg-zinc-900 flex justify-center items-start">
+            <div
+              className="bg-white shadow-2xl transition-transform duration-200 origin-top"
+              style={{
+                width: '210mm',
+                minHeight: '297mm',
+                transform: `scale(${expandedPreviewScale})`,
+                marginBottom: `calc(${expandedPreviewScale * 50}vh)` // Extra scroll space
+              }}
+              id="builder-preview-panel"
+            >
+              <ResumePreview data={resumeData} templateId={selectedTemplate} />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tutorials */}
+      <TutorialOverlay
+        isOpen={showBuilderTutorial}
+        onClose={() => setShowBuilderTutorial(false)}
+        onComplete={handleTutorialComplete}
+        onSkip={handleTutorialComplete}
+        steps={builderTutorialSteps}
       />
     </div>
   )
@@ -1723,12 +2081,14 @@ const ReviewStep = ({
   data,
   onDownload,
   onAnalysisComplete,
-  userId
+  userId,
+  resumeId
 }: {
   data: ResumeData;
   onDownload: () => void;
   onAnalysisComplete: (analysis: ResumeAnalysisType) => void;
   userId?: string;
+  resumeId?: string | null;
 }) => {
   const [showAnalysis, setShowAnalysis] = useState(false)
 
@@ -1828,6 +2188,7 @@ const ReviewStep = ({
         onClose={() => setShowAnalysis(false)}
         resumeData={data}
         userId={userId}
+        resumeId={resumeId}
       />
     </div>
   )

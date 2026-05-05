@@ -7,7 +7,7 @@ import { PreferencesProvider } from "@/hooks/use-preferences"
 import { CreditsProvider } from "@/hooks/use-credits"
 import { ProfileProvider } from "@/hooks/use-profile"
 import { Toaster } from "@/components/ui/toaster"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/theme/provider"
 import { StructuredData } from "@/components/seo/structured-data"
 import { generateOrganizationSchema, generateWebApplicationSchema, generateSoftwareApplicationSchema } from "@/lib/structured-data"
 

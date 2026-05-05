@@ -2,7 +2,7 @@
 
 import { FileText, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/theme/toggle"
 
 export default function Loading() {
   return (

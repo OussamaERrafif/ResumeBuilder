@@ -5,8 +5,8 @@ import { Globe, Palette, Clock, Coins } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { UserPreferences } from "@/lib/profile-service"
-import { formatDate, formatTime, formatCurrency } from "@/lib/format-utils"
+import { UserPreferences } from "@/lib/services/profile"
+import { formatDate, formatTime, formatCurrency } from "@/lib/utils/format"
 
 interface PreferenceSettingsProps {
   preferences: UserPreferences

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { CreditsService, AI_FEATURE_COSTS, AIFeature } from '@/lib/credits-service'
+import { CreditsService, AI_FEATURE_COSTS, AIFeature } from '@/lib/services/credits'
 
 // Create admin client for server-side operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

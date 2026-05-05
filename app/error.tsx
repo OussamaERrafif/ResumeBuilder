@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, RefreshCcw, Home, AlertTriangle } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/theme/toggle"
 import Link from "next/link"
 
 export default function Error({

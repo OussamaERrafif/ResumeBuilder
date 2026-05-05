@@ -1,8 +1,8 @@
 // Test file to demonstrate timezone-aware date formatting improvements
 // This can be run in the browser console to test the differences
 
-import { formatDate, formatDateTime, formatRelativeTime } from '../lib/format-utils'
-import { UserPreferences } from '../lib/profile-service'
+import { formatDate, formatDateTime, formatRelativeTime } from '@/lib/utils/format'
+import { UserPreferences } from '@/lib/services/profile'
 
 export function demonstrateDateFormattingFixes() {
   console.log('=== Date Formatting Improvements Demo ===\n')

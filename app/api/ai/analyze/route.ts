@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Gemini (commented out - using OpenAI instead)
 // import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
-import { CreditsService, AIFeature } from '@/lib/credits-service'
+import { CreditsService, AIFeature } from '@/lib/services/credits'
 
 interface PersonalInfo {
   name: string

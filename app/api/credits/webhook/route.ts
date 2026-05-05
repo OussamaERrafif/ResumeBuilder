@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PaymentService } from '@/lib/credits-service'
+import { PaymentService } from '@/lib/services/credits'
 
 /**
  * POST /api/credits/webhook

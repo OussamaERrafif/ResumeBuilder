@@ -21,7 +21,7 @@ export const FEATURES = [
     icon: Palette,
     title: "Professional Templates",
     description:
-      "Choose from 6 beautifully designed templates, each optimized for different industries and career levels.",
+      "Choose from 5 beautifully designed templates, each optimized for different industries and career levels.",
   },
   {
     icon: Zap,
@@ -69,25 +69,25 @@ export const COMMUNITY_FEATURES = [
 ]
 
 export const VALUE_PROPS = [
-  { 
-    icon: "🎯", 
-    title: "Free Forever Plan", 
-    description: "Start building professional resumes at no cost. No credit card required, no hidden fees." 
+  {
+    icon: "🎯",
+    title: "Free Forever Plan",
+    description: "Start building professional resumes at no cost. No credit card required, no hidden fees."
   },
-  { 
-    icon: "⚡", 
-    title: "7-Day Pro Trial", 
-    description: "Experience all premium features risk-free. Cancel anytime, no questions asked." 
+  {
+    icon: "⚡",
+    title: "7-Day Pro Trial",
+    description: "Experience all premium features risk-free. Cancel anytime, no questions asked."
   },
-  { 
-    icon: "🌟", 
-    title: "Open Source", 
-    description: "Transparent development, community-driven improvements, and complete code visibility on GitHub." 
+  {
+    icon: "🌟",
+    title: "Open Source",
+    description: "Transparent development, community-driven improvements, and complete code visibility on GitHub."
   },
-  { 
-    icon: "🚀", 
-    title: "ATS-Optimized", 
-    description: "All templates designed to pass applicant tracking systems used by 95% of Fortune 500 companies." 
+  {
+    icon: "🚀",
+    title: "ATS-Optimized",
+    description: "All templates designed to pass applicant tracking systems used by 95% of Fortune 500 companies."
   },
 ]
 

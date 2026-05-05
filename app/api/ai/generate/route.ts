@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 // Gemini (commented out - using OpenAI instead)
 // import { GoogleGenerativeAI } from '@google/generative-ai'
-import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
-import { aiCache, getAICacheKey } from '@/lib/cache'
+import { callAIChatCompletion, isAIConfigured } from '@/lib/ai/client'
+import { aiCache, getAICacheKey } from '@/lib/utils/cache'
 import { aiRequestQueue, aiCircuitBreaker, requestDeduplicator } from '@/lib/request-queue'
-import { aiLimiter, getClientIP, createRateLimitResponse, addRateLimitHeaders } from '@/lib/rate-limiter'
-import { metrics, logger, requestTracker, generateRequestId } from '@/lib/monitoring'
-import { CreditsService, AIFeature } from '@/lib/credits-service'
+import { aiLimiter, getClientIP, createRateLimitResponse, addRateLimitHeaders } from '@/lib/security/rate-limiter'
+import { metrics, logger, requestTracker, generateRequestId } from '@/lib/utils/monitoring'
+import { CreditsService, AIFeature } from '@/lib/services/credits'
 
 // Supabase client for auth verification
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -282,10 +282,8 @@ export async function POST(request: NextRequest) {
     }
     requestTracker.recordCacheHit(requestId, false)
 
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
+    if (!isAIConfigured()) {
       const fallbackContent = getFallbackContent(type, query)
-      // Don't cache fallback for context-heavy requests as they might be unique
       if (!context) {
         aiCache.set(cacheKey, fallbackContent, 60 * 60 * 1000)
       }
@@ -298,34 +296,26 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Use request deduplication and queue for AI requests
       const content = await requestDeduplicator.execute(cacheKey, async () => {
         return await aiRequestQueue.enqueue(async () => {
           return await aiCircuitBreaker.execute(async () => {
-            const timingId = metrics.startTiming('openai_request')
+            const timingId = metrics.startTiming('ai_request')
 
             try {
-              const openai = new OpenAI({ apiKey })
               const prompt = AI_PROMPTS[type as keyof typeof AI_PROMPTS](query, context)
-
-              const completion = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [
+              const result = await callAIChatCompletion(
+                [
                   {
                     role: 'system',
                     content: 'You are a professional resume writer. Generate clear, concise, and ATS-friendly content. Do not use markdown formatting.'
                   },
-                  {
-                    role: 'user',
-                    content: prompt
-                  }
+                  { role: 'user', content: prompt }
                 ],
-                max_tokens: 500,
-                temperature: 0.7,
-              })
+                { max_tokens: 500, temperature: 0.7 }
+              )
 
               metrics.endTiming(timingId, { status: 'success', type })
-              return completion.choices[0]?.message?.content || ''
+              return result || ''
             } catch (error) {
               metrics.endTiming(timingId, { status: 'error', type })
               throw error

@@ -37,7 +37,7 @@ import {
     type ATSTemplateId,
     type ATSTemplateConfig,
     type ResumeData
-} from '@/lib/ats-resume-exporter'
+} from '@/lib/exporters'
 import { toast } from '@/hooks/use-toast'
 
 // ============================================================================
@@ -84,9 +84,12 @@ function TemplateCard({ template, isSelected, onClick }: TemplateCardProps) {
                 </div>
             )}
 
-            {/* Template preview */}
-            <div className="mb-3 rounded-lg bg-white p-3 shadow-sm border">
-                <TemplatePreview template={template} />
+            {/* Template preview — paper on desk */}
+            <div className="mb-3 rounded-lg bg-slate-100 dark:bg-slate-800/60 p-2 overflow-hidden">
+                <div className="relative rounded-md overflow-hidden shadow-[0_3px_12px_rgba(0,0,0,0.13)] ring-1 ring-black/[0.06] bg-white">
+                    <TemplatePreview template={template} />
+                    <div className="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-white/90 to-transparent pointer-events-none" />
+                </div>
             </div>
 
             {/* Template info */}
@@ -123,84 +126,111 @@ function TemplateCard({ template, isSelected, onClick }: TemplateCardProps) {
 
 function TemplatePreview({ template }: { template: ATSTemplateConfig }) {
     const { colors, features, fonts } = template
+    const ff = template.font === 'times' ? 'serif' : 'sans-serif'
+
+    // Photo/sidebar template gets a two-column layout
+    if (template.id === 'ats-photo') {
+        return (
+            <div className="flex" style={{ fontFamily: ff, minHeight: 120 }}>
+                {/* Sidebar */}
+                <div className="w-[33%] p-2 flex-shrink-0" style={{ backgroundColor: colors.primary }}>
+                    <div className="w-8 h-8 rounded-full bg-white/20 mx-auto mb-1.5" />
+                    <div style={{ fontSize: '6px', fontWeight: 'bold', color: '#fff', textAlign: 'center' }}>
+                        John Doe
+                    </div>
+                    <div style={{ fontSize: '5px', color: 'rgba(255,255,255,0.7)', textAlign: 'center' }} className="mb-2">
+                        Engineer
+                    </div>
+                    <div className="border-t border-white/20 mb-1" />
+                    <div style={{ fontSize: '5px', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>CONTACT</div>
+                    <div style={{ fontSize: '4.5px', color: 'rgba(255,255,255,0.6)' }} className="mt-0.5 space-y-0.5">
+                        <div>email@example.com</div>
+                        <div>(555) 123-4567</div>
+                    </div>
+                    <div className="border-t border-white/20 mt-1.5 mb-1" />
+                    <div style={{ fontSize: '5px', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>SKILLS</div>
+                    {['JavaScript', 'React', 'Node.js'].map(s => (
+                        <div key={s} style={{ fontSize: '4.5px', color: 'rgba(255,255,255,0.6)' }}>◆ {s}</div>
+                    ))}
+                </div>
+                {/* Main */}
+                <div className="w-[67%] p-2 bg-white">
+                    <SectionHeader colors={colors} features={features}>EXPERIENCE</SectionHeader>
+                    <div style={{ fontSize: '5.5px', fontWeight: 'bold', color: colors.text }}>Senior Developer</div>
+                    <div style={{ fontSize: '4.5px', color: colors.muted }}>Tech Corp · 2020–Present</div>
+                    <div style={{ fontSize: '4.5px', color: colors.text }} className="mt-0.5">• Led development team of 5</div>
+                    <div className="mt-1.5">
+                        <SectionHeader colors={colors} features={features}>EDUCATION</SectionHeader>
+                        <div style={{ fontSize: '5.5px', fontWeight: 'bold', color: colors.text }}>B.S. Computer Science</div>
+                        <div style={{ fontSize: '4.5px', color: colors.muted }}>State University · 2020</div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div
-            className="text-[6px] leading-tight"
-            style={{
-                fontFamily: template.font === 'times' ? 'serif' : 'sans-serif',
-                color: colors.text
-            }}
+            className="p-2.5 leading-tight"
+            style={{ fontFamily: ff, color: colors.text, fontSize: '6px' }}
         >
             {/* Header */}
             <div className={features.centeredHeader ? 'text-center' : ''}>
-                <div
-                    style={{
-                        fontSize: '10px',
-                        fontWeight: fonts.name.weight,
-                        color: colors.primary
-                    }}
-                >
-                    John Doe
+                <div style={{ fontSize: '11px', fontWeight: fonts.name.weight, color: colors.primary }}>
+                    {features.centeredHeader ? 'JOHN DOE' : 'John Doe'}
                 </div>
-                <div style={{ fontSize: '7px', color: colors.secondary }}>
-                    Software Engineer
-                </div>
+                <div style={{ fontSize: '7px', color: colors.secondary }}>Software Engineer</div>
                 <div style={{ fontSize: '5px', color: colors.muted }} className="mt-0.5">
-                    email@example.com • (555) 123-4567
+                    email@example.com • (555) 123-4567 • San Francisco, CA
                 </div>
             </div>
 
             {features.showLines && (
-                <div
-                    className="my-1.5 border-t"
-                    style={{ borderColor: colors.accent }}
-                />
+                <div className="my-1.5 border-t" style={{ borderColor: colors.primary }} />
             )}
 
-            {/* Experience section */}
-            <div className="mt-1.5">
-                <div
-                    style={{
-                        fontWeight: 'bold',
-                        color: colors.primary,
-                        fontSize: '7px'
-                    }}
-                >
-                    EXPERIENCE
-                </div>
-                {features.showLines && (
-                    <div
-                        className="mb-1 border-t"
-                        style={{ borderColor: colors.accent, width: '40%' }}
-                    />
-                )}
-                <div className="ml-0">
-                    <div style={{ fontWeight: 'bold', fontSize: '6px' }}>Senior Developer</div>
-                    <div style={{ color: colors.muted, fontSize: '5px' }}>Tech Corp • 2020-Present</div>
-                    {features.showBullets ? (
-                        <div style={{ fontSize: '5px' }}>• Led development team...</div>
-                    ) : (
-                        <div style={{ fontSize: '5px' }}>Led development team...</div>
-                    )}
+            {/* Experience */}
+            <div className="mt-1">
+                <SectionHeader colors={colors} features={features}>EXPERIENCE</SectionHeader>
+                <div style={{ fontSize: '6px', fontWeight: 'bold' }}>Senior Developer</div>
+                <div style={{ fontSize: '5px', color: colors.muted }}>Tech Corp • 2020–Present</div>
+                <div style={{ fontSize: '5px' }} className="mt-0.5">
+                    {features.showBullets ? '• ' : '– '}Led development team and delivered key features.
                 </div>
             </div>
 
-            {/* Skills section */}
+            {/* Skills */}
             <div className="mt-1.5">
-                <div
-                    style={{
-                        fontWeight: 'bold',
-                        color: colors.primary,
-                        fontSize: '7px'
-                    }}
-                >
-                    SKILLS
-                </div>
-                <div style={{ fontSize: '5px', color: colors.muted }}>
-                    JavaScript, React, Node.js, Python
-                </div>
+                <SectionHeader colors={colors} features={features}>SKILLS</SectionHeader>
+                <div style={{ fontSize: '5px', color: colors.muted }}>JavaScript, React, Node.js, Python, Docker</div>
             </div>
+
+            {/* Education */}
+            <div className="mt-1.5">
+                <SectionHeader colors={colors} features={features}>EDUCATION</SectionHeader>
+                <div style={{ fontSize: '6px', fontWeight: 'bold' }}>B.S. Computer Science</div>
+                <div style={{ fontSize: '5px', color: colors.muted }}>State University • 2020</div>
+            </div>
+        </div>
+    )
+}
+
+// Shared section header used in both layouts
+function SectionHeader({
+    colors,
+    features,
+    children,
+}: {
+    colors: ATSTemplateConfig['colors']
+    features: ATSTemplateConfig['features']
+    children: React.ReactNode
+}) {
+    return (
+        <div className="mb-0.5">
+            <div style={{ fontSize: '7px', fontWeight: 'bold', color: colors.primary }}>{children}</div>
+            {features.showLines && (
+                <div className="border-t mb-0.5" style={{ borderColor: colors.primary }} />
+            )}
         </div>
     )
 }

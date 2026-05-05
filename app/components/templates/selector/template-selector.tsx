@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Check, Palette, Eye, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { RESUME_TEMPLATES } from "@/app/types/templates"
+import { RESUME_TEMPLATES } from "@/types/templates"
 import { TemplatePreview } from "../preview"
 
 interface TemplateSelectorProps {
@@ -179,19 +179,20 @@ export default function TemplateSelector({ selectedTemplate, onTemplateSelect, o
                                     >
                                         {/* Template Preview */}
                                         <div className="relative">
-                                            <div
-                                                className="w-full h-52 overflow-hidden bg-gradient-to-b from-muted/50 to-muted/30 p-3"
-                                            >
-                                                {/* Paper effect container */}
+                                            <div className="w-full h-64 overflow-hidden bg-slate-100 dark:bg-slate-800/60 p-3">
+                                                {/* Paper on desk */}
                                                 <div className="relative h-full w-full">
-                                                    <div className="absolute inset-0 bg-black/5 rounded-lg blur-md transform translate-y-1"></div>
+                                                    {/* Drop shadow behind paper */}
+                                                    <div className="absolute inset-0 bg-black/10 rounded-lg blur-[6px] translate-y-1" />
                                                     <div
-                                                        className="relative h-full w-full rounded-lg overflow-hidden bg-white shadow-sm ring-1 ring-black/5"
-                                                        style={{ backgroundColor: template.colors.background }}
+                                                        className="relative h-full w-full rounded-lg overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.14)] ring-1 ring-black/[0.06]"
+                                                        style={{ backgroundColor: template.colors.background || '#ffffff' }}
                                                     >
                                                         <div className="transform scale-[0.35] origin-top-left w-[286%] h-[286%]">
                                                             <TemplatePreview template={template} data={mockResumeData} />
                                                         </div>
+                                                        {/* Bottom fade to indicate more content */}
+                                                        <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white/90 to-transparent pointer-events-none" />
                                                     </div>
                                                 </div>
                                             </div>
