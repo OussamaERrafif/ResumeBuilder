@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { AICreditsUsage, UserProfile } from "@/lib/profile-service"
-import { formatDate } from "@/lib/format-utils"
-import { UserPreferences } from "@/lib/profile-service"
+import { AICreditsUsage, UserProfile } from "@/lib/services/profile"
+import { formatDate } from "@/lib/utils/format"
+import { UserPreferences } from "@/lib/services/profile"
 
 interface BillingSettingsProps {
   profile: UserProfile

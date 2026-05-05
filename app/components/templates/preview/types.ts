@@ -1,6 +1,6 @@
 "use client"
 
-import type { Template } from "@/app/types/templates"
+import type { Template } from "@/types/templates"
 
 export interface ResumeData {
     personalInfo: {

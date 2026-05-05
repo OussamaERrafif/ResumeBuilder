@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { UserProfile, ProfileService } from "@/lib/profile-service"
+import { UserProfile, ProfileService } from "@/lib/services/profile"
 import { useAuth } from "./use-auth"
 
 interface ProfileContextType {

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(sed -i \"s|'../app/types/templates'|'@/types/templates'|g\" lib/exporters/legacy-exact-html.ts lib/exporters/legacy-html-pdf.ts lib/exporters/legacy-pdf.ts)",
+      "Bash(sed -i \"s|'../lib/profile-service'|'@/lib/services/profile'|g\" tests/date-formatting-demo.ts tests/delete-account-test.ts)",
+      "Bash(python3 -c ' *)",
+      "Bash(npx tsc *)",
+      "Bash(xargs grep -l \"interface ResumeData\\\\|type ResumeData\")",
+      "Bash(New-Item -ItemType Directory -Path \"C:\\\\Users\\\\thunderX\\\\Desktop\\\\Programing\\\\ResumeBuilder\\\\app\\\\api\\\\ai\\\\generate-from-job\" -Force)",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"done\")",
+      "Bash(npm run *)",
+      "PowerShell(git add *)"
+    ]
+  }
+}

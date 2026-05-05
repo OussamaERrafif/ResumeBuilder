@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { AnalysisService } from "@/lib/analysis-service"
+import { AnalysisService } from "@/lib/services/analysis"
 
 /**
  * GET /api/ai/analysis?resumeId=xxx&userId=xxx&type=full_analysis

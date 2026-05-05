@@ -4,7 +4,7 @@ import Link from "next/link"
 import { ArrowRight, Github, CheckCircle2, Sparkles, ExternalLink, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { GridPattern } from "@/components/ui/grid-pattern"
+import { GridPattern } from "@/components/shared/grid-pattern"
 import { HeroDashboardPreview } from "@/components/landing/hero-dashboard-preview"
 
 export function HeroSection() {

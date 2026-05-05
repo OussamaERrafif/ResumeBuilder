@@ -5,9 +5,9 @@ import { Lock, Shield, Key, Smartphone, LogOut, Laptop } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { SecuritySettings as SecuritySettingsType } from "@/lib/profile-service"
-import { formatDate } from "@/lib/format-utils"
-import { UserPreferences } from "@/lib/profile-service"
+import { SecuritySettings as SecuritySettingsType } from "@/lib/services/profile"
+import { formatDate } from "@/lib/utils/format"
+import { UserPreferences } from "@/lib/services/profile"
 import { Badge } from "@/components/ui/badge"
 
 interface SecuritySettingsProps {

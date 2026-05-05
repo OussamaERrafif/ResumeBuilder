@@ -10,9 +10,9 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { UserProfile } from "@/lib/profile-service"
-import { formatDate } from "@/lib/format-utils"
-import { UserPreferences } from "@/lib/profile-service"
+import { UserProfile } from "@/lib/services/profile"
+import { formatDate } from "@/lib/utils/format"
+import { UserPreferences } from "@/lib/services/profile"
 
 interface ProfileFormProps {
   profile: UserProfile

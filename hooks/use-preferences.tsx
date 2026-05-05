@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/hooks/use-auth'
-import { ProfileService, UserPreferences } from '@/lib/profile-service'
+import { ProfileService, UserPreferences } from '@/lib/services/profile'
 
 // Timeout for preferences initialization
 const PREFERENCES_INIT_TIMEOUT = 10000

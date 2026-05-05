@@ -1,7 +1,7 @@
 // Test file to verify deleteAccount method
 // This can be run manually to test the deleteAccount functionality
 
-import { ProfileService } from '../lib/profile-service'
+import { ProfileService } from '@/lib/services/profile'
 
 export async function testDeleteAccount() {
   console.log('ProfileService deleteAccount method test')

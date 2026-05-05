@@ -12,8 +12,8 @@ import {
   PaymentService,
   type SubscriptionTier,
   type CreditPackage,
-} from "@/lib/credits-service"
-import { AICreditsUsage } from "@/lib/profile-service"
+} from "@/lib/services/credits"
+import { AICreditsUsage } from "@/lib/services/profile"
 
 // Timeout for credits initialization
 const CREDITS_INIT_TIMEOUT = 10000

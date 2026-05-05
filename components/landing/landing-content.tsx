@@ -1,7 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { ScrollToTop } from "@/components/ui/scroll-to-top"
+import { ScrollToTop } from "@/components/shared/scroll-to-top"
 import { HeroSection } from "@/components/landing/hero-section"
 
 // Section skeleton

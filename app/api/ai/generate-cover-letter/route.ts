@@ -1,33 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-// Gemini (commented out - using OpenAI instead)
-// import { GoogleGenerativeAI } from '@google/generative-ai'
-import OpenAI from 'openai'
 import { ResumeData, CoverLetterRequest } from '@/types/resume'
-import { CreditsService } from '@/lib/credits-service'
+import { callAIChatCompletion, isAIConfigured } from '@/lib/ai/client'
+import { CreditsService } from '@/lib/services/credits'
 
 export async function POST(request: NextRequest) {
   let resumeData: ResumeData | null = null
 
   try {
-    // Gemini (commented out - using OpenAI instead)
-    // const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-    // if (!GEMINI_API_KEY) {
-    //   return NextResponse.json(
-    //     { error: 'Gemini API key is not configured. Please set GEMINI_API_KEY in your environment.' },
-    //     { status: 500 }
-    //   )
-    // }
-    // const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
-
-    // OpenAI Configuration
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-    if (!OPENAI_API_KEY) {
+    if (!isAIConfigured()) {
       return NextResponse.json(
-        { error: 'OpenAI API key is not configured. Please set OPENAI_API_KEY in your environment.' },
+        { error: 'No AI provider configured. Please set OPENAI_API_KEY or GROQ_API_KEY in your environment.' },
         { status: 500 }
       )
     }
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
 
     const requestData: CoverLetterRequest = await request.json()
     const { jobDescription, jobTitle, companyName, specialInstructions, userId } = requestData
@@ -87,61 +72,32 @@ export async function POST(request: NextRequest) {
     // Create the AI prompt
     const prompt = createCoverLetterPrompt(jobDescription, resumeSummary, jobTitle, companyName, specialInstructions)
 
-    // Gemini (commented out - using OpenAI instead)
-    // const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
-    // const result = await model.generateContent(prompt)
-    // const coverLetterContent = result.response.text()
-
-    // OpenAI Implementation - Generate cover letter
-    const coverLetterCompletion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const coverLetterContent = await callAIChatCompletion(
+      [
         {
           role: 'system',
           content: 'You are an expert cover letter writer. Write professional, compelling cover letters that are ATS-friendly. Never use placeholders like [Your Name] - always use the actual name provided.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      max_tokens: 1000,
-      temperature: 0.7,
-    })
-    const coverLetterContent = coverLetterCompletion.choices[0]?.message?.content || ''
+      { max_tokens: 1000, temperature: 0.7 }
+    ) || ''
 
     // Also generate resume optimization suggestions
     const optimizationPrompt = createResumeOptimizationPrompt(jobDescription, resumeSummary)
 
-    // Gemini (commented out - using OpenAI instead)
-    // const optimizationResult = await model.generateContent(optimizationPrompt)
-    // let optimizationSuggestions = []
-    // try {
-    //   optimizationSuggestions = JSON.parse(optimizationResult.response.text())
-    // } catch (_parseError) {
-    //   optimizationSuggestions = [...]
-    // }
-
-    // OpenAI Implementation - Generate optimization suggestions
-    const optimizationCompletion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a resume optimization expert. Provide actionable suggestions to improve resumes. Always respond with valid JSON array of strings.'
-        },
-        {
-          role: 'user',
-          content: optimizationPrompt
-        }
-      ],
-      max_tokens: 500,
-      temperature: 0.7,
-    })
-
     let optimizationSuggestions = []
     try {
-      const optimizationText = optimizationCompletion.choices[0]?.message?.content || '[]'
+      const optimizationText = await callAIChatCompletion(
+        [
+          {
+            role: 'system',
+            content: 'You are a resume optimization expert. Provide actionable suggestions to improve resumes. Always respond with valid JSON array of strings.'
+          },
+          { role: 'user', content: optimizationPrompt }
+        ],
+        { max_tokens: 500, temperature: 0.7 }
+      ) || '[]'
       const cleanText = optimizationText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       optimizationSuggestions = JSON.parse(cleanText)
     } catch (_parseError) {

@@ -1,7 +1,7 @@
 "use client"
 
 import type { TemplatePreviewProps } from "./types"
-import { DefaultAvatar } from "@/components/ui/default-avatar"
+import { DefaultAvatar } from "@/components/shared/default-avatar"
 
 // ============================================================================
 // TEMPLATE 5: LuxSleek Photo Sidebar (LaTeX lines 740-933)

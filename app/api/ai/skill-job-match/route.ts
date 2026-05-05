@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { ResumeData } from '@/types/resume'
-import { CreditsService } from '@/lib/credits-service'
+import { callAIChatCompletion, isAIConfigured } from '@/lib/ai/client'
+import { CreditsService } from '@/lib/services/credits'
 
 // Define response types
 interface SkillAnalysis {
@@ -27,15 +27,13 @@ interface AnalysisResponse {
 
 export async function POST(request: NextRequest) {
     try {
-        const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-        if (!OPENAI_API_KEY) {
+        if (!isAIConfigured()) {
             return NextResponse.json(
-                { error: 'OpenAI API key is not configured' },
+                { error: 'No AI provider configured. Please set OPENAI_API_KEY or GROQ_API_KEY.' },
                 { status: 500 }
             )
         }
 
-        const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
         const body = await request.json()
         const { resumeData, userId } = body as { resumeData: ResumeData; userId: string }
 
@@ -81,24 +79,17 @@ export async function POST(request: NextRequest) {
         // AI Processing
         const prompt = createAnalysisPrompt(resumeData)
 
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
+        const content = await callAIChatCompletion(
+            [
                 {
                     role: 'system',
                     content: 'You are a career expert AI. Analyze the resume and provide a structured JSON response with skill proficiency (0-100) and suitable job matches.'
                 },
-                {
-                    role: 'user',
-                    content: prompt
-                }
+                { role: 'user', content: prompt }
             ],
-            response_format: { type: "json_object" },
-            temperature: 0.7,
-        })
-
-        const content = completion.choices[0]?.message?.content
-        if (!content) throw new Error('No content from OpenAI')
+            { response_format: { type: 'json_object' }, temperature: 0.7 }
+        )
+        if (!content) throw new Error('No content from AI provider')
 
         const analysis = JSON.parse(content) as AnalysisResponse
 

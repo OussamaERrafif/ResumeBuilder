@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { APISecurityMiddleware, APIRateLimit, AuthSecurity } from '@/lib/api-security'
+import { APISecurityMiddleware, APIRateLimit, AuthSecurity } from '@/lib/security/api'
 import { SecurityAudit } from '@/lib/security'
 
 /**

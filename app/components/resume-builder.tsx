@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/theme/toggle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   FileText,
@@ -80,18 +80,18 @@ const ATSTemplateSelector = dynamic(() => import("./templates/selector/ats-templ
 import "easymde/dist/easymde.min.css"
 const SimpleMDE = dynamic(() => import("react-simplemde-editor"), { ssr: false })
 
-import { RESUME_TEMPLATES } from "../types/templates"
+import { RESUME_TEMPLATES } from '@/types/templates'
 
 // Lazy load PDF export (heavy jspdf library) - only imported when downloading
-const exportResumePDF = async (...args: Parameters<typeof import("@/lib/ats-resume-exporter").exportResumePDF>) => {
-  const { exportResumePDF: exportFn } = await import("@/lib/ats-resume-exporter")
+const exportResumePDF = async (...args: Parameters<typeof import("@/lib/exporters").exportResumePDF>) => {
+  const { exportResumePDF: exportFn } = await import("@/lib/exporters")
   return exportFn(...args)
 }
 
 import {
   type ATSTemplateId,
   mapLegacyTemplateId
-} from "@/lib/ats-resume-exporter"
+} from "@/lib/exporters"
 import {
   ClassicTemplate,
   ModernTemplate,
@@ -101,8 +101,8 @@ import {
 } from "./templates/preview"
 import { useAuth } from "@/hooks/use-auth"
 import { useCredits } from "@/hooks/use-credits"
-import { ResumeService } from "@/lib/resume-service"
-import { FileUpload } from "@/components/ui/file-upload"
+import { ResumeService } from "@/lib/services/resume"
+import { FileUpload } from "@/components/shared/file-upload"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Dialog,
