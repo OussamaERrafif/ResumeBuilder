@@ -20,7 +20,7 @@ export function isAIConfigured(): boolean {
 }
 
 /**
- * Calls OpenAI chat completions, falling back to Groq if OpenAI fails or is unconfigured.
+ * Calls Groq API first (primary), falling back to OpenAI if Groq fails or is unavailable.
  * Returns null only if both providers are unconfigured or both fail.
  */
 export async function callAIChatCompletion(
@@ -30,28 +30,28 @@ export async function callAIChatCompletion(
   const openaiKey = process.env.OPENAI_API_KEY
   const groqKey = process.env.GROQ_API_KEY
 
-  if (openaiKey) {
+  if (groqKey) {
     try {
-      const client = new OpenAI({ apiKey: openaiKey })
+      const client = new OpenAI({ apiKey: groqKey, baseURL: GROQ_BASE_URL })
       const completion = await client.chat.completions.create({
-        model: OPENAI_MODEL,
+        model: GROQ_MODEL,
         messages,
         ...options,
       })
       return completion.choices[0]?.message?.content ?? null
     } catch (err) {
-      if (!groqKey) throw err
+      if (!openaiKey) throw err
       console.warn(
-        '[AI] OpenAI failed, falling back to Groq:',
+        '[AI] Groq failed, falling back to OpenAI:',
         err instanceof Error ? err.message : String(err)
       )
     }
   }
 
-  if (groqKey) {
-    const client = new OpenAI({ apiKey: groqKey, baseURL: GROQ_BASE_URL })
+  if (openaiKey) {
+    const client = new OpenAI({ apiKey: openaiKey })
     const completion = await client.chat.completions.create({
-      model: GROQ_MODEL,
+      model: OPENAI_MODEL,
       messages,
       ...options,
     })
