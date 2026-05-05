@@ -11,16 +11,16 @@ export const AI_CONFIG = {
 
   isConfigured: () => Boolean(process.env.OPENAI_API_KEY || process.env.GROQ_API_KEY),
   getProvider: () => {
-    if (process.env.OPENAI_API_KEY) return 'OpenAI'
     if (process.env.GROQ_API_KEY) return 'Groq'
+    if (process.env.OPENAI_API_KEY) return 'OpenAI'
     return 'None'
   },
   getStatus: () => {
-    if (process.env.OPENAI_API_KEY) {
-      return { configured: true, message: 'AI features enabled with OpenAI' }
-    }
     if (process.env.GROQ_API_KEY) {
-      return { configured: true, message: 'AI features enabled with Groq (fallback)' }
+      return { configured: true, message: 'AI features enabled with Groq' }
+    }
+    if (process.env.OPENAI_API_KEY) {
+      return { configured: true, message: 'AI features enabled with OpenAI (fallback)' }
     }
     return {
       configured: false,

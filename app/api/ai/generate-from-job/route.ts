@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { callAIChatCompletion, isAIConfigured } from '@/lib/ai/client'
 import { aiLimiter, getClientIP, createRateLimitResponse, addRateLimitHeaders } from '@/lib/security/rate-limiter'
 import { logger, requestTracker, generateRequestId } from '@/lib/utils/monitoring'
 import { CreditsService } from '@/lib/services/credits'
@@ -228,19 +228,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
+    if (!isAIConfigured()) {
       requestTracker.end(requestId, 503)
       return NextResponse.json({ error: 'AI service is not configured.' }, { status: 503 })
     }
 
     try {
-      const openai = new OpenAI({ apiKey })
       const prompt = buildPrompt(jobPost.trim(), baseResume)
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
+      const rawJson = await callAIChatCompletion(
+        [
           {
             role: 'system',
             content:
@@ -248,18 +245,19 @@ export async function POST(request: NextRequest) {
           },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 2500,
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      })
+        { max_tokens: 2500, temperature: 0.7, response_format: { type: 'json_object' } }
+      )
 
-      const rawJson = completion.choices[0]?.message?.content || '{}'
+      if (!rawJson) {
+        requestTracker.end(requestId, 500)
+        return NextResponse.json({ error: 'AI generation failed. Please try again.' }, { status: 500 })
+      }
+
       let parsedData: any
-
       try {
         parsedData = JSON.parse(rawJson)
       } catch {
-        logger.error('Failed to parse OpenAI JSON response', { requestId })
+        logger.error('Failed to parse AI JSON response', { requestId })
         requestTracker.end(requestId, 500)
         return NextResponse.json(
           { error: 'Failed to parse AI response. Please try again.' },
@@ -277,7 +275,7 @@ export async function POST(request: NextRequest) {
       requestTracker.end(requestId, 200)
       return addRateLimitHeaders(response, rateLimit.remaining, rateLimit.resetTime, 10)
     } catch (aiError) {
-      logger.error('OpenAI call failed in generate-from-job', {
+      logger.error('AI call failed in generate-from-job', {
         error: aiError instanceof Error ? aiError.message : String(aiError),
       })
       requestTracker.end(requestId, 500)

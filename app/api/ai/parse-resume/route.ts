@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-// Gemini (commented out - using OpenAI instead)
-// import { GoogleGenerativeAI } from '@google/generative-ai'
-import OpenAI from 'openai'
-
-// Gemini (commented out - using OpenAI instead)
-// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+import { callAIChatCompletion, isAIConfigured } from '@/lib/ai/client'
 
 // Function to safely import pdf-parse
 const parsePDF = async (buffer: Buffer): Promise<string> => {
@@ -279,11 +274,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse with AI
-    // Gemini (commented out - using OpenAI instead)
-    // const apiKey = process.env.GEMINI_API_KEY
-    const apiKey = process.env.OPENAI_API_KEY
-    
-    if (!apiKey) {
+    if (!isAIConfigured()) {
       return NextResponse.json(
         { error: 'AI parsing service is not configured.', success: false },
         { status: 500 }
@@ -291,34 +282,18 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Gemini (commented out - using OpenAI instead)
-      // const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
-      // const prompt = getParsingPrompt(extractedText)
-      // const result = await model.generateContent(prompt)
-      // const response = await result.response
-      // const text = response.text()
-
-      // OpenAI Implementation
-      const openai = new OpenAI({ apiKey })
       const prompt = getParsingPrompt(extractedText)
-      
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
+
+      const text = await callAIChatCompletion(
+        [
           {
             role: 'system',
             content: 'You are a resume parsing expert. Extract structured information from resumes and return valid JSON only. Preserve proper spacing and formatting in extracted text.'
           },
-          {
-            role: 'user',
-            content: prompt
-          }
+          { role: 'user', content: prompt }
         ],
-        max_tokens: 2000,
-        temperature: 0.3, // Lower temperature for more consistent parsing
-      })
-      
-      const text = completion.choices[0]?.message?.content || ''
+        { max_tokens: 2000, temperature: 0.3 }
+      ) ?? ''
 
       // Parse JSON response
       let parsedData: ParsedResumeData
